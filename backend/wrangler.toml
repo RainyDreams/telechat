@@ -1,0 +1,21 @@
+name = "telechat-backend"
+main = "src/index.js"
+compatibility_date = "2023-08-23"
+
+routes = [
+  { pattern = "t.lingben.top/ws*", zone_name = "lingben.top" },
+  { pattern = "t.lingben.top/api/check*", zone_name = "lingben.top" }
+]
+
+[[durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "telechat-db"
+database_id = "REPLACE_ME"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChatRoom"]

@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 这里可以放一些全局样式 */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased; /* 让字体更像 Apple */
+    -moz-osx-font-smoothing: grayscale;
+}
