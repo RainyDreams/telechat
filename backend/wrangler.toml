@@ -14,7 +14,7 @@ class_name = "ChatRoom"
 [[d1_databases]]
 binding = "DB"
 database_name = "telechat-db"
-database_id = "REPLACE_ME"
+database_id = "c125e35c-f452-4398-9584-23489a602dc6"
 
 [[migrations]]
 tag = "v1"
