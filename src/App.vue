@@ -1,5 +1,8 @@
 ﻿<template>
-  <div class="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-slate-100 text-slate-900 antialiased">
+  <div
+    class="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-slate-100 text-slate-900 antialiased"
+    :class="[{ 'keyboard-open': isKeyboardOpen }, { 'viewport-narrow': viewportNarrow }]"
+  >
     <div
       v-if="isInsecureBrowser"
       class="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 via-white to-slate-200 px-4"
@@ -40,7 +43,7 @@
       </div>
       <div
         v-if="banner.open"
-        class="fixed left-1/2 top-16 z-40 w-[min(94vw,640px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
+        class="fixed left-1/2 top-11 z-40 w-[min(94vw,640px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
       >
         <button type="button" class="w-full text-left px-4 py-3" @click="openBannerChat">
           <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">新消息</p>
@@ -109,6 +112,9 @@
               </div>
               <div class="min-w-0">
                 <p class="text-xs uppercase tracking-wide text-slate-400">My ID</p>
+                <p class="truncate text-xs font-semibold text-slate-700">
+                  {{ myNickname || '未设置昵称' }}
+                </p>
                 <p
                   class="cursor-pointer text-sm font-medium text-slate-800"
                   :class="isIdentityExpanded('self-id-desktop') ? 'whitespace-normal break-all' : 'truncate'"
@@ -232,6 +238,14 @@
               >
                 邀请新人
               </button>
+              <button
+                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
+                type="button"
+                @click="openGroupManage"
+                class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+              >
+                群设置
+              </button>
               <div
                 class="hidden items-center gap-2 rounded-full px-3 py-1 text-xs font-medium sm:flex"
                 :class="connectionPillClass"
@@ -276,6 +290,14 @@
             >
               设置
             </button>
+            <button
+              v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
+              type="button"
+              @click="openGroupManage"
+              class="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-700"
+            >
+              群设置
+            </button>
           </div>
         </header>
 
@@ -290,6 +312,9 @@
            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
              <div class="min-w-0">
                <p class="text-xs uppercase tracking-wide text-slate-400">Group Panel</p>
+               <p class="truncate text-xs font-semibold text-slate-700">
+                 {{ myNickname || '未设置昵称' }}
+               </p>
                <p
                  class="cursor-pointer text-sm font-semibold text-slate-800"
                  :class="isIdentityExpanded('self-id-mobile') ? 'whitespace-normal break-all' : 'truncate'"
@@ -466,13 +491,24 @@
                       class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2"
                     >
                       <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0 flex-1">
+                        <div class="min-w-0 flex flex-1 items-center gap-2">
+                          <div
+                            class="avatar h-9 w-9 rounded-full text-[12px] font-semibold text-white"
+                            :style="{ background: avatarColor(user.uid || user.nickname) }"
+                          >
+                            {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                          </div>
+                          <div class="min-w-0 flex-1">
                           <p class="truncate text-sm font-semibold text-slate-800">
-                            {{ user.isSelf ? '你' : `用户 ${user.uidShort}` }}
+                            {{ user.isSelf ? (myNickname ? `${myNickname}（你）` : '你') : (user.nickname || `用户 ${user.uidShort}`) }}
+                          </p>
+                          <p class="truncate text-[11px] text-slate-400">
+                            ID: {{ user.uidShort }}
                           </p>
                           <p class="truncate text-xs text-slate-500">
                             {{ user.os }} · {{ user.location }}
                           </p>
+                          </div>
                         </div>
                         <div class="flex flex-wrap items-center justify-between gap-3 sm:flex-col sm:items-end">
                           <div class="text-right">
@@ -557,7 +593,7 @@
               :key="`${msg.msgId}-${msg.sender}-${msg.groupId || 'system'}`"
               class="flex message-item"
               :class="
-                msg.payloadType === 'dm_limit_tip'
+                msg.payloadType === 'dm_limit_tip' || msg.payloadType === 'send_block_tip'
                   ? 'justify-center'
                   : msg.isSystem || msg.sender !== myUid
                     ? 'justify-start'
@@ -578,21 +614,46 @@
                   </button>
                 </div>
               </div>
-              <div v-else class="max-w-[92%] sm:max-w-[75%]">
-                <p
-                  v-if="!msg.isSystem && msg.sender !== myUid"
-                  class="mb-1 px-1 text-[11px] font-medium text-slate-500 break-all"
-                >
-                  {{ msg.sender }}
-                </p>
+              <div v-else-if="msg.payloadType === 'send_block_tip'" class="w-full max-w-xl px-2">
+                <div class="mx-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 text-center shadow-sm">
+                  <p class="text-[11px] font-semibold text-slate-700">{{ msg.tipTitle || '发送未完成' }}</p>
+                  <p class="mt-1 text-[11px] text-slate-500">{{ msg.tipText }}</p>
+                  <div v-if="Array.isArray(msg.tipActions) && msg.tipActions.length" class="mt-2 flex flex-wrap justify-center gap-2">
+                    <button
+                      v-for="(item, idx) in msg.tipActions"
+                      :key="`tip-action-${msg.msgId}-${idx}`"
+                      type="button"
+                      @click="handleSystemAction(msg, item)"
+                      class="rounded-full bg-slate-900 px-3 py-1 text-[11px] font-semibold text-white"
+                    >
+                      {{ item.label || item.action || '处理' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="max-w-[92%] sm:max-w-[75%] flex items-end gap-2">
                 <div
-                  class="message-bubble rounded-2xl px-3.5 py-2.5 shadow-sm ring-1"
-                  :class="
-                    msg.sender === myUid
-                      ? 'rounded-br-md bg-gradient-to-br from-sky-500 to-sky-600 text-white ring-sky-400/30'
-                      : 'rounded-bl-md bg-white text-slate-800 ring-slate-200/80'
-                  "
+                  v-if="!msg.isSystem && msg.sender !== myUid"
+                  class="avatar h-8 w-8 shrink-0 rounded-full text-[11px] font-semibold text-white"
+                  :style="{ background: avatarColor(msg.sender) }"
                 >
+                  {{ avatarInitial(displayNameForUid(msg.sender) || msg.sender) }}
+                </div>
+                <div class="min-w-0">
+                  <p
+                    v-if="!msg.isSystem && msg.sender !== myUid"
+                    class="mb-1 px-1 text-[11px] font-medium text-slate-500 break-all"
+                  >
+                    {{ displayNameForUid(msg.sender) }}
+                  </p>
+                  <div
+                    class="message-bubble rounded-2xl px-3.5 py-2.5 shadow-sm ring-1"
+                    :class="
+                      msg.sender === myUid
+                        ? 'rounded-br-md bg-gradient-to-br from-sky-500 to-sky-600 text-white ring-sky-400/30'
+                        : 'rounded-bl-md bg-white text-slate-800 ring-slate-200/80'
+                    "
+                  >
                   <template v-if="msg.payloadType === 'image' && msg.imageData">
                     <img
                       :src="msg.imageData"
@@ -685,10 +746,10 @@
                     </div>
                   </div>
                   <p v-else class="emoji-font whitespace-pre-wrap break-words text-[15px] leading-6">{{ msg.text }}</p>
-                  <div
-                    class="mt-1.5 flex items-center justify-end gap-1 text-[11px]"
-                    :class="msg.sender === myUid ? 'text-sky-100/90' : 'text-slate-400'"
-                  >
+                    <div
+                      class="mt-1.5 flex items-center justify-end gap-1 text-[11px]"
+                      :class="msg.sender === myUid ? 'text-sky-100/90' : 'text-slate-400'"
+                    >
                     <span>{{ formatTime(msg.ts) }}</span>
                     <button
                       v-if="msg.sender === myUid"
@@ -697,9 +758,25 @@
                       :class="msg.readBy && msg.readBy.length ? 'underline decoration-dotted' : ''"
                       @click="msg.readBy && msg.readBy.length ? openReadReceipts(msg) : null"
                     >
-                      {{ msg.readBy && msg.readBy.length ? '已读' : '送达' }}
+                      {{ outgoingStatusLabel(msg) }}
                     </button>
+                    <button
+                      v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
+                      type="button"
+                      @click="retryMessage(msg)"
+                      class="rounded-full border border-white/40 px-2 py-0.5 text-[10px] font-semibold hover:bg-white/15"
+                    >
+                      重试
+                    </button>
+                    </div>
                   </div>
+                </div>
+                <div
+                  v-if="!msg.isSystem && msg.sender === myUid"
+                  class="avatar h-8 w-8 shrink-0 rounded-full text-[11px] font-semibold text-white"
+                  :style="{ background: avatarColor(myUid || myNickname || 'me') }"
+                >
+                  {{ avatarInitial(myNickname || '我') }}
                 </div>
               </div>
             </article>
@@ -812,6 +889,151 @@
           </div>
         </div>
 
+        <div v-if="createGroupModal.open" class="absolute inset-0 z-30">
+          <button
+            type="button"
+            @click="closeCreateGroupModal"
+            class="absolute inset-0 bg-slate-900/35"
+            aria-label="Close create group modal"
+          ></button>
+          <div class="absolute inset-x-3 top-20 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">新建群聊</p>
+                <p class="text-sm font-semibold text-slate-800">可命名，不改变群ID</p>
+              </div>
+              <button
+                type="button"
+                @click="closeCreateGroupModal"
+                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                关闭
+              </button>
+            </div>
+            <div class="px-4 py-4">
+              <p class="text-xs text-slate-500">群 ID 将自动按时间生成，后续可由群主修改群名称。</p>
+              <input
+                v-model="createGroupModal.name"
+                maxlength="40"
+                class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                placeholder="输入群名称（可选）"
+              />
+              <div class="mt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  @click="closeCreateGroupModal"
+                  class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  @click="submitCreateGroup"
+                  class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                >
+                  创建群聊
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="groupManageOpen" class="absolute inset-0 z-30">
+          <button
+            type="button"
+            @click="groupManageOpen = false"
+            class="absolute inset-0 bg-slate-900/35"
+            aria-label="Close group manage modal"
+          ></button>
+          <div class="absolute inset-x-3 top-16 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">群设置</p>
+                <p class="text-sm font-semibold text-slate-800">{{ activeGroupName }}</p>
+              </div>
+              <button
+                type="button"
+                @click="groupManageOpen = false"
+                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+              >
+                关闭
+              </button>
+            </div>
+            <div class="max-h-[70dvh] overflow-y-auto px-4 py-4">
+              <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-600">群名称</p>
+                    <p class="truncate text-[11px] text-slate-500">群 ID：{{ activeGroup }}</p>
+                  </div>
+                  <span
+                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                    :class="isActiveGroupOwner ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'"
+                  >
+                    {{ isActiveGroupOwner ? '你是群主' : '成员' }}
+                  </span>
+                </div>
+                <div class="mt-2 flex items-center gap-2">
+                  <input
+                    v-model="groupRenameInput"
+                    maxlength="40"
+                    :disabled="!isActiveGroupOwner"
+                    class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 disabled:opacity-60"
+                    placeholder="修改群名称"
+                  />
+                  <button
+                    type="button"
+                    :disabled="!isActiveGroupOwner"
+                    @click="renameActiveGroup"
+                    class="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+                  >
+                    保存
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-3 rounded-xl border border-slate-100 bg-white px-3 py-3">
+                <div class="mb-2 flex items-center justify-between">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群成员</p>
+                  <button
+                    type="button"
+                    @click="requestGroupMembers"
+                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    刷新
+                  </button>
+                </div>
+                <div v-if="groupMembersLoading" class="text-xs text-slate-500">加载中…</div>
+                <div v-else-if="!groupMembers.length" class="text-xs text-slate-500">暂无成员。</div>
+                <div v-else class="grid gap-2">
+                  <div
+                    v-for="member in groupMembers"
+                    :key="`gm-${member.uid}`"
+                    class="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2"
+                  >
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold text-slate-800">
+                        {{ member.nickname || `用户 ${member.uidShort}` }}
+                      </p>
+                      <p class="truncate text-[11px] text-slate-500">
+                        {{ member.uidShort }} · {{ member.os || '未知系统' }} · {{ member.location || '未知地区' }}
+                      </p>
+                    </div>
+                    <button
+                      v-if="isActiveGroupOwner && !member.isOwner"
+                      type="button"
+                      @click="kickGroupMember(member.uid)"
+                      class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
+                    >
+                      移出
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="settingsOpen" class="absolute inset-0 z-30">
           <button
             type="button"
@@ -823,7 +1045,7 @@
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">设置</p>
-                <p class="text-sm font-semibold text-slate-800">通知与提示音</p>
+                <p class="text-sm font-semibold text-slate-800">昵称、通知与提示音</p>
               </div>
               <button
                 type="button"
@@ -834,7 +1056,28 @@
               </button>
             </div>
             <div class="px-4 py-6">
-              <div class="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+              <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+                <p class="text-sm font-semibold text-slate-800">昵称</p>
+                <p class="mt-1 text-xs text-slate-500">昵称全局唯一，绑定当前设备。旧设备迁移时可授权转让。</p>
+                <div class="mt-2 flex items-center gap-2">
+                  <input
+                    v-model="nicknameInput"
+                    maxlength="24"
+                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="请输入昵称（1-24 字）"
+                  />
+                  <button
+                    type="button"
+                    @click="submitNickname"
+                    :disabled="nicknameSaving"
+                    class="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                  >
+                    {{ nicknameSaving ? '保存中' : '保存' }}
+                  </button>
+                </div>
+              </div>
+
+              <div class="mt-3 flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-slate-800">系统通知</p>
                   <p class="text-xs text-slate-500">需要浏览器授权，开启后可推送通知</p>
@@ -956,46 +1199,54 @@
                   :key="`contact-${contact.contactFingerprint}`"
                   class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
                 >
-                  <div class="min-w-0">
-                    <p
-                      class="cursor-pointer text-sm font-semibold text-slate-800"
-                      :class="
-                        isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                          ? 'whitespace-normal break-all'
-                          : 'truncate'
-                      "
-                      @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                  <div class="min-w-0 flex items-center gap-2">
+                    <div
+                      class="avatar h-9 w-9 rounded-full text-[12px] font-semibold text-white"
+                      :style="{ background: avatarColor(contact.contactFingerprint || contact.alias) }"
                     >
-                      {{
-                        formatIdentityDisplay(
-                          contact.alias,
-                          `contact-alias-${contact.contactFingerprint}`,
-                          12,
-                          10
-                        )
-                      }}
-                    </p>
-                    <p
-                      class="cursor-pointer text-xs text-slate-500 font-mono"
-                      :class="
-                        isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                          ? 'whitespace-normal break-all'
-                          : 'truncate'
-                      "
-                      @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
-                    >
-                      指纹：{{
-                        formatIdentityDisplay(
-                          contact.contactFingerprint,
-                          `contact-fp-${contact.contactFingerprint}`,
-                          8,
-                          8
-                        )
-                      }}
-                    </p>
-                    <p class="truncate text-xs text-slate-500">
-                      {{ contact.online ? `${contact.os} · ${contact.location}` : '离线' }}
-                    </p>
+                      {{ avatarInitial(contact.alias || contact.fingerprintShort || 'U') }}
+                    </div>
+                    <div class="min-w-0">
+                      <p
+                        class="cursor-pointer text-sm font-semibold text-slate-800"
+                        :class="
+                          isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
+                            ? 'whitespace-normal break-all'
+                            : 'truncate'
+                        "
+                        @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                      >
+                        {{
+                          formatIdentityDisplay(
+                            contact.alias,
+                            `contact-alias-${contact.contactFingerprint}`,
+                            12,
+                            10
+                          )
+                        }}
+                      </p>
+                      <p
+                        class="cursor-pointer text-xs text-slate-500 font-mono"
+                        :class="
+                          isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
+                            ? 'whitespace-normal break-all'
+                            : 'truncate'
+                        "
+                        @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
+                      >
+                        指纹：{{
+                          formatIdentityDisplay(
+                            contact.contactFingerprint,
+                            `contact-fp-${contact.contactFingerprint}`,
+                            8,
+                            8
+                          )
+                        }}
+                      </p>
+                      <p class="truncate text-xs text-slate-500">
+                        {{ contact.online ? `${contact.os} · ${contact.location}` : '离线' }}
+                      </p>
+                    </div>
                   </div>
                   <div class="flex items-center gap-2">
                     <button
@@ -1020,7 +1271,7 @@
               <div class="mt-5 rounded-2xl border border-slate-100 bg-white px-3 py-3">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">迁移通讯录</p>
                 <p class="mt-1 text-xs text-slate-500">
-                  新旧设备同时打开。新设备生成迁移码，旧设备输入后授权迁移。
+                  新旧设备同时打开。新设备生成迁移码，旧设备输入后授权迁移，可选择同时转让昵称。
                 </p>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                   <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
@@ -1059,6 +1310,9 @@
                       >
                         确认迁移
                       </button>
+                      <p v-if="migrationConfirm.transferNickname" class="mt-2 text-[11px] text-emerald-700">
+                        将同步转让昵称{{ migrationConfirm.oldNickname ? `：${migrationConfirm.oldNickname}` : '' }}，旧设备会恢复默认身份显示。
+                      </p>
                     </div>
                   </div>
                   <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
@@ -1068,6 +1322,10 @@
                       class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700"
                       placeholder="输入迁移码"
                     />
+                    <label class="mt-2 flex items-center gap-2 text-[11px] text-slate-600">
+                      <input v-model="transferNicknameOnMigration" type="checkbox" class="h-3.5 w-3.5" />
+                      授权同时转让昵称（旧设备回默认）
+                    </label>
                     <button
                       type="button"
                       @click="approveMigration"
@@ -1210,8 +1468,7 @@
             <button
               type="button"
               @click="handleSend"
-              :disabled="!canSendText"
-              class="inline-flex h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+              class="inline-flex h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
             >
               发送
             </button>
@@ -1239,6 +1496,7 @@ const currentUrl = window.location.href;
 const copyText = ref('复制链接');
 const inviteText = ref('邀请新人');
 const myUid = ref('');
+const myNickname = ref('');
 const myPrivateKey = ref(null);
 const myPublicKeyBase64 = ref('');
 const identitySignKeyPair = ref(null);
@@ -1253,7 +1511,7 @@ const groups = ref([
   { id: SYSTEM_GROUP, name: '首页', onlineCount: 0 },
   { id: SYSTEM_NOTICE_GROUP, name: '系统消息', onlineCount: 0 },
 ]);
-const pendingJoin = ref({ groupId: '', inviteCode: '', select: true });
+const pendingJoin = ref({ groupId: '', inviteCode: '', select: true, groupName: '' });
 const connectionState = ref('connecting'); // connecting | verifying | connected | reconnecting
 const showMobilePanel = ref(false);
 const isSendingImage = ref(false);
@@ -1281,6 +1539,13 @@ const banner = ref({ open: false, groupId: '', title: '', text: '', canEnableNot
 const notificationPrompted = ref(false);
 const systemNotifyEnabled = ref(false);
 const settingsOpen = ref(false);
+const createGroupModal = ref({ open: false, name: '' });
+const groupManageOpen = ref(false);
+const groupMembers = ref([]);
+const groupMembersLoading = ref(false);
+const groupRenameInput = ref('');
+const groupMetaMap = ref({});
+const pendingInviteApprovals = ref([]);
 const contactsOpen = ref(false);
 const contacts = ref([]);
 const contactsLoading = ref(false);
@@ -1292,7 +1557,17 @@ const migrationCode = ref('');
 const migrationExpiresAt = ref(0);
 const migrationInput = ref('');
 const migrationStatus = ref({ kind: 'info', text: '' });
-const migrationConfirm = ref({ code: '', fromFingerprintShort: '', fromOs: '', fromLocation: '' });
+const migrationConfirm = ref({
+  code: '',
+  fromFingerprintShort: '',
+  fromOs: '',
+  fromLocation: '',
+  transferNickname: true,
+  oldNickname: '',
+});
+const transferNicknameOnMigration = ref(true);
+const nicknameInput = ref('');
+const nicknameSaving = ref(false);
 const trustedKeys = ref({});
 const verifyModal = ref({ open: false, user: null, safetyCode: '' });
 const dmLocks = ref({});
@@ -1300,6 +1575,10 @@ const dmUnlocked = ref({});
 const dmHasIncoming = ref({});
 const dmHasOutgoing = ref({});
 const deviceKicked = ref({ open: false, reason: '' });
+const outboxQueue = ref([]);
+const isFlushingOutbox = ref(false);
+const isKeyboardOpen = ref(false);
+const viewportNarrow = ref(false);
 const suppressReconnect = ref(false);
 let powSolveToken = 0;
 let ws = null;
@@ -1308,9 +1587,26 @@ const joinedGroups = new Set([SYSTEM_GROUP, SYSTEM_NOTICE_GROUP]);
 const dmSessions = new Map();
 
 const importedPublicKeyCache = new Map();
+const handleNetworkOnline = () => {
+  void flushOutbox();
+};
+const handleViewportResize = () => {
+  updateViewportState();
+};
 
 const activeGroupName = computed(() => {
   return groups.value.find((g) => g.id === activeGroup.value)?.name || activeGroup.value;
+});
+
+const activeGroupMeta = computed(() => {
+  const gid = sanitizeGroupId(activeGroup.value) || '';
+  return gid ? groupMetaMap.value[gid] || null : null;
+});
+
+const isActiveGroupOwner = computed(() => {
+  const meta = activeGroupMeta.value;
+  if (!meta || !meta.ownerUid) return false;
+  return meta.ownerUid === myUid.value;
 });
 
 const visibleGroups = computed(() => {
@@ -1410,8 +1706,9 @@ const onlineUserCards = computed(() => {
       .filter((c) => c && typeof c.contactFingerprint === 'string')
       .map((c) => c.contactFingerprint)
   );
-  return onlineUsers.value.map((user) => {
+  const cards = onlineUsers.value.map((user) => {
     const uid = typeof user.uid === 'string' ? user.uid : '';
+    const nickname = typeof user.nickname === 'string' ? user.nickname : '';
     const os = normalize(user.os, '未知系统');
     const location = normalize(user.location, '未知地区');
     const fp = typeof user.deviceFingerprint === 'string' ? user.deviceFingerprint : '';
@@ -1435,6 +1732,7 @@ const onlineUserCards = computed(() => {
             : '未注册';
     return {
       uid,
+      nickname,
       uidShort: uid ? uid.slice(0, 6) : '未知',
       os,
       location,
@@ -1453,10 +1751,18 @@ const onlineUserCards = computed(() => {
       requestPending: uid ? isOutgoingContactPending(uid) : false,
     };
   });
+  cards.sort((a, b) => {
+    if (a.isSelf && !b.isSelf) return -1;
+    if (!a.isSelf && b.isSelf) return 1;
+    if (a.inContacts && !b.inContacts) return -1;
+    if (!a.inContacts && b.inContacts) return 1;
+    return a.uid.localeCompare(b.uid);
+  });
+  return cards;
 });
 
 const contactCards = computed(() => {
-  return contacts.value.map((contact) => {
+  const cards = contacts.value.map((contact) => {
     const fingerprint = contact.contactFingerprint || '';
     const alias = contact.alias || `设备 ${fingerprint.slice(0, 6)}`;
     return {
@@ -1470,6 +1776,12 @@ const contactCards = computed(() => {
       mutual: Boolean(contact.mutual),
     };
   });
+  cards.sort((a, b) => {
+    if (a.online && !b.online) return -1;
+    if (!a.online && b.online) return 1;
+    return (a.alias || '').localeCompare(b.alias || '');
+  });
+  return cards;
 });
 
 const contactRequestCards = computed(() => {
@@ -1500,13 +1812,6 @@ const migrationStatusClass = computed(() => {
   if (kind === 'success') return 'border-emerald-200 bg-emerald-50 text-emerald-700';
   if (kind === 'error') return 'border-rose-200 bg-rose-50 text-rose-700';
   return 'border-slate-200 bg-slate-50 text-slate-600';
-});
-
-const canSendText = computed(() => {
-  if (!ws || ws.readyState !== WebSocket.OPEN || !powState.value.verified) return false;
-  if (!inputMsg.value.trim()) return false;
-  if (isDirectGroupId(activeGroup.value) && isDmLocked(activeGroup.value)) return false;
-  return true;
 });
 
 const connectionLabel = computed(() => {
@@ -1554,6 +1859,49 @@ const formatIdentityDisplay = (value, key, head = 10, tail = 8) => {
   return isIdentityExpanded(key) ? text : shortIdentity(text, head, tail);
 };
 
+const avatarInitial = (text) => {
+  const value = String(text || '').trim();
+  if (!value) return 'U';
+  return value[0].toUpperCase();
+};
+
+const avatarColor = (seed) => {
+  const raw = String(seed || 'seed');
+  let hash = 0;
+  for (let i = 0; i < raw.length; i += 1) {
+    hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
+  }
+  const hue = hash % 360;
+  return `linear-gradient(135deg, hsl(${hue} 75% 58%), hsl(${(hue + 36) % 360} 70% 48%))`;
+};
+
+const displayNameForUid = (uid) => {
+  const id = typeof uid === 'string' ? uid : '';
+  if (!id) return '未知用户';
+  if (id === myUid.value) return myNickname.value || '你';
+  const user = onlineUsers.value.find((u) => u && u.uid === id);
+  if (user?.nickname) return user.nickname;
+  const contact = contacts.value.find((c) => c && c.onlineUid === id);
+  if (contact?.alias) return contact.alias;
+  return `用户 ${id.slice(0, 6)}`;
+};
+
+const upsertGroupMeta = (groupId, groupName = '', ownerUid = '') => {
+  const gid = sanitizeGroupId(groupId);
+  if (!gid) return;
+  const prev = groupMetaMap.value[gid] || {};
+  const next = {
+    groupId: gid,
+    groupName: groupName || prev.groupName || gid,
+    ownerUid: ownerUid || prev.ownerUid || '',
+  };
+  groupMetaMap.value = { ...groupMetaMap.value, [gid]: next };
+  ensureGroupInList(gid, next.groupName);
+  if (gid === activeGroup.value && groupRenameInput.value.trim() === '') {
+    groupRenameInput.value = next.groupName;
+  }
+};
+
 const toast = (text, kind = 'info') => {
   lastToast.value = { kind, text };
   setTimeout(() => {
@@ -1565,6 +1913,38 @@ const toast = (text, kind = 'info') => {
 
 const setMigrationStatus = (kind, text) => {
   migrationStatus.value = { kind, text };
+};
+
+const loadOutboxQueue = () => {
+  try {
+    const raw = window.localStorage.getItem('telechat.outbox.v1');
+    outboxQueue.value = raw ? JSON.parse(raw) : [];
+  } catch {
+    outboxQueue.value = [];
+  }
+};
+
+const persistOutboxQueue = () => {
+  try {
+    window.localStorage.setItem('telechat.outbox.v1', JSON.stringify(outboxQueue.value));
+  } catch {
+    // no-op
+  }
+};
+
+const enqueueOutbox = (groupId, payloadType, payload) => {
+  const gid = sanitizeGroupId(groupId) || SYSTEM_GROUP;
+  const msgId = `q-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  outboxQueue.value.push({
+    msgId,
+    groupId: gid,
+    payloadType,
+    payload,
+    createdAt: Date.now(),
+    retries: 0,
+  });
+  persistOutboxQueue();
+  return msgId;
 };
 
 const loadNotificationPrompt = () => {
@@ -1657,6 +2037,24 @@ const openContacts = () => {
     toast('正在验证连接，通讯录稍后加载。', 'info');
   }
   requestContacts();
+};
+
+const submitNickname = () => {
+  const nickname = nicknameInput.value.trim();
+  if (!nickname) {
+    toast('请输入昵称。', 'info');
+    return;
+  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    toast('连接未就绪，稍后重试。', 'error');
+    return;
+  }
+  if (!deviceBound.value) {
+    toast('请先完成设备绑定。', 'info');
+    return;
+  }
+  nicknameSaving.value = true;
+  ws.send(JSON.stringify({ type: 'set_nickname', nickname }));
 };
 
 const upsertContact = (contact) => {
@@ -1800,8 +2198,13 @@ const approveMigration = () => {
     toast('请先完成设备绑定。', 'info');
     return;
   }
-  setMigrationStatus('info', '授权请求已发送，等待新设备确认…');
-  ws.send(JSON.stringify({ type: 'contacts_migrate_approve', code }));
+  setMigrationStatus(
+    'info',
+    transferNicknameOnMigration.value
+      ? '授权请求已发送（含昵称转让），等待新设备确认…'
+      : '授权请求已发送，等待新设备确认…'
+  );
+  ws.send(JSON.stringify({ type: 'contacts_migrate_approve', code, transferNickname: transferNicknameOnMigration.value }));
 };
 
 const confirmMigration = (codeOverride = '') => {
@@ -1988,6 +2391,18 @@ const checkEnvironment = () => {
   isInsecureBrowser.value = isWechat || isUC || isQuark || isBaidu;
 };
 
+const updateViewportState = () => {
+  const vv = window.visualViewport;
+  if (!vv) {
+    isKeyboardOpen.value = false;
+    viewportNarrow.value = window.innerWidth < 380;
+    return;
+  }
+  const heightDiff = window.innerHeight - vv.height;
+  isKeyboardOpen.value = heightDiff > 120;
+  viewportNarrow.value = vv.width < 380;
+};
+
 const sanitizeGroupId = (value) => {
   if (!value) return '';
   const gid = String(value).trim();
@@ -2050,6 +2465,7 @@ const groupPreviewText = (groupId) => {
   }
   if (msg.payloadType === 'system') return msg.systemTitle || '系统提醒';
   if (msg.payloadType === 'dm_limit_tip') return '私聊受限提醒';
+  if (msg.payloadType === 'send_block_tip') return msg.tipTitle || '发送受阻提醒';
   const text = typeof msg.text === 'string' ? msg.text : '';
   return text.replace(/\s+/g, ' ').trim();
 };
@@ -2075,10 +2491,10 @@ const joinByInviteCode = async () => {
   ensureGroupInList(gid);
   activeGroup.value = gid;
 
-  pendingJoin.value = { groupId: gid, inviteCode: code, select: true };
+  pendingJoin.value = { groupId: gid, inviteCode: code, select: true, groupName: '' };
   if (powState.value.verified && ws && ws.readyState === WebSocket.OPEN) {
     joinGroup(gid, code);
-    pendingJoin.value = { groupId: '', inviteCode: '', select: true };
+    pendingJoin.value = { groupId: '', inviteCode: '', select: true, groupName: '' };
   } else {
     void startPowSolve();
   }
@@ -2141,7 +2557,7 @@ const ensureGroupInList = (groupId, name = '') => {
     groups.value.push({ id: groupId, name: name || groupId, onlineCount: 0 });
     return;
   }
-  if (name && (existing.name === existing.id || !existing.name)) {
+  if (name && name !== existing.name) {
     existing.name = name;
   }
 };
@@ -2436,6 +2852,8 @@ const resetDeviceBinding = () => {
     // no-op
   }
   deviceFingerprint.value = '';
+  myNickname.value = '';
+  nicknameInput.value = '';
   void initDeviceFingerprint();
 };
 
@@ -2941,6 +3359,16 @@ const formatDateTime = (ts) => {
   return new Date(ts).toLocaleString();
 };
 
+const outgoingStatusLabel = (msg) => {
+  if (!msg || msg.sender !== myUid.value) return '';
+  if (Array.isArray(msg.readBy) && msg.readBy.length) return '已读';
+  if (msg.clientStatus === 'queued') return '排队中';
+  if (msg.clientStatus === 'sending') return '发送中';
+  if (msg.clientStatus === 'failed') return '失败';
+  if (msg.clientStatus === 'sent') return '已发送';
+  return '送达';
+};
+
 const isNearBottom = () => {
   if (!msgBox.value) return false;
   const threshold = 80;
@@ -3050,6 +3478,42 @@ const pushDmLimitTip = (groupId, targetUid = '') => {
     localSeen: true,
     readBy: [],
     isSystem: true,
+  });
+  scrollToBottom();
+};
+
+const pushSendBlockedTip = (groupId, { title, text, actions = [], dedupeKey = '' }) => {
+  const gid = sanitizeGroupId(groupId) || SYSTEM_GROUP;
+  const tipTitle = typeof title === 'string' && title.trim() ? title.trim() : '发送未完成';
+  const tipText = typeof text === 'string' ? text.trim() : '';
+  const tipKey = dedupeKey || `${tipTitle}|${tipText}`;
+  const now = Date.now();
+  const exists = messages.value.some(
+    (msg) =>
+      msg.payloadType === 'send_block_tip' &&
+      (msg.groupId || SYSTEM_GROUP) === gid &&
+      msg.tipKey === tipKey &&
+      now - (msg.ts || 0) < 12_000
+  );
+  if (exists) return;
+
+  messages.value.push({
+    msgId: createMsgId(),
+    payloadType: 'send_block_tip',
+    sender: '系统消息',
+    groupId: gid,
+    text: '',
+    tipTitle,
+    tipText,
+    tipActions: normalizeSystemActions(actions),
+    tipKey,
+    ts: now,
+    read: true,
+    localSeen: true,
+    readBy: [],
+    isSystem: true,
+    systemAction: '',
+    systemActionLabel: '',
   });
   scrollToBottom();
 };
@@ -3173,6 +3637,9 @@ const pushLocalMessage = ({
   pairGroupName = '',
   pairStatus = 'pending',
   expiresAt = null,
+  clientStatus = 'sending',
+  clientError = '',
+  outboxId = '',
 }) => {
   messages.value.push({
     msgId,
@@ -3196,7 +3663,26 @@ const pushLocalMessage = ({
     read: false,
     localSeen: true,
     readBy: [],
+    clientStatus,
+    clientError,
+    outboxId: outboxId || '',
   });
+};
+
+const findLocalOutgoing = (msgId) => {
+  if (!msgId) return null;
+  return messages.value.find((m) => m.msgId === msgId && m.sender === myUid.value) || null;
+};
+
+const markOutgoingStatus = (msgId, status, errorText = '') => {
+  const local = findLocalOutgoing(msgId);
+  if (!local) return;
+  local.clientStatus = status;
+  if (errorText) {
+    local.clientError = errorText;
+  } else if (status !== 'failed') {
+    local.clientError = '';
+  }
 };
 
 const normalizeSystemActions = (actions, fallbackAction = '', fallbackLabel = '') => {
@@ -3206,7 +3692,7 @@ const normalizeSystemActions = (actions, fallbackAction = '', fallbackLabel = ''
       const action = typeof item?.action === 'string' ? item.action.trim() : '';
       if (!action) continue;
       const label = typeof item?.label === 'string' && item.label.trim() ? item.label.trim() : action;
-      out.push({ action, label });
+      out.push({ ...item, action, label });
       if (out.length >= 8) break;
     }
   }
@@ -3287,6 +3773,28 @@ const handleSystemAction = (msg, actionItem = null) => {
     createGroup();
     return;
   }
+  if (action === 'create_group_modal') {
+    createGroup();
+    return;
+  }
+  if (action === 'open_group_manage') {
+    openGroupManage();
+    return;
+  }
+  if (action === 'approve_group_invite' || action === 'reject_group_invite') {
+    const requestId =
+      (typeof actionItem?.requestId === 'string' && actionItem.requestId) ||
+      (typeof msg?.systemMeta?.requestId === 'string' ? msg.systemMeta.requestId : '');
+    if (!requestId || !ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(
+      JSON.stringify({
+        type: 'group_invite_approve',
+        requestId,
+        approve: action === 'approve_group_invite',
+      })
+    );
+    return;
+  }
   if (action === 'toggle_notify') {
     void toggleSystemNotify();
     return;
@@ -3297,16 +3805,19 @@ const handleSystemAction = (msg, actionItem = null) => {
   }
   if (action === 'copy_invite') {
     void copyInviteLink();
+    return;
+  }
+  if (action === 'retry_outbox') {
+    retryOutbox();
   }
 };
 
-const sendEncryptedPayload = async (payloadType, payload) => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return false;
 
-  const groupId = sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
+  const groupId = sanitizeGroupId(options.groupId || activeGroup.value) || SYSTEM_GROUP;
   if (isDirectGroupId(groupId)) {
-    await sendDirectEncryptedPayload(payloadType, payload, groupId);
-    return;
+    return sendDirectEncryptedPayload(payloadType, payload, groupId, options);
   }
   const serverPayloadType = payloadType === 'image' ? 'image' : 'text';
   const recipients = onlineUsers.value.filter(
@@ -3319,12 +3830,18 @@ const sendEncryptedPayload = async (payloadType, payload) => {
   );
 
   if (!recipients.length) {
-    alert('当前群组暂无可接收消息的在线成员。');
-    return;
+    pushSendBlockedTip(groupId, {
+      title: '发送未完成',
+      text: '当前群组暂无可接收消息的在线成员。建议先邀请成员加入，或稍后重试。',
+      actions: [{ action: 'copy_invite', label: '复制群邀请' }],
+      dedupeKey: `no-recipient-${groupId}`,
+    });
+    toast('当前群组暂无可接收消息的在线成员。', 'info');
+    return false;
   }
 
   const encrypted = await encryptPayloadForRecipients(payload, recipients);
-  const msgId = createMsgId();
+  const msgId = typeof options.msgId === 'string' && options.msgId ? options.msgId : createMsgId();
 
   ws.send(
     JSON.stringify({
@@ -3340,52 +3857,67 @@ const sendEncryptedPayload = async (payloadType, payload) => {
     })
   );
 
-  if (payloadType === 'image') {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'image',
-      groupId,
-      imageData: payload.imageData,
-      name: payload.name,
-    });
-  } else if (payloadType === 'pair') {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'pair',
-      groupId,
-      pairGroupId: payload.pairGroupId || '',
-      pairInviteCode: payload.pairInviteCode || '',
-      pairInviteLink: payload.pairInviteLink || '',
-      pairGroupName: payload.pairGroupName || '',
-      pairStatus: payload.pairStatus || 'pending',
-    });
-  } else if (payloadType === 'invite') {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'invite',
-      groupId,
-      text: payload.inviteGroup || '',
-      inviteCode: payload.inviteCode || '',
-      inviteLink: payload.inviteLink || '',
-      inviteGroup: payload.inviteGroup || '',
-      inviteGroupName: payload.inviteGroupName || '',
-      expiresAt: payload.expiresAt || null,
-    });
+  if (!options.skipLocalPush) {
+    if (payloadType === 'image') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'image',
+        groupId,
+        imageData: payload.imageData,
+        name: payload.name,
+        clientStatus: 'sent',
+      });
+    } else if (payloadType === 'pair') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'pair',
+        groupId,
+        pairGroupId: payload.pairGroupId || '',
+        pairInviteCode: payload.pairInviteCode || '',
+        pairInviteLink: payload.pairInviteLink || '',
+        pairGroupName: payload.pairGroupName || '',
+        pairStatus: payload.pairStatus || 'pending',
+        clientStatus: 'sent',
+      });
+    } else if (payloadType === 'invite') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'invite',
+        groupId,
+        text: payload.inviteGroup || '',
+        inviteCode: payload.inviteCode || '',
+        inviteLink: payload.inviteLink || '',
+        inviteGroup: payload.inviteGroup || '',
+        inviteGroupName: payload.inviteGroupName || '',
+        expiresAt: payload.expiresAt || null,
+        clientStatus: 'sent',
+      });
+    } else {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'text',
+        groupId,
+        text: payload.text,
+        clientStatus: 'sent',
+      });
+    }
   } else {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'text',
-      groupId,
-      text: payload.text,
-    });
+    markOutgoingStatus(msgId, 'sent');
   }
 
   scrollToBottom();
+  return true;
 };
 
-const sendDirectEncryptedPayload = async (payloadType, payload, groupId) => {
+const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options = {}) => {
   const targetUid = getDirectTargetUid(groupId);
   if (!targetUid) {
+    pushSendBlockedTip(groupId, {
+      title: '发送失败：私聊对象不存在',
+      text: '当前私聊会话信息不完整，请重新发起私聊。',
+      actions: [{ action: 'open_home', label: '返回首页' }],
+      dedupeKey: `dm-target-missing-${groupId}`,
+    });
     toast('无法找到私聊对象。', 'error');
     return false;
   }
@@ -3398,21 +3930,37 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId) => {
 
   const target = onlineUsers.value.find((u) => u.uid === targetUid);
   if (!target || !target.identityDh || !target.identitySign) {
+    pushSendBlockedTip(groupId, {
+      title: '发送未完成：对方身份未就绪',
+      text: '对方可能刚上线，身份信息尚未同步完成，请稍后重试。',
+      dedupeKey: `dm-target-identity-not-ready-${targetUid}`,
+    });
     toast('对方身份信息未就绪。', 'error');
     return false;
   }
   if (target.identityValid === false) {
+    pushSendBlockedTip(groupId, {
+      title: '发送已拦截：身份校验失败',
+      text: '检测到对方身份签名异常，已阻止发送以保护安全。',
+      actions: [{ action: 'open_home', label: '返回首页' }],
+      dedupeKey: `dm-target-identity-invalid-${targetUid}`,
+    });
     toast('对方身份签名无效，无法安全通信。', 'error');
     return false;
   }
 
   const encrypted = await dmEncryptPayload(targetUid, target.identityDh, payload);
   if (!encrypted) {
+    pushSendBlockedTip(groupId, {
+      title: '发送失败：加密异常',
+      text: '本地加密失败，请稍后重试。',
+      dedupeKey: `dm-encrypt-fail-${groupId}`,
+    });
     toast('私聊加密失败。', 'error');
     return false;
   }
 
-  const msgId = createMsgId();
+  const msgId = typeof options.msgId === 'string' && options.msgId ? options.msgId : createMsgId();
   const serverPayloadType = payloadType === 'image' ? 'image' : 'text';
 
   ws.send(
@@ -3428,44 +3976,52 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId) => {
     })
   );
 
-  if (payloadType === 'image') {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'image',
-      groupId,
-      imageData: payload.imageData,
-      name: payload.name,
-    });
-  } else if (payloadType === 'pair') {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'pair',
-      groupId,
-      pairGroupId: payload.pairGroupId || '',
-      pairInviteCode: payload.pairInviteCode || '',
-      pairInviteLink: payload.pairInviteLink || '',
-      pairGroupName: payload.pairGroupName || '',
-      pairStatus: payload.pairStatus || 'pending',
-    });
-  } else if (payloadType === 'invite') {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'invite',
-      groupId,
-      text: payload.inviteGroup || '',
-      inviteCode: payload.inviteCode || '',
-      inviteLink: payload.inviteLink || '',
-      inviteGroup: payload.inviteGroup || '',
-      inviteGroupName: payload.inviteGroupName || '',
-      expiresAt: payload.expiresAt || null,
-    });
+  if (!options.skipLocalPush) {
+    if (payloadType === 'image') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'image',
+        groupId,
+        imageData: payload.imageData,
+        name: payload.name,
+        clientStatus: 'sent',
+      });
+    } else if (payloadType === 'pair') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'pair',
+        groupId,
+        pairGroupId: payload.pairGroupId || '',
+        pairInviteCode: payload.pairInviteCode || '',
+        pairInviteLink: payload.pairInviteLink || '',
+        pairGroupName: payload.pairGroupName || '',
+        pairStatus: payload.pairStatus || 'pending',
+        clientStatus: 'sent',
+      });
+    } else if (payloadType === 'invite') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'invite',
+        groupId,
+        text: payload.inviteGroup || '',
+        inviteCode: payload.inviteCode || '',
+        inviteLink: payload.inviteLink || '',
+        inviteGroup: payload.inviteGroup || '',
+        inviteGroupName: payload.inviteGroupName || '',
+        expiresAt: payload.expiresAt || null,
+        clientStatus: 'sent',
+      });
+    } else {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'text',
+        groupId,
+        text: payload.text,
+        clientStatus: 'sent',
+      });
+    }
   } else {
-    pushLocalMessage({
-      msgId,
-      payloadType: 'text',
-      groupId,
-      text: payload.text,
-    });
+    markOutgoingStatus(msgId, 'sent');
   }
 
   markDmOutgoing(groupId);
@@ -3473,10 +4029,104 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId) => {
   return true;
 };
 
+const queueOutgoingMessage = (payloadType, payload, groupId) => {
+  const gid = sanitizeGroupId(groupId) || SYSTEM_GROUP;
+  const msgId = enqueueOutbox(gid, payloadType, payload);
+  if (payloadType === 'image') {
+    pushLocalMessage({
+      msgId,
+      payloadType: 'image',
+      groupId: gid,
+      imageData: payload.imageData,
+      name: payload.name,
+      clientStatus: 'queued',
+      outboxId: msgId,
+    });
+  } else {
+    pushLocalMessage({
+      msgId,
+      payloadType: 'text',
+      groupId: gid,
+      text: payload.text || '',
+      clientStatus: 'queued',
+      outboxId: msgId,
+    });
+  }
+  pushSendBlockedTip(gid, {
+    title: '已加入离线发件箱',
+    text: '当前网络未就绪，消息会在恢复连接后自动重发。',
+    actions: [{ action: 'retry_outbox', label: '立即重试' }],
+    dedupeKey: `queued-${gid}`,
+  });
+  return msgId;
+};
+
+const flushOutbox = async () => {
+  if (isFlushingOutbox.value) return;
+  if (!outboxQueue.value.length) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN || !powState.value.verified) return;
+  isFlushingOutbox.value = true;
+  try {
+    let idx = 0;
+    while (idx < outboxQueue.value.length) {
+      const item = outboxQueue.value[idx];
+      if (!item) {
+        idx += 1;
+        continue;
+      }
+      markOutgoingStatus(item.msgId, 'sending');
+      const ok = await sendEncryptedPayload(item.payloadType, item.payload, {
+        groupId: item.groupId,
+        msgId: item.msgId,
+        skipLocalPush: Boolean(findLocalOutgoing(item.msgId)),
+      });
+      if (ok) {
+        outboxQueue.value.splice(idx, 1);
+        persistOutboxQueue();
+        continue;
+      }
+      item.retries = Number(item.retries || 0) + 1;
+      markOutgoingStatus(item.msgId, 'failed', '重发失败，可点击重试');
+      persistOutboxQueue();
+      idx += 1;
+      if (!ws || ws.readyState !== WebSocket.OPEN) break;
+    }
+  } finally {
+    isFlushingOutbox.value = false;
+  }
+};
+
+const retryOutbox = () => {
+  void flushOutbox();
+};
+
+const retryMessage = (msg) => {
+  if (!msg || !msg.msgId) return;
+  const existing = outboxQueue.value.find((item) => item.msgId === msg.msgId);
+  if (!existing) return;
+  markOutgoingStatus(msg.msgId, 'queued');
+  void flushOutbox();
+};
+
 const handleSend = async () => {
+  const gid = sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
   const text = inputMsg.value.trim();
-  if (!text) return;
+  if (!text) {
+    toast('请输入消息内容。', 'info');
+    return;
+  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    queueOutgoingMessage('text', { kind: 'text', text }, gid);
+    inputMsg.value = '';
+    return;
+  }
   if (!powState.value.verified) {
+    pushSendBlockedTip(gid, {
+      title: '发送前需安全验证',
+      text: '系统正在进行反机器人校验，校验完成后可继续发送。',
+      actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+      dedupeKey: 'send-pow-required',
+    });
     toast('正在进行反机器人验证…', 'info');
     void startPowSolve();
     return;
@@ -3491,8 +4141,10 @@ const handleSend = async () => {
     return;
   }
 
-  await sendEncryptedPayload('text', { kind: 'text', text });
-  inputMsg.value = '';
+  const ok = await sendEncryptedPayload('text', { kind: 'text', text });
+  if (ok) {
+    inputMsg.value = '';
+  }
 };
 
 const onInputKeydown = (e) => {
@@ -3582,12 +4234,29 @@ const onPickImage = async (event) => {
       return;
     }
 
-    await sendEncryptedPayload('image', {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      queueOutgoingMessage(
+        'image',
+        {
+          kind: 'image',
+          imageData: prepared.dataUrl,
+          mimeType: prepared.mimeType,
+          name: file.name,
+        },
+        sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP
+      );
+      return;
+    }
+
+    const ok = await sendEncryptedPayload('image', {
       kind: 'image',
       imageData: prepared.dataUrl,
       mimeType: prepared.mimeType,
       name: file.name,
     });
+    if (!ok) {
+      toast('图片发送未完成。', 'info');
+    }
   } catch {
     alert('图片处理失败，请重试。');
   } finally {
@@ -3598,11 +4267,12 @@ const onPickImage = async (event) => {
 const joinGroup = (groupId, inviteCode = '', options = {}) => {
   const gid = sanitizeGroupId(groupId);
   if (!gid) return;
+  const groupName = typeof options?.groupName === 'string' ? options.groupName.trim() : '';
   const shouldSelect = options?.select !== false;
   if (shouldSelect) {
     selectGroup(gid);
   }
-  ensureGroupInList(gid, nameForDirectGroup(gid));
+  ensureGroupInList(gid, groupName || nameForDirectGroup(gid));
 
   if (gid === SYSTEM_NOTICE_GROUP) {
     return;
@@ -3617,7 +4287,7 @@ const joinGroup = (groupId, inviteCode = '', options = {}) => {
         pendingDirect.value = { groupId: gid, targetUid };
       }
     } else {
-      pendingJoin.value = { groupId: gid, inviteCode: inviteCode || '', select: shouldSelect };
+      pendingJoin.value = { groupId: gid, inviteCode: inviteCode || '', select: shouldSelect, groupName };
     }
     toast('正在进行反机器人验证…', 'info');
     void startPowSolve();
@@ -3640,6 +4310,7 @@ const joinGroup = (groupId, inviteCode = '', options = {}) => {
       type: 'join_group',
       groupId: gid,
       inviteCode: code || undefined,
+      groupName: groupName || undefined,
     })
   );
 };
@@ -3656,8 +4327,66 @@ const openGroup = (groupId) => {
 };
 
 const createGroup = () => {
+  createGroupModal.value.open = true;
+  if (!createGroupModal.value.name) {
+    createGroupModal.value.name = '';
+  }
+};
+
+const closeCreateGroupModal = () => {
+  createGroupModal.value = { open: false, name: createGroupModal.value.name || '' };
+};
+
+const submitCreateGroup = () => {
   const gid = generateTimeGroupId();
-  joinGroup(gid);
+  const groupName = createGroupModal.value.name.trim();
+  createGroupModal.value.open = false;
+  joinGroup(gid, '', { groupName });
+};
+
+const openGroupManage = () => {
+  const gid = sanitizeGroupId(activeGroup.value);
+  if (!gid || gid === SYSTEM_GROUP || gid === SYSTEM_NOTICE_GROUP || isDirectGroupId(gid)) {
+    return;
+  }
+  groupManageOpen.value = true;
+  const meta = groupMetaMap.value[gid];
+  groupRenameInput.value = meta?.groupName || activeGroupName.value;
+  requestGroupMembers();
+};
+
+const requestGroupMembers = () => {
+  const gid = sanitizeGroupId(activeGroup.value);
+  if (!gid || !ws || ws.readyState !== WebSocket.OPEN) {
+    groupMembersLoading.value = false;
+    return;
+  }
+  groupMembersLoading.value = true;
+  ws.send(JSON.stringify({ type: 'group_members', groupId: gid }));
+};
+
+const renameActiveGroup = () => {
+  const gid = sanitizeGroupId(activeGroup.value);
+  const groupName = groupRenameInput.value.trim();
+  if (!gid || !groupName) {
+    toast('请输入群名称。', 'info');
+    return;
+  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    toast('连接未就绪，稍后重试。', 'error');
+    return;
+  }
+  ws.send(JSON.stringify({ type: 'group_rename', groupId: gid, groupName }));
+};
+
+const kickGroupMember = (targetUid) => {
+  const gid = sanitizeGroupId(activeGroup.value);
+  if (!gid || !targetUid) return;
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    toast('连接未就绪，稍后重试。', 'error');
+    return;
+  }
+  ws.send(JSON.stringify({ type: 'group_kick', groupId: gid, targetUid }));
 };
 
 const resolveWsUrl = () => {
@@ -3724,6 +4453,31 @@ const connectWS = () => {
       return;
     }
 
+    if (data.type === 'nickname_state') {
+      const nickname = typeof data.nickname === 'string' ? data.nickname : '';
+      myNickname.value = nickname;
+      if (!nicknameSaving.value || !nicknameInput.value.trim() || nicknameInput.value.trim() === nickname) {
+        nicknameInput.value = nickname;
+      }
+      nicknameSaving.value = false;
+      return;
+    }
+
+    if (data.type === 'nickname_updated') {
+      const nickname = typeof data.nickname === 'string' ? data.nickname : '';
+      myNickname.value = nickname;
+      nicknameInput.value = nickname;
+      nicknameSaving.value = false;
+      toast('昵称已更新。', 'info');
+      pushSystemMessage({
+        title: '昵称已更新',
+        text: `当前昵称：${nickname}`,
+        action: 'open_home',
+        actionLabel: '返回首页',
+      });
+      return;
+    }
+
     if (data.type === 'contacts_list') {
       contactsLoading.value = false;
       contacts.value = Array.isArray(data.contacts) ? data.contacts : [];
@@ -3743,6 +4497,56 @@ const connectWS = () => {
         action,
         actionLabel,
         actions,
+      });
+      return;
+    }
+
+    if (data.type === 'invite_approval_pending') {
+      pushSystemMessage({
+        title: '邀请审批中',
+        text: '你的邀请请求已提交给群主，等待确认。',
+        action: 'open_system_notice',
+        actionLabel: '查看系统消息',
+        meta: { requestId: typeof data.requestId === 'string' ? data.requestId : '' },
+      });
+      return;
+    }
+
+    if (data.type === 'invite_approval_request') {
+      const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+      const groupName = typeof data.groupName === 'string' ? data.groupName : (typeof data.groupId === 'string' ? data.groupId : '群聊');
+      const requesterNickname = typeof data.requesterNickname === 'string' ? data.requesterNickname : '';
+      const requesterUid = typeof data.requesterUid === 'string' ? data.requesterUid : '';
+      const requester = requesterNickname || `用户 ${requesterUid.slice(0, 6) || requesterUid}`;
+      pendingInviteApprovals.value = [
+        { requestId, groupId: data.groupId || '', groupName, requesterUid, requesterNickname },
+        ...pendingInviteApprovals.value.filter((item) => item.requestId !== requestId),
+      ];
+      pushSystemMessage({
+        title: '群邀请待审批',
+        text: `${requester} 申请为“${groupName}”生成邀请链接。`,
+        actions: [
+          { action: 'approve_group_invite', label: '同意', requestId },
+          { action: 'reject_group_invite', label: '拒绝', requestId },
+        ],
+        meta: { requestId },
+      });
+      return;
+    }
+
+    if (data.type === 'invite_approval_result') {
+      const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+      const approved = data.approved === true;
+      if (!approved && pendingInviteRequest.value.reqId) {
+        pendingInviteRequest.value = { reqId: '', groupId: '', mode: 'copy' };
+        inviteText.value = '邀请新人';
+      }
+      pendingInviteApprovals.value = pendingInviteApprovals.value.filter((item) => item.requestId !== requestId);
+      pushSystemMessage({
+        title: approved ? '邀请审批通过' : '邀请审批拒绝',
+        text: approved ? '群主已通过你的邀请请求。' : '群主拒绝了你的邀请请求。',
+        action: 'open_system_notice',
+        actionLabel: '查看详情',
       });
       return;
     }
@@ -3868,17 +4672,28 @@ const connectWS = () => {
     if (data.type === 'contacts_migrate_code') {
       migrationCode.value = typeof data.code === 'string' ? data.code : '';
       migrationExpiresAt.value = typeof data.expiresAt === 'number' ? data.expiresAt : 0;
-      migrationConfirm.value = { code: '', fromFingerprintShort: '', fromOs: '', fromLocation: '' };
+      migrationConfirm.value = {
+        code: '',
+        fromFingerprintShort: '',
+        fromOs: '',
+        fromLocation: '',
+        transferNickname: true,
+        oldNickname: '',
+      };
       setMigrationStatus('success', '迁移码已生成，10 分钟内有效。请在旧设备输入并授权。');
       toast('迁移码已生成。', 'info');
       return;
     }
 
     if (data.type === 'contacts_migrate_waiting') {
-      setMigrationStatus('info', '旧设备已授权，等待新设备确认…');
+      const transferNickname = data.transferNickname !== false;
+      setMigrationStatus(
+        'info',
+        transferNickname ? '旧设备已授权（含昵称转让），等待新设备确认…' : '旧设备已授权，等待新设备确认…'
+      );
       pushSystemMessage({
         title: '通讯录迁移已授权',
-        text: '等待新设备确认后将完成迁移。',
+        text: transferNickname ? '等待新设备确认后将完成迁移，昵称将一并转让。' : '等待新设备确认后将完成迁移。',
       });
       return;
     }
@@ -3887,18 +4702,25 @@ const connectWS = () => {
       const fromOs = typeof data.fromOs === 'string' ? data.fromOs : '';
       const fromLocation = typeof data.fromLocation === 'string' ? data.fromLocation : '';
       const fromText = [fromOs, fromLocation].filter((v) => v && v !== 'Unknown').join(' · ');
+      const transferNickname = data.transferNickname !== false;
+      const oldNickname = typeof data.oldNickname === 'string' ? data.oldNickname : '';
       migrationConfirm.value = {
         code: typeof data.code === 'string' ? data.code : '',
         fromFingerprintShort: typeof data.fromFingerprintShort === 'string' ? data.fromFingerprintShort : '',
         fromOs,
         fromLocation,
+        transferNickname,
+        oldNickname,
       };
-      setMigrationStatus('info', '旧设备已授权，请在新设备确认迁移。');
+      setMigrationStatus(
+        'info',
+        transferNickname ? '旧设备已授权（含昵称转让），请在新设备确认迁移。' : '旧设备已授权，请在新设备确认迁移。'
+      );
       pushSystemMessage({
         title: '通讯录迁移确认',
         text: fromText
-          ? `旧设备（${fromText}）已授权，请在新设备点击确认完成迁移。`
-          : '旧设备已授权，请在新设备点击确认完成迁移。',
+          ? `旧设备（${fromText}）已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`
+          : `旧设备已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`,
         action: 'confirm_migration',
         actionLabel: '确认迁移',
         meta: { code: migrationConfirm.value.code },
@@ -3909,16 +4731,31 @@ const connectWS = () => {
     if (data.type === 'contacts_migrate_done') {
       contactsLoading.value = false;
       const count = typeof data.count === 'number' ? data.count : 0;
-      setMigrationStatus('success', `通讯录迁移完成，共 ${count} 条。新设备可刷新通讯录确认。`);
+      const transferredNickname = typeof data.transferredNickname === 'string' ? data.transferredNickname : '';
+      setMigrationStatus(
+        'success',
+        transferredNickname
+          ? `通讯录迁移完成，共 ${count} 条，昵称“${transferredNickname}”已转让到当前设备。`
+          : `通讯录迁移完成，共 ${count} 条。新设备可刷新通讯录确认。`
+      );
       toast(`通讯录迁移完成（${count} 条）。`, 'info');
       pushSystemMessage({
         title: '通讯录迁移完成',
-        text: `已同步 ${count} 位联系人。`,
+        text: transferredNickname
+          ? `已同步 ${count} 位联系人，昵称“${transferredNickname}”已完成转让。`
+          : `已同步 ${count} 位联系人。`,
       });
       migrationCode.value = '';
       migrationExpiresAt.value = 0;
       migrationInput.value = '';
-      migrationConfirm.value = { code: '', fromFingerprintShort: '', fromOs: '', fromLocation: '' };
+      migrationConfirm.value = {
+        code: '',
+        fromFingerprintShort: '',
+        fromOs: '',
+        fromLocation: '',
+        transferNickname: true,
+        oldNickname: '',
+      };
       requestContacts();
       return;
     }
@@ -3948,8 +4785,9 @@ const connectWS = () => {
       } else if (pendingJoin.value.groupId) {
         joinGroup(pendingJoin.value.groupId, pendingJoin.value.inviteCode, {
           select: pendingJoin.value.select,
+          groupName: pendingJoin.value.groupName || '',
         });
-        pendingJoin.value = { groupId: '', inviteCode: '', select: true };
+        pendingJoin.value = { groupId: '', inviteCode: '', select: true, groupName: '' };
       } else if (activeGroup.value !== SYSTEM_GROUP && activeGroup.value !== SYSTEM_NOTICE_GROUP) {
         joinGroup(activeGroup.value);
       }
@@ -3959,12 +4797,20 @@ const connectWS = () => {
       if (pendingPairGroup.value.targetUid && !pendingPairGroup.value.groupId) {
         sendPairGroupCard(pendingPairGroup.value.targetUid);
       }
+      void flushOutbox();
       return;
     }
 
     if (data.type === 'status') {
       const rawUsers = Array.isArray(data.users) ? data.users : [];
       onlineUsers.value = rawUsers;
+      const self = rawUsers.find((u) => u && typeof u.uid === 'string' && u.uid === myUid.value);
+      if (self && typeof self.nickname === 'string') {
+        myNickname.value = self.nickname;
+        if (!nicknameSaving.value || !nicknameInput.value.trim()) {
+          nicknameInput.value = self.nickname;
+        }
+      }
       void validateIdentities(rawUsers);
       importedPublicKeyCache.clear();
       groups.value[0].onlineCount = typeof data.onlineCount === 'number' ? data.onlineCount : onlineUsers.value.length;
@@ -3977,10 +4823,80 @@ const connectWS = () => {
       return;
     }
 
+    if (data.type === 'group_meta_updated') {
+      const gid = sanitizeGroupId(data.groupId);
+      if (!gid) return;
+      const groupName = typeof data.groupName === 'string' ? data.groupName : gid;
+      const ownerUid = typeof data.ownerUid === 'string' ? data.ownerUid : '';
+      upsertGroupMeta(gid, groupName, ownerUid);
+      toast('群信息已更新。', 'info');
+      return;
+    }
+
+    if (data.type === 'group_members') {
+      groupMembersLoading.value = false;
+      const members = Array.isArray(data.members) ? data.members : [];
+      groupMembers.value = members.map((m) => {
+        const uid = typeof m.uid === 'string' ? m.uid : '';
+        return {
+          uid,
+          uidShort: uid ? uid.slice(0, 8) : '未知',
+          nickname: typeof m.nickname === 'string' ? m.nickname : '',
+          os: typeof m.os === 'string' ? m.os : '',
+          location: typeof m.location === 'string' ? m.location : '',
+          isOwner: m.isOwner === true,
+        };
+      });
+      const gid = sanitizeGroupId(data.groupId);
+      if (gid) {
+        upsertGroupMeta(
+          gid,
+          typeof data.groupName === 'string' ? data.groupName : gid,
+          typeof data.ownerUid === 'string' ? data.ownerUid : ''
+        );
+      }
+      return;
+    }
+
+    if (data.type === 'group_kicked') {
+      const gid = sanitizeGroupId(data.groupId);
+      if (gid) {
+        joinedGroups.delete(gid);
+        groups.value = groups.value.filter((g) => g.id !== gid || g.id === SYSTEM_GROUP || g.id === SYSTEM_NOTICE_GROUP);
+        const nextMeta = { ...groupMetaMap.value };
+        delete nextMeta[gid];
+        groupMetaMap.value = nextMeta;
+        if (activeGroup.value === gid) {
+          openGroup(SYSTEM_GROUP);
+        }
+      }
+      pushSystemMessage({
+        title: '你已被移出群聊',
+        text: '群主已将你移出当前群聊。',
+        action: 'open_home',
+        actionLabel: '回首页',
+      });
+      return;
+    }
+
+    if (data.type === 'group_kick_result') {
+      if (data.success === true) {
+        toast('成员已移出群聊。', 'info');
+        requestGroupMembers();
+      }
+      return;
+    }
+
     if (data.type === 'group_joined') {
       const gid = sanitizeGroupId(data.groupId);
       const directName = nameForDirectGroup(gid);
-      ensureGroupInList(gid, directName);
+      const groupName = typeof data.groupName === 'string' && data.groupName ? data.groupName : directName;
+      ensureGroupInList(gid, groupName);
+      upsertGroupMeta(
+        gid,
+        groupName || gid,
+        typeof data.ownerUid === 'string' ? data.ownerUid : ''
+      );
       if (gid && !joinedGroups.has(gid)) {
         joinedGroups.add(gid);
         if (gid !== SYSTEM_GROUP && gid !== SYSTEM_NOTICE_GROUP) {
@@ -4062,7 +4978,7 @@ const connectWS = () => {
 
       if (mode === 'card') {
         const groupName = groups.value.find((g) => g.id === groupId)?.name || groupId;
-        await sendEncryptedPayload('invite', {
+        const ok = await sendEncryptedPayload('invite', {
           kind: 'invite',
           inviteCode,
           inviteLink: shortLink,
@@ -4070,7 +4986,9 @@ const connectWS = () => {
           inviteGroupName: groupName,
           expiresAt,
         });
-        toast('已发送群邀请卡片。', 'info');
+        if (ok) {
+          toast('已发送群邀请卡片。', 'info');
+        }
         return;
       }
 
@@ -4102,20 +5020,40 @@ const connectWS = () => {
     if (data.type === 'error') {
       const code = typeof data.code === 'string' ? data.code : 'ERROR';
       const message = typeof data.message === 'string' ? data.message : '请求失败';
+      const currentGroupId = sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
+      if (code.startsWith('GROUP_')) {
+        groupMembersLoading.value = false;
+      }
 
       if (code === 'POW_REQUIRED') {
         powState.value.verified = false;
+        pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
+          title: '发送前需安全验证',
+          text: '连接已重置，需重新完成反机器人校验后再发送。',
+          actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+          dedupeKey: 'error-pow-required',
+        });
         void startPowSolve();
         toast('正在进行反机器人验证…', 'info');
         return;
       }
 
       if (code === 'INVITE_REQUIRED') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '入群失败',
+          text: '该群组需要邀请码，请使用有效邀请链接。',
+          dedupeKey: 'error-invite-required',
+        });
         toast('该群组需要邀请码才能加入。请使用“邀请新人”生成的链接/邀请码。', 'error');
         return;
       }
 
       if (code === 'USER_OFFLINE') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '对方不在线',
+          text: '目标用户当前不在线，请稍后重试。',
+          dedupeKey: 'error-user-offline',
+        });
         toast('对方当前不在线，无法发起临时对话。', 'error');
         return;
       }
@@ -4133,6 +5071,12 @@ const connectWS = () => {
       }
 
       if (code === 'DEVICE_BIND_REQUIRED') {
+        pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
+          title: '发送失败：未完成设备绑定',
+          text: '请先完成设备绑定，再进行私聊或通讯录操作。',
+          actions: [{ action: 'open_contacts', label: '打开通讯录' }],
+          dedupeKey: 'error-device-bind-required',
+        });
         toast('请先完成设备绑定后再发起私聊。', 'error');
         return;
       }
@@ -4144,6 +5088,27 @@ const connectWS = () => {
           pushDmLimitTip(gid, getDirectTargetUid(gid));
         }
         toast('你不在对方通讯录：请等待对方回复，或先申请加入对方通讯录。', 'info');
+        return;
+      }
+
+      if (code === 'RATE_LIMIT') {
+        pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
+          title: '发送频率过快',
+          text: '触发频率限制，请稍后再发送。建议先整理一条完整消息后再发。',
+          dedupeKey: 'error-rate-limit',
+        });
+        toast('发送过快，请稍后重试。', 'info');
+        return;
+      }
+
+      if (code === 'NO_RECIPIENT') {
+        pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
+          title: '发送未完成',
+          text: '当前群组没有可接收消息的在线成员。',
+          actions: [{ action: 'copy_invite', label: '复制群邀请' }],
+          dedupeKey: 'error-no-recipient',
+        });
+        toast('当前群组暂无可接收消息的在线成员。', 'info');
         return;
       }
 
@@ -4167,6 +5132,11 @@ const connectWS = () => {
         return;
       }
 
+      if (code === 'CONTACT_ALREADY_MUTUAL') {
+        toast('双方已互为通讯录，无需重复申请。', 'info');
+        return;
+      }
+
       if (code === 'CONTACT_REQUEST_INVALID') {
         toast('通讯录请求已失效或不存在。', 'error');
         return;
@@ -4184,6 +5154,7 @@ const connectWS = () => {
 
       if (code === 'DB_NOT_READY' || code === 'DB_ERROR') {
         contactsLoading.value = false;
+        nicknameSaving.value = false;
         setMigrationStatus('error', '通讯录服务暂不可用，请稍后重试。');
         toast('通讯录服务暂不可用，请稍后重试。', 'error');
         return;
@@ -4225,11 +5196,75 @@ const connectWS = () => {
         return;
       }
 
+      if (code === 'NICKNAME_INVALID') {
+        nicknameSaving.value = false;
+        toast('昵称不合法，请使用 1-24 个可见字符。', 'error');
+        return;
+      }
+
+      if (code === 'NICKNAME_TAKEN') {
+        nicknameSaving.value = false;
+        toast('昵称已被占用，请换一个。', 'error');
+        return;
+      }
+
       if (code === 'INVITE_INVALID') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '群邀请失效',
+          text: '该邀请已失效，请重新发起。',
+          dedupeKey: 'error-invite-invalid',
+        });
         toast('群聊邀请已失效，请重新发起。', 'error');
         return;
       }
 
+      if (code === 'GROUP_OWNER_REQUIRED') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '权限不足',
+          text: '该操作仅群主可执行。',
+          dedupeKey: 'error-group-owner-required',
+        });
+        toast('该操作仅群主可执行。', 'error');
+        return;
+      }
+
+      if (code === 'GROUP_RENAME_FORBIDDEN') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '无法修改群名',
+          text: '当前群类型不支持重命名。',
+          dedupeKey: 'error-group-rename-forbidden',
+        });
+        toast('当前群类型不支持改名。', 'error');
+        return;
+      }
+
+      if (code === 'GROUP_KICK_TARGET_MISSING') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '移出失败',
+          text: '目标成员不在群内或已离开。',
+          dedupeKey: 'error-group-kick-target',
+        });
+        toast('目标成员不在群内。', 'error');
+        return;
+      }
+
+      if (code === 'INVITE_APPROVAL_INVALID') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '审批已失效',
+          text: '该邀请审批已过期或不存在。',
+          dedupeKey: 'error-invite-approval-invalid',
+        });
+        toast('邀请审批已失效。', 'error');
+        return;
+      }
+
+      nicknameSaving.value = false;
+      pushSendBlockedTip(currentGroupId, {
+        title: `操作失败：${code}`,
+        text: message || '请求失败，请稍后重试。',
+        actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+        dedupeKey: `error-generic-${code}`,
+      });
       toast(`${code}: ${message}`, 'error');
       return;
     }
@@ -4333,6 +5368,10 @@ const connectWS = () => {
       if (local && data.ts) {
         local.ts = data.ts;
       }
+      if (local) {
+        local.clientStatus = 'delivered';
+        local.clientError = '';
+      }
       if (local && isDirectGroupId(local.groupId) && !isDmUnlocked(local.groupId)) {
         const delivered = Number(data.delivered) || 0;
         const dmRestricted = data.dmRestricted === true;
@@ -4351,6 +5390,7 @@ const connectWS = () => {
         (m) => m.msgId === data.targetMsgId && m.sender === myUid.value
       );
       if (local) {
+        local.clientStatus = 'read';
         local.read = true;
         if (!Array.isArray(local.readBy)) {
           local.readBy = [];
@@ -4369,6 +5409,12 @@ const connectWS = () => {
 
   ws.onclose = () => {
     connectionState.value = 'reconnecting';
+    pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
+      title: '连接已断开',
+      text: '正在尝试重连。离线期间发送的消息会进入发件箱并在恢复后自动重发。',
+      actions: [{ action: 'retry_outbox', label: '立即重发' }],
+      dedupeKey: 'ws-closed',
+    });
     if (suppressReconnect.value) return;
     setTimeout(() => {
       if (!isInsecureBrowser.value) connectWS();
@@ -4385,6 +5431,14 @@ onMounted(() => {
   loadNotificationPrompt();
   loadSystemNotifySetting();
   loadTrustedKeys();
+  loadOutboxQueue();
+  if (outboxQueue.value.length) {
+    pushSystemMessage({
+      title: '检测到离线发件箱',
+      text: `有 ${outboxQueue.value.length} 条消息待重发，连接恢复后会自动发送。`,
+      actions: [{ action: 'retry_outbox', label: '立即重发' }],
+    });
+  }
   ensureDeviceCookie();
   void initDeviceFingerprint();
   notificationAudio = new Audio(SOUND_URL);
@@ -4406,7 +5460,7 @@ onMounted(() => {
 
   if (groupFromUrl || groupFromInviteOnly) {
     const gid = groupFromUrl || groupFromInviteOnly;
-    pendingJoin.value = { groupId: gid, inviteCode: inviteOnly, select: true };
+    pendingJoin.value = { groupId: gid, inviteCode: inviteOnly, select: true, groupName: '' };
     activeGroup.value = gid;
     ensureGroupInList(gid);
   }
@@ -4415,11 +5469,24 @@ onMounted(() => {
   if (!isInsecureBrowser.value) {
     connectWS();
   }
+  updateViewportState();
+  window.addEventListener('online', handleNetworkOnline);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportResize);
+  } else {
+    window.addEventListener('resize', handleViewportResize);
+  }
   document.addEventListener('visibilitychange', handleVisibilityChange);
 });
 
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', handleVisibilityChange);
+  window.removeEventListener('online', handleNetworkOnline);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportResize);
+  } else {
+    window.removeEventListener('resize', handleViewportResize);
+  }
 });
 </script>
 
@@ -4429,6 +5496,26 @@ onBeforeUnmount(() => {
     radial-gradient(circle at 25px 25px, rgba(148, 163, 184, 0.09) 2px, transparent 0),
     radial-gradient(circle at 75px 75px, rgba(148, 163, 184, 0.09) 2px, transparent 0);
   background-size: 100px 100px;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+}
+
+button {
+  transition: transform 140ms ease, box-shadow 140ms ease, filter 140ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: saturate(1.03);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .emoji-font {
@@ -4485,6 +5572,19 @@ onBeforeUnmount(() => {
 
 .mobile-safe-footer {
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+}
+
+.keyboard-open .mobile-safe-footer {
+  padding-bottom: calc(0.35rem + env(safe-area-inset-bottom));
+}
+
+.keyboard-open header p.text-xs,
+.keyboard-open header p.text-\[11px\] {
+  display: none;
+}
+
+.viewport-narrow .message-bubble {
+  max-width: 78vw;
 }
 
 @media (min-width: 640px) {

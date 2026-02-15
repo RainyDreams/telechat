@@ -14,8 +14,10 @@
 - 端到端加密消息
 - 私聊（设备对设备）
 - 群聊与邀请码/邀请卡
+- 群主治理（群名称、成员列表、移出成员、邀请审批）
 - 通讯录申请、同意、拒绝
 - 通讯录迁移（新旧设备双向授权）
+- 设备昵称（D1 持久化、全局唯一、可在迁移时授权转让）
 - 系统消息虚拟群（`system-notice`）
 - 已读回执
 - 设备单会话（同一设备新登录会踢旧连接）
@@ -24,11 +26,14 @@
 ## 关键业务规则
 
 - 身份以设备指纹为准，不依赖手机号/邮箱/账号密码
+- 昵称绑定设备且全局唯一；设备迁移时可由旧设备授权转让昵称，旧设备回归默认身份显示
 - 通讯录“同意”是双向建立；“移除”是单向移除
 - 私聊限发规则：
   - 当你不在对方通讯录时：对方回复前，你只能先发一条
   - 对方回复后：该设备对进入自由私聊
   - 若你已在对方通讯录：无上述限制
+- 移动端发送按钮不做禁用；发送受限时在会话区给出系统原因提示与建议操作
+- 发消息支持离线发件箱、断网自动重发与消息状态（排队中/发送中/已发送/送达/已读/失败可重试）
 - `system-notice` 是系统虚拟群，用户不能手动加入/拉人，仅用于系统引导和状态通知
 
 ## 安全模型（务必阅读）
@@ -126,7 +131,9 @@ npm run deploy
 - 连接与验证：`identity`、`solve_pow`、`pow_verified`
 - 设备绑定：`set_device_fingerprint`、`device_bound`、`device_fingerprint_registered`
 - 群与私聊：`join_group`、`direct_start`、`chat`、`sent_ack`
+- 群治理：`group_members`、`group_rename`、`group_kick`、`group_invite_approve`
 - 通讯录：`contacts_add`、`contacts_accept`、`contacts_decline`、`contacts_remove`、`contacts_list`
+- 昵称：`set_nickname`、`nickname_state`、`nickname_updated`
 - 迁移：`contacts_migrate_init`、`contacts_migrate_approve`、`contacts_migrate_confirm`
 - 系统消息：`system_notice`
 
