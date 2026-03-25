@@ -41,45 +41,57 @@
       >
         {{ lastToast.text }}
       </div>
-      <div
-        v-if="banner.open"
-        class="fixed left-1/2 top-11 z-40 w-[min(92vw,420px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur md:left-auto md:right-4 md:top-4 md:w-[360px] md:translate-x-0"
-      >
-        <div class="flex items-start justify-between gap-2 px-4 pb-1 pt-3">
-          <button type="button" class="min-w-0 flex-1 text-left" @click="openBannerChat">
-            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">新消息</p>
-            <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ banner.title }}</p>
-            <p class="mt-1 clamp-2 text-xs text-slate-500">{{ banner.text }}</p>
-          </button>
-          <button
-            type="button"
-            @click="dismissBanner"
-            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
-            aria-label="Close banner"
-          >
-            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M6 6l12 12M18 6 6 18"/>
-            </svg>
-          </button>
+      <Transition name="banner-pop">
+        <div
+          v-if="banner.open"
+          class="fixed left-1/2 top-11 z-40 w-[min(92vw,420px)] -translate-x-1/2 rounded-[24px] border border-slate-200/90 bg-white/92 shadow-[0_24px_60px_rgba(15,23,42,0.16)] backdrop-blur-xl md:left-auto md:right-4 md:top-4 md:w-[360px] md:translate-x-0"
+        >
+          <div class="flex items-start justify-between gap-2 px-4 pb-1 pt-3">
+            <button
+              v-if="banner.clickable"
+              type="button"
+              class="min-w-0 flex-1 text-left"
+              @click="openBannerChat"
+            >
+              <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">新消息</p>
+              <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ banner.title }}</p>
+              <p class="mt-1 clamp-2 text-xs leading-5 text-slate-500">{{ banner.text }}</p>
+            </button>
+            <div v-else class="min-w-0 flex-1 text-left">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">新消息</p>
+              <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ banner.title }}</p>
+              <p class="mt-1 clamp-2 text-xs leading-5 text-slate-500">{{ banner.text }}</p>
+            </div>
+            <button
+              type="button"
+              @click="dismissBanner"
+              class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+              aria-label="Close banner"
+            >
+              <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 6l12 12M18 6 6 18"/>
+              </svg>
+            </button>
+          </div>
+          <div class="flex items-center justify-between gap-2 px-4 py-3">
+            <button
+              v-if="banner.canEnableNotify"
+              type="button"
+              @click="toggleSystemNotify"
+              class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
+            >
+              开启系统通知
+            </button>
+            <button
+              type="button"
+              @click="openBannerChat"
+              class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white"
+            >
+              {{ banner.groupId === SYSTEM_NOTICE_GROUP ? '查看通知' : '进入聊天' }}
+            </button>
+          </div>
         </div>
-        <div class="flex items-center justify-between px-4 py-3">
-          <button
-            v-if="banner.canEnableNotify"
-            type="button"
-            @click="toggleSystemNotify"
-            class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
-          >
-            开启系统通知
-          </button>
-          <button
-            type="button"
-            @click="openBannerChat"
-            class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white"
-          >
-            进入聊天
-          </button>
-        </div>
-      </div>
+      </Transition>
       <div v-if="deviceKicked.open" class="fixed inset-0 z-50">
         <button
           type="button"
@@ -361,14 +373,15 @@
           </div>
         </header>
 
-        <div v-if="showMobilePanel" class="absolute inset-0 z-20 md:hidden">
-          <button
-            type="button"
-            @click="showMobilePanel = false"
-            class="absolute inset-0 bg-slate-900/35"
-            aria-label="Close group panel"
-          ></button>
-          <div class="absolute inset-y-2 left-2 flex w-[min(84vw,22rem)] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+        <Transition name="mobile-drawer">
+          <div v-if="showMobilePanel" class="absolute inset-0 z-20 md:hidden">
+            <button
+              type="button"
+              @click="showMobilePanel = false"
+              class="mobile-panel-overlay absolute inset-0 bg-slate-900/28"
+              aria-label="Close group panel"
+            ></button>
+            <div class="mobile-side-drawer absolute inset-y-2 left-2 flex w-[min(84vw,22rem)] flex-col overflow-hidden rounded-[30px] border border-slate-200/90 bg-white/96 shadow-[0_30px_70px_rgba(15,23,42,0.22)] backdrop-blur-xl">
            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
              <div class="min-w-0">
                <p class="text-xs uppercase tracking-wide text-slate-400">Group Panel</p>
@@ -516,7 +529,7 @@
                >
                  {{ formatUnreadCount(getUnreadCount(group.id)) }}
                </span>
-             </button>
+            </button>
             <div class="mt-3 flex justify-end">
               <div class="relative">
                 <button
@@ -992,13 +1005,54 @@
                         有效期至 {{ formatDateTime(msg.expiresAt) }}
                       </p>
                     </div>
+                    <div
+                      v-else-if="msg.payloadType === 'audio' && msg.audioData"
+                      class="voice-message-card rounded-[22px] px-3 py-3"
+                      :class="msg.sender === myUid ? 'bg-white/14 text-white' : 'bg-slate-50 text-slate-800'"
+                    >
+                      <div class="flex items-center gap-3">
+                        <button
+                          type="button"
+                          class="voice-play-button inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                          :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
+                          @click="toggleAudioPlayback(msg)"
+                          :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
+                        >
+                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                            <path d="M7 5h3v14H7zM14 5h3v14h-3z"/>
+                          </svg>
+                          <svg v-else viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                            <path d="M8 6.5v11l9-5.5-9-5.5Z"/>
+                          </svg>
+                        </button>
+                        <div class="min-w-0 flex-1">
+                          <div class="voice-waveform flex h-10 items-end gap-1">
+                            <span
+                              v-for="(bar, idx) in audioWaveformForMessage(msg)"
+                              :key="`voice-wave-${msg.msgId}-${idx}`"
+                              class="voice-waveform-bar"
+                              :class="audioWaveformBarClass(msg, idx)"
+                              :style="audioWaveformBarStyle(bar)"
+                            ></span>
+                          </div>
+                          <div class="mt-2 flex items-center justify-between text-[11px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
+                            <span>{{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}</span>
+                            <span>{{ audioMessageTimeLabel(msg) }}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                     <p v-else class="emoji-font whitespace-pre-wrap break-words text-[14px] leading-[1.45]">{{ msg.text }}</p>
                     <div
                       class="mt-1.5 flex items-center justify-end gap-1 text-[10px]"
                       :class="msg.sender === myUid ? 'text-sky-100/90' : 'text-slate-400'"
                     >
-                      <span v-if="msg.burnAfterRead" class="rounded-full border px-1.5 py-0.5" :class="msg.sender === myUid ? 'border-white/25' : 'border-slate-200'">
-                        焚
+                      <span
+                        v-if="msg.burnAfterRead"
+                        class="rounded-full border px-1.5 py-0.5"
+                        :class="msg.sender === myUid ? 'border-white/25' : 'border-slate-200'"
+                      >
+                        {{ burnStatusLabel(msg) }}
                       </span>
                       <span>{{ formatTime(msg.ts) }}</span>
                       <button
@@ -1040,7 +1094,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close read receipts"
           ></button>
-          <div class="absolute inset-x-3 top-10 mx-auto max-w-4xl rounded-[28px] border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-10 mx-auto max-w-2xl rounded-[28px] border border-slate-200 bg-white shadow-2xl lg:max-w-[34rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">已读详情</p>
@@ -1065,7 +1119,7 @@
                   class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
                 >
                   <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-slate-800">用户 {{ entry.uidShort }}</p>
+                    <p class="truncate text-sm font-semibold text-slate-800">{{ entry.displayName }}</p>
                     <p class="truncate text-xs text-slate-500">{{ entry.os }} · {{ entry.location }}</p>
                   </div>
                   <div class="text-right">
@@ -1075,8 +1129,9 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
-        </div>
+        </Transition>
 
         <div v-if="invitePickerOpen" class="absolute inset-0 z-30">
           <button
@@ -1085,7 +1140,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close invite picker"
           ></button>
-          <div class="absolute inset-x-3 top-20 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-20 mx-auto max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl lg:max-w-[30rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">选择群组</p>
@@ -1146,7 +1201,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close create group modal"
           ></button>
-          <div class="absolute inset-x-3 top-20 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-20 mx-auto max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl lg:max-w-[30rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">新建群聊</p>
@@ -1195,7 +1250,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close group manage modal"
           ></button>
-          <div class="absolute inset-x-3 top-16 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-16 mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white shadow-2xl lg:max-w-[34rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">群设置</p>
@@ -1291,7 +1346,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close settings"
           ></button>
-          <div class="absolute inset-x-3 top-20 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-20 mx-auto max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl lg:max-w-[30rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">设置</p>
@@ -1327,7 +1382,7 @@
                 </div>
               </div>
 
-              <div class="mt-3 flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+              <div class="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-slate-800">系统通知</p>
                   <p class="text-xs text-slate-500">需要浏览器授权，开启后可推送通知</p>
@@ -1335,14 +1390,14 @@
                 <button
                   type="button"
                   @click="toggleSystemNotify"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                  class="shrink-0 self-start whitespace-nowrap rounded-full px-3 py-1.5 text-center text-xs font-semibold sm:self-center"
                   :class="systemNotifyEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700'"
                 >
                   {{ systemNotifyEnabled ? '已开启' : '已关闭' }}
                 </button>
               </div>
 
-              <div class="mt-3 flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+              <div class="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-slate-800">提示音</p>
                   <p class="text-xs text-slate-500">新消息到达时播放提示音</p>
@@ -1350,14 +1405,14 @@
                 <button
                   type="button"
                   @click="toggleSound"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                  class="shrink-0 self-start whitespace-nowrap rounded-full px-3 py-1.5 text-center text-xs font-semibold sm:self-center"
                   :class="soundEnabled ? 'bg-sky-500 text-white' : 'bg-slate-200 text-slate-700'"
                 >
                   {{ soundEnabled ? '已开启' : '已关闭' }}
                 </button>
               </div>
 
-              <div class="mt-3 flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+              <div class="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-slate-800">陌生人私聊</p>
                   <p class="text-xs text-slate-500">开启后，陌生设备只能向你发送私聊请求；关闭后，仅通讯录可向你发起私聊。</p>
@@ -1366,7 +1421,7 @@
                   type="button"
                   @click="toggleDmPreference"
                   :disabled="dmPreferenceSaving"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+                  class="shrink-0 self-start whitespace-nowrap rounded-full px-3 py-1.5 text-center text-xs font-semibold disabled:opacity-60 sm:self-center"
                   :class="dmContactsOnly ? 'bg-slate-900 text-white' : 'bg-emerald-500 text-white'"
                 >
                   {{ dmContactsOnly ? '仅通讯录' : '允许请求' }}
@@ -1380,110 +1435,160 @@
           </div>
         </div>
 
-        <div v-if="systemNoticeOpen" class="absolute inset-0 z-30">
-          <button
-            type="button"
-            @click="closeSystemNoticePanel"
-            class="absolute inset-0 bg-slate-900/25 md:bg-transparent"
-            aria-label="Close system notices"
-          ></button>
-          <div
-            class="absolute inset-x-0 bottom-0 flex max-h-[68dvh] flex-col overflow-hidden rounded-t-[30px] border border-slate-200 bg-white/95 shadow-2xl backdrop-blur md:inset-x-auto md:bottom-4 md:right-4 md:max-h-[76dvh] md:w-[26rem] md:rounded-[30px]"
-          >
-            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div class="min-w-0">
-                <p class="text-xs uppercase tracking-wide text-slate-400">系统通知</p>
-                <p class="truncate text-sm font-semibold text-slate-800">推荐操作会在这里集中展示</p>
-              </div>
-              <button
-                type="button"
-                @click="closeSystemNoticePanel"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-              >
-                关闭
-              </button>
-            </div>
-            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <p class="text-xs text-slate-500">
-                {{ systemNoticeMessages.length ? `最近 ${systemNoticeMessages.length} 条通知` : '暂无系统通知' }}
-              </p>
-              <button
-                v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
-                type="button"
-                @click="clearUnread(SYSTEM_NOTICE_GROUP)"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
-              >
-                标为已读
-              </button>
-            </div>
-            <div class="max-h-[calc(68dvh-7rem)] overflow-y-auto px-3 py-3 md:max-h-[calc(76dvh-7rem)]">
-              <div v-if="!systemNoticeMessages.length" class="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-8 text-center">
-                <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
-                <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
-              </div>
-              <div v-else class="grid gap-3">
-                <button
-                  v-for="msg in systemNoticeMessages"
-                  :key="`system-panel-${msg.msgId}`"
-                  type="button"
-                  class="w-full rounded-[24px] border px-4 py-4 text-left shadow-sm transition"
-                  :class="[systemCardSurfaceClass(msg), isSystemCardInteractive(msg) ? 'system-card-clickable' : 'cursor-default']"
-                  @click="openSystemNoticeCard(msg)"
-                >
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                      <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
-                      <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
-                        {{ systemCardEyebrow(msg) }}
-                      </p>
-                    </div>
-                    <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(msg.ts) }}</p>
+        <Transition name="notice-panel">
+          <div v-if="systemNoticeOpen" class="absolute inset-0 z-30">
+            <button
+              type="button"
+              @click="closeSystemNoticePanel"
+              class="system-notice-backdrop absolute inset-0 bg-slate-900/22 md:bg-slate-900/8"
+              aria-label="Close system notices"
+            ></button>
+            <div
+              class="system-notice-shell absolute inset-x-0 bottom-0 flex max-h-[68dvh] flex-col overflow-hidden rounded-t-[32px] border border-slate-200/90 bg-white/94 shadow-[0_28px_80px_rgba(15,23,42,0.2)] backdrop-blur-xl md:inset-x-auto md:bottom-4 md:right-4 md:max-h-[76dvh] md:w-[25rem] md:rounded-[30px]"
+            >
+              <div class="border-b border-slate-100 px-4 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">系统通知</p>
+                    <p class="truncate text-sm font-semibold text-slate-800">推荐操作会在这里集中展示</p>
                   </div>
-                  <div class="mt-3 flex flex-col gap-3">
+                  <button
+                    type="button"
+                    @click="closeSystemNoticePanel"
+                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                  >
+                    关闭
+                  </button>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-3 rounded-[22px] bg-slate-50/90 px-3 py-2">
+                  <p class="text-xs text-slate-500">
+                    {{ systemNoticeMessages.length ? `最近 ${systemNoticeMessages.length} 条通知` : '暂无系统通知' }}
+                  </p>
+                  <button
+                    v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
+                    type="button"
+                    @click="clearUnread(SYSTEM_NOTICE_GROUP)"
+                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
+                  >
+                    标为已读
+                  </button>
+                </div>
+              </div>
+              <div class="max-h-[calc(68dvh-7rem)] overflow-y-auto px-3 py-3 md:max-h-[calc(76dvh-7rem)]">
+                <div v-if="!systemNoticeMessages.length" class="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                  <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
+                  <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
+                </div>
+                <div v-else class="grid gap-3">
+                  <div
+                    v-for="msg in systemNoticeMessages"
+                    :key="`system-panel-${msg.msgId}`"
+                    class="rounded-[26px] border px-4 py-4 text-left shadow-sm"
+                    :class="systemCardSurfaceClass(msg)"
+                  >
                     <div class="flex items-start justify-between gap-3">
-                      <div class="min-w-0">
-                        <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
+                      <div class="flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
+                          {{ systemCardEyebrow(msg) }}
+                        </p>
                       </div>
-                      <div
-                        v-if="systemMessageTargetLabel(msg)"
-                        class="shrink-0 rounded-2xl bg-white/85 px-3 py-2 text-right"
-                      >
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">跳转</p>
-                        <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
-                      </div>
+                      <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(msg.ts) }}</p>
                     </div>
-                    <div v-if="systemCardPreviewUsers(msg).length" class="flex items-center gap-3">
-                      <div class="flex -space-x-2">
+                    <div class="mt-3 flex flex-col gap-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
+                          <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
+                        </div>
                         <div
-                          v-for="(user, idx) in systemCardPreviewUsers(msg)"
-                          :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
-                          class="avatar h-9 w-9 rounded-full border-2 border-white text-[10px] font-semibold text-white"
-                          :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
+                          v-if="systemMessageTargetLabel(msg)"
+                          class="shrink-0 rounded-2xl bg-white/85 px-3 py-2 text-right"
                         >
-                          {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                          <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">目标</p>
+                          <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
                         </div>
                       </div>
-                      <p class="min-w-0 text-xs leading-5 text-slate-500 clamp-2">{{ systemCardPreviewSummary(msg) }}</p>
+                      <div v-if="systemCardPreviewUsers(msg).length" class="flex items-center gap-3">
+                        <div class="flex -space-x-2">
+                          <div
+                            v-for="(user, idx) in systemCardPreviewUsers(msg)"
+                            :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
+                            class="avatar h-9 w-9 rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                            :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
+                          >
+                            {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                          </div>
+                        </div>
+                        <p class="min-w-0 text-xs leading-5 text-slate-500 clamp-2">{{ systemCardPreviewSummary(msg) }}</p>
+                      </div>
+                    </div>
+                    <div v-if="systemCardActions(msg).length" class="mt-4 rounded-[22px] bg-white/70 p-2">
+                      <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">可用操作</p>
+                      <div class="mt-2 flex flex-wrap gap-2">
+                        <button
+                          v-for="(item, idx) in systemCardActions(msg)"
+                          :key="`system-panel-action-${msg.msgId}-${idx}`"
+                          type="button"
+                          @click="handleSystemAction(msg, item)"
+                          class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                          :class="idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
+                        >
+                          {{ item.label || item.action || '处理' }}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <div v-if="systemCardActions(msg).length" class="mt-4 flex flex-wrap gap-2">
-                    <button
-                      v-for="(item, idx) in systemCardActions(msg)"
-                      :key="`system-panel-action-${msg.msgId}-${idx}`"
-                      type="button"
-                      @click.stop="handleSystemAction(msg, item)"
-                      class="rounded-full px-3 py-1.5 text-xs font-semibold"
-                      :class="idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
-                    >
-                      {{ item.label || item.action || '处理' }}
-                    </button>
-                  </div>
-                </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </Transition>
+
+        <Transition name="dialog-pop">
+          <div v-if="explanationModal.open" class="absolute inset-0 z-40">
+            <button
+              type="button"
+              @click="closeExplanationModal"
+              class="dialog-backdrop absolute inset-0 bg-slate-900/28"
+              aria-label="Close explanation"
+            ></button>
+            <div class="dialog-shell absolute inset-x-0 bottom-0 rounded-t-[30px] border border-slate-200/90 bg-white/96 shadow-[0_28px_80px_rgba(15,23,42,0.2)] backdrop-blur-xl md:inset-x-4 md:bottom-auto md:top-24 md:mx-auto md:max-w-md md:rounded-[28px]">
+              <div class="px-5 py-5">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">原因说明</p>
+                    <p class="mt-1 text-base font-semibold text-slate-900">{{ explanationModal.title }}</p>
+                  </div>
+                  <button
+                    type="button"
+                    @click="closeExplanationModal"
+                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500"
+                    aria-label="Close explanation"
+                  >
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M6 6l12 12M18 6 6 18"/>
+                    </svg>
+                  </button>
+                </div>
+                <p class="mt-4 text-sm leading-6 text-slate-600">{{ explanationModal.text }}</p>
+                <div v-if="explanationModal.tip" class="mt-4 rounded-[20px] bg-slate-50 px-4 py-3">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">建议</p>
+                  <p class="mt-1 text-sm leading-6 text-slate-600">{{ explanationModal.tip }}</p>
+                </div>
+                <div class="mt-5 flex justify-end">
+                  <button
+                    type="button"
+                    @click="closeExplanationModal"
+                    class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    我知道了
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Transition>
 
         <div v-if="contactsOpen" class="absolute inset-0 z-30">
           <button
@@ -1492,7 +1597,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close contacts"
           ></button>
-          <div class="absolute inset-x-3 top-16 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-16 mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white shadow-2xl lg:max-w-[38rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">通讯录</p>
@@ -1507,31 +1612,31 @@
               </button>
             </div>
             <div class="max-h-[76dvh] overflow-y-auto px-4 py-4">
-              <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div class="grid grid-cols-3 gap-2">
-                  <div class="rounded-2xl bg-slate-50 px-3 py-2">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto">
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">联系人</p>
                     <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
                   </div>
-                  <div class="rounded-2xl bg-slate-50 px-3 py-2">
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">在线</p>
                     <p class="mt-1 text-sm font-semibold text-slate-800">{{ onlineContactCards.length }}</p>
                   </div>
-                  <div class="rounded-2xl bg-slate-50 px-3 py-2">
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
                     <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
                   </div>
                 </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 lg:w-[20rem]">
                   <input
                     v-model="contactQuery"
-                    class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 sm:w-72"
+                    class="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
                     placeholder="搜索联系人、指纹、地区"
                   />
                   <button
                     type="button"
                     @click="requestContacts"
-                    class="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                    class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
                   >
                     刷新
                   </button>
@@ -1546,7 +1651,7 @@
                   <div
                     v-for="req in contactRequestCards"
                     :key="`req-${req.requestId}`"
-                    class="flex items-center justify-between rounded-xl border border-amber-100 bg-white px-3 py-2"
+                    class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-slate-800">
@@ -1559,18 +1664,18 @@
                         指纹：{{ req.fingerprintShort }}
                       </p>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         @click="acceptContactRequest(req)"
-                        class="rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white"
+                        class="shrink-0 whitespace-nowrap rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white"
                       >
                         同意
                       </button>
                       <button
                         type="button"
                         @click="declineContactRequest(req)"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
+                        class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
                       >
                         拒绝
                       </button>
@@ -1787,7 +1892,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close verify modal"
           ></button>
-          <div class="absolute inset-x-3 top-20 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-20 mx-auto max-w-md rounded-2xl border border-slate-200 bg-white shadow-2xl lg:max-w-[30rem]">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">安全验证</p>
@@ -1828,6 +1933,59 @@
           v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP"
           class="mobile-safe-footer relative z-10 border-t border-white/70 bg-white/75 p-3 backdrop-blur sm:p-4 md:px-6 md:py-4"
         >
+          <div
+            v-if="voiceComposerActive && mobileViewport"
+            class="pointer-events-none absolute inset-x-3 bottom-full z-20 mb-3 md:hidden"
+          >
+            <div
+              class="voice-mobile-panel pointer-events-auto rounded-[28px] border border-slate-200/90 px-4 py-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+              :class="voiceComposerShellClass"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="truncate text-base font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
+                  <p class="mt-1 text-xs leading-5 text-slate-500">{{ voiceComposerSubtitle }}</p>
+                </div>
+                <p class="shrink-0 text-sm font-semibold text-slate-700">{{ voiceComposerElapsedLabel }}</p>
+              </div>
+              <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-4 flex items-center justify-center gap-2">
+                <span class="voice-waiting-dot"></span>
+                <span class="voice-waiting-dot"></span>
+                <span class="voice-waiting-dot"></span>
+              </div>
+              <div v-else class="mt-4 flex h-12 items-end justify-center gap-1.5">
+                <span
+                  v-for="(bar, idx) in voiceComposerWaveform"
+                  :key="`mobile-composer-wave-${idx}`"
+                  class="voice-waveform-bar voice-waveform-bar-live"
+                  :style="audioWaveformBarStyle(bar)"
+                ></span>
+              </div>
+              <div class="mt-4 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  class="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="voiceComposeState === 'encoding' || voiceComposeState === 'sending'"
+                  @click="cancelVoiceRecording"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  class="voice-recorder-action inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  :disabled="voiceComposeState !== 'recording'"
+                  @click="finishVoiceRecording"
+                >
+                  <span v-if="voiceComposeState === 'recording'" class="inline-flex items-center gap-2">
+                    <span class="voice-recorder-dot h-2.5 w-2.5 rounded-full bg-white"></span>
+                    结束并发送
+                  </span>
+                  <span v-else-if="voiceComposeState === 'encoding'">整理中</span>
+                  <span v-else>发送中</span>
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="mx-auto flex w-full max-w-4xl items-end gap-2">
             <input
               ref="imagePicker"
@@ -1840,7 +1998,8 @@
               <button
                 type="button"
                 @click="toggleComposerMenu"
-                class="inline-flex h-[46px] w-[46px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                :disabled="voiceComposerActive"
+                class="inline-flex h-[46px] w-[46px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-xl font-semibold text-slate-700 transition hover:border-sky-300 hover:text-sky-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 +
               </button>
@@ -1904,7 +2063,8 @@
             <button
               type="button"
               @click="burnAfterReadEnabled = !burnAfterReadEnabled"
-              class="inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border text-slate-700 transition md:hidden"
+              :disabled="voiceComposerActive"
+              class="inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-50 md:hidden"
               :class="burnAfterReadEnabled ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white'"
               aria-label="Toggle burn after read"
             >
@@ -1916,25 +2076,111 @@
                 <path d="M24 44C32.2347 44 38.9998 37.4742 38.9998 29.0981C38.9998 27.0418 38.8953 24.8375 37.7555 21.4116C36.6157 17.9858 36.3861 17.5436 35.1809 15.4279C34.666 19.7454 31.911 21.5448 31.2111 22.0826C31.2111 21.5231 29.5445 15.3359 27.0176 11.6339C24.537 8 21.1634 5.61592 19.1853 4C19.1853 7.06977 18.3219 11.6339 17.0854 13.9594C15.8489 16.2849 15.6167 16.3696 14.0722 18.1002C12.5278 19.8308 11.8189 20.3653 10.5274 22.4651C9.23596 24.565 9 27.3618 9 29.4181C9 37.7942 15.7653 44 24 44Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
               </svg>
             </button>
-            <textarea
-              v-model="inputMsg"
-              @keydown="onInputKeydown"
-              ref="textInput"
-              rows="1"
-              class="emoji-font max-h-36 min-h-[46px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-              :placeholder="composerPlaceholder"
-            ></textarea>
-            <button
-              type="button"
-              @click="handleSend"
-              class="inline-flex h-[46px] min-w-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+            <div
+              v-if="voiceComposerActive && mobileViewport"
+              class="voice-mobile-bar flex min-h-[46px] flex-1 items-center gap-3 rounded-[24px] border border-slate-200/90 bg-white px-4 py-2 shadow-[0_14px_32px_rgba(15,23,42,0.08)] md:hidden"
             >
-              <svg viewBox="0 0 24 24" class="h-4 w-4 md:hidden" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 12h13"/>
-                <path d="m12 5 7 7-7 7"/>
-              </svg>
-              <span class="hidden md:inline">发送</span>
-            </button>
+              <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V7.5a3.5 3.5 0 1 0-7 0V11a3.5 3.5 0 0 0 3.5 3.5Z"/>
+                  <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0"/>
+                  <path d="M12 17v3.5"/>
+                </svg>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
+                <p class="mt-0.5 truncate text-[11px] text-slate-500">{{ voiceComposerElapsedLabel }} · 上方完成发送</p>
+              </div>
+            </div>
+            <div
+              v-else-if="voiceComposerActive"
+              class="voice-composer-shell relative flex min-h-[46px] flex-1 flex-wrap items-center gap-2 overflow-hidden rounded-[24px] border border-slate-200/90 bg-white px-2 py-2 shadow-[0_18px_48px_rgba(15,23,42,0.12)] sm:flex-nowrap"
+              :class="voiceComposerShellClass"
+            >
+              <button
+                type="button"
+                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="voiceComposeState === 'encoding' || voiceComposeState === 'sending'"
+                @click="cancelVoiceRecording"
+                aria-label="Cancel voice message"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
+              </button>
+              <div class="order-2 min-w-0 basis-[calc(100%-3rem)] flex-1 sm:order-none sm:basis-auto">
+                <div class="flex flex-wrap items-start justify-between gap-2">
+                  <div class="min-w-0">
+                    <p class="voice-status-title truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
+                    <p class="voice-status-subtitle mt-0.5 text-[11px] text-slate-500">{{ voiceComposerSubtitle }}</p>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <p class="text-[11px] font-semibold text-slate-700">{{ voiceComposerElapsedLabel }}</p>
+                  </div>
+                </div>
+                <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-2 flex items-center gap-1.5">
+                  <span class="voice-waiting-dot"></span>
+                  <span class="voice-waiting-dot"></span>
+                  <span class="voice-waiting-dot"></span>
+                </div>
+                <div v-else class="mt-2 flex h-9 items-end gap-1.5">
+                  <span
+                    v-for="(bar, idx) in voiceComposerWaveform"
+                    :key="`composer-wave-${idx}`"
+                    class="voice-waveform-bar voice-waveform-bar-live"
+                    :style="audioWaveformBarStyle(bar)"
+                  ></span>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="voice-recorder-action order-3 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:order-none sm:ml-1 sm:w-auto sm:whitespace-nowrap"
+                :disabled="voiceComposeState !== 'recording'"
+                @click="finishVoiceRecording"
+              >
+                <span v-if="voiceComposeState === 'recording'" class="inline-flex items-center gap-2">
+                  <span class="voice-recorder-dot h-2.5 w-2.5 rounded-full bg-white"></span>
+                  结束并发送
+                </span>
+                <span v-else-if="voiceComposeState === 'encoding'">整理中</span>
+                <span v-else>发送中</span>
+              </button>
+            </div>
+            <template v-else>
+              <textarea
+                v-model="inputMsg"
+                @keydown="onInputKeydown"
+                ref="textInput"
+                rows="1"
+                class="emoji-font max-h-36 min-h-[46px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                :placeholder="composerPlaceholder"
+              ></textarea>
+              <button
+                v-if="inputMsg.trim()"
+                type="button"
+                @click="handleSend"
+                class="inline-flex h-[46px] min-w-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4 md:hidden" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 12h13"/>
+                  <path d="m12 5 7 7-7 7"/>
+                </svg>
+                <span class="hidden md:inline">发送</span>
+              </button>
+              <button
+                v-else
+                type="button"
+                @click="startVoiceRecording"
+                class="voice-start-button inline-flex h-[46px] min-w-[46px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-3 text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
+                aria-label="Start voice recording"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M12 14.5a3.5 3.5 0 0 0 3.5-3.5V7.5a3.5 3.5 0 1 0-7 0V11a3.5 3.5 0 0 0 3.5 3.5Z"/>
+                  <path d="M6.5 11.5a5.5 5.5 0 0 0 11 0"/>
+                  <path d="M12 17v3.5"/>
+                </svg>
+              </button>
+            </template>
           </div>
         </footer>
       </main>
@@ -1951,6 +2197,9 @@ const GROUP_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,127}$/;
 const MAX_TEXT_LENGTH = 2000;
 const MAX_IMAGE_BYTES = 900 * 1024;
 const MAX_IMAGE_DIMENSION = 1440;
+const MAX_AUDIO_BYTES = 700 * 1024;
+const MAX_AUDIO_DURATION_MS = 60_000;
+const VOICE_WAVEFORM_SIZE = 28;
 const INVITE_CODE_PATTERN = /(?:^|\b)(TCINV-[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)(?:\b|$)/;
 const DM_LIMIT_REASON_TEXT = '你不在对方通讯录：对方回复前你只能发送一条消息。';
 
@@ -2001,7 +2250,7 @@ const pendingPairInvite = ref({ reqId: '', groupId: '', targetUid: '' });
 const invitePickerOpen = ref(false);
 const invitePickerGroupId = ref('');
 const unreadCounts = ref({});
-const banner = ref({ open: false, groupId: '', title: '', text: '', canEnableNotify: false });
+const banner = ref({ open: false, groupId: '', title: '', text: '', canEnableNotify: false, clickable: true });
 const notificationPrompted = ref(false);
 const systemNotifyEnabled = ref(false);
 const settingsOpen = ref(false);
@@ -2013,6 +2262,7 @@ const groupRenameInput = ref('');
 const groupMetaMap = ref({});
 const pendingInviteApprovals = ref([]);
 const systemNoticeOpen = ref(false);
+const explanationModal = ref({ open: false, title: '', text: '', tip: '' });
 const contactsOpen = ref(false);
 const contacts = ref([]);
 const contactsLoading = ref(false);
@@ -2051,12 +2301,40 @@ const viewportNarrow = ref(false);
 const mobileViewport = ref(false);
 const suppressReconnect = ref(false);
 const burnAfterReadEnabled = ref(false);
+const burnNow = ref(Date.now());
+const voiceComposer = ref({
+  state: 'idle',
+  startedAt: 0,
+  elapsedMs: 0,
+  mimeType: '',
+  waveform: [],
+  level: 0,
+});
+const audioPlayback = ref({
+  msgId: '',
+  currentTimeMs: 0,
+  durationMs: 0,
+  playing: false,
+});
 let powSolveToken = 0;
 let ws = null;
 let notificationAudio = null;
 const joinedGroups = new Set([SYSTEM_GROUP, SYSTEM_NOTICE_GROUP]);
 const dmSessions = new Map();
 const burnTimers = new Map();
+let burnTicker = 0;
+let voiceRequestToken = 0;
+let voiceMediaRecorder = null;
+let voiceMediaStream = null;
+let voiceAudioContext = null;
+let voiceAnalyser = null;
+let voiceSourceNode = null;
+let voiceMeterRaf = 0;
+let voiceElapsedTimer = 0;
+let voiceRecordedChunks = [];
+let voiceRecordedSamples = [];
+let voicePendingSend = true;
+let voicePlaybackAudio = null;
 
 const importedPublicKeyCache = new Map();
 const handleNetworkOnline = () => {
@@ -2192,9 +2470,11 @@ const readReceiptList = computed(() => {
     const user = userMap.get(entry.uid);
     const os = user && typeof user.os === 'string' ? user.os : '';
     const location = user && typeof user.location === 'string' ? user.location : '';
+    const displayName = displayNameForUid(entry.uid);
     return {
       uid: entry.uid,
       uidShort: entry.uid ? entry.uid.slice(0, 8) : '未知',
+      displayName,
       ts: entry.ts,
       os: os && os !== 'Unknown' ? os : '未知系统',
       location: location && location !== 'Unknown' ? location : '未知地区',
@@ -2509,17 +2789,543 @@ const estimateReadDurationMs = ({ text = '', payloadType = 'text', imageData = '
   return Math.max(10000, Math.min(45000, readingMs)) + 10000;
 };
 
+const makeWaveform = (size = VOICE_WAVEFORM_SIZE, seed = 0.16) => {
+  return Array.from({ length: size }, (_, idx) => {
+    const sway = Math.sin((idx / Math.max(1, size - 1)) * Math.PI) * 0.08;
+    return Math.max(0.08, Math.min(1, seed + sway));
+  });
+};
+
+const normalizeWaveform = (values, size = VOICE_WAVEFORM_SIZE) => {
+  const input = Array.isArray(values) ? values.map((value) => Number(value) || 0) : [];
+  if (!input.length) return makeWaveform(size);
+  if (input.length === size) {
+    return input.map((value) => Math.max(0.08, Math.min(1, value)));
+  }
+  const output = [];
+  for (let idx = 0; idx < size; idx += 1) {
+    const start = Math.floor((idx / size) * input.length);
+    const end = Math.max(start + 1, Math.floor(((idx + 1) / size) * input.length));
+    const slice = input.slice(start, end);
+    const avg = slice.reduce((sum, value) => sum + value, 0) / Math.max(1, slice.length);
+    output.push(Math.max(0.08, Math.min(1, avg)));
+  }
+  return output;
+};
+
+const formatDurationMs = (ms = 0) => {
+  const totalSeconds = Math.max(0, Math.ceil((Number(ms) || 0) / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+const pickVoiceRecorderMimeType = () => {
+  if (typeof MediaRecorder === 'undefined') return '';
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/webm',
+  ];
+  for (const mimeType of candidates) {
+    if (typeof MediaRecorder.isTypeSupported !== 'function' || MediaRecorder.isTypeSupported(mimeType)) {
+      return mimeType;
+    }
+  }
+  return '';
+};
+
+const measureAudioDurationMs = (src) => {
+  return new Promise((resolve) => {
+    const audio = document.createElement('audio');
+    audio.preload = 'metadata';
+    audio.onloadedmetadata = () => {
+      resolve(Number.isFinite(audio.duration) ? Math.round(audio.duration * 1000) : 0);
+    };
+    audio.onerror = () => resolve(0);
+    audio.src = src;
+  });
+};
+
+const buildAudioBurnDurationMs = (durationMs = 0) => {
+  const total = Math.max(10_000, Math.min(120_000, Math.round((Number(durationMs) || 0) + 10_000)));
+  return total;
+};
+
+const voiceComposerActive = computed(() => voiceComposer.value.state !== 'idle');
+const voiceComposeState = computed(() => voiceComposer.value.state);
+const voiceComposerWaveform = computed(() => normalizeWaveform(voiceComposer.value.waveform, VOICE_WAVEFORM_SIZE));
+const voiceComposerElapsedLabel = computed(() => formatDurationMs(voiceComposer.value.elapsedMs));
+const voiceComposerTitle = computed(() => {
+  if (voiceComposeState.value === 'requesting') return '等待麦克风权限';
+  if (voiceComposeState.value === 'recording') return '正在录音';
+  if (voiceComposeState.value === 'encoding') return '正在整理语音';
+  if (voiceComposeState.value === 'sending') return '语音发送中';
+  return '';
+});
+const voiceComposerSubtitle = computed(() => {
+  if (voiceComposeState.value === 'requesting') return '系统权限弹窗出现后，请允许使用麦克风';
+  if (voiceComposeState.value === 'recording') return '波形会跟随你的声音轻微起伏，点击右侧完成发送';
+  if (voiceComposeState.value === 'encoding') return '正在封装音频与波形数据';
+  if (voiceComposeState.value === 'sending') return '消息气泡会在发送完成后平滑落位';
+  return '';
+});
+const voiceComposerShellClass = computed(() => {
+  if (voiceComposeState.value === 'requesting') return 'voice-shell-requesting';
+  if (voiceComposeState.value === 'recording') return 'voice-shell-recording';
+  if (voiceComposeState.value === 'encoding') return 'voice-shell-encoding';
+  if (voiceComposeState.value === 'sending') return 'voice-shell-sending';
+  return '';
+});
+
 const burnAfterReadPreviewText = computed(() => {
   const payloadType = 'text';
   const ms = estimateReadDurationMs({ text: inputMsg.value, payloadType });
   return `${Math.ceil(ms / 1000)}s 后焚毁`;
 });
 
+const refreshBurnClock = () => {
+  burnNow.value = Date.now();
+};
+
+const ensureBurnTicker = () => {
+  if (burnTicker) return;
+  refreshBurnClock();
+  burnTicker = window.setInterval(() => {
+    refreshBurnClock();
+  }, 1000);
+};
+
+const stopBurnTickerIfIdle = () => {
+  if (burnTicker && burnTimers.size === 0) {
+    window.clearInterval(burnTicker);
+    burnTicker = 0;
+  }
+};
+
+const burnCountdownMs = (msg) => {
+  if (!msg?.burnAfterRead || !msg.burnAt) return 0;
+  return Math.max(0, msg.burnAt - burnNow.value);
+};
+
+const burnCountdownCompact = (msg) => {
+  const remainMs = burnCountdownMs(msg);
+  if (!remainMs) return '即将';
+  const totalSeconds = Math.ceil(remainMs / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, '0')}`;
+};
+
+const burnStatusLabel = (msg) => {
+  if (!msg?.burnAfterRead) return '';
+  if (!msg.burnAt) return '焚 待读';
+  return `焚 ${burnCountdownCompact(msg)}`;
+};
+
+const audioWaveformForMessage = (msg) => {
+  return normalizeWaveform(msg?.audioWaveform, 24);
+};
+
+const audioWaveformBarStyle = (value) => {
+  const safe = Math.max(0.08, Math.min(1, Number(value) || 0));
+  return { height: `${Math.round(10 + safe * 26)}px` };
+};
+
+const isAudioMessagePlaying = (msg) => {
+  return Boolean(msg?.msgId && audioPlayback.value.msgId === msg.msgId && audioPlayback.value.playing);
+};
+
+const audioMessageProgress = (msg) => {
+  if (!msg?.msgId || audioPlayback.value.msgId !== msg.msgId) return 0;
+  const duration = audioPlayback.value.durationMs || msg.audioDurationMs || 0;
+  if (!duration) return 0;
+  return Math.max(0, Math.min(1, audioPlayback.value.currentTimeMs / duration));
+};
+
+const audioWaveformBarClass = (msg, idx) => {
+  const bars = audioWaveformForMessage(msg);
+  const progress = audioMessageProgress(msg);
+  const played = progress > 0 && idx / Math.max(1, bars.length - 1) <= progress;
+  if (msg?.sender === myUid.value) {
+    return played ? 'voice-waveform-bar-outgoing-active' : 'voice-waveform-bar-outgoing';
+  }
+  return played ? 'voice-waveform-bar-active' : 'voice-waveform-bar-idle';
+};
+
+const audioMessageTimeLabel = (msg) => {
+  if (!msg) return '0:00';
+  if (audioPlayback.value.msgId === msg.msgId) {
+    return `${formatDurationMs(audioPlayback.value.currentTimeMs)} / ${formatDurationMs(audioPlayback.value.durationMs || msg.audioDurationMs || 0)}`;
+  }
+  return formatDurationMs(msg.audioDurationMs || 0);
+};
+
+const updateAudioPlaybackState = () => {
+  if (!voicePlaybackAudio) return;
+  audioPlayback.value = {
+    msgId: audioPlayback.value.msgId,
+    currentTimeMs: Math.round((voicePlaybackAudio.currentTime || 0) * 1000),
+    durationMs: Number.isFinite(voicePlaybackAudio.duration) ? Math.round(voicePlaybackAudio.duration * 1000) : (audioPlayback.value.durationMs || 0),
+    playing: !voicePlaybackAudio.paused && !voicePlaybackAudio.ended,
+  };
+};
+
+const ensureVoicePlaybackAudio = () => {
+  if (voicePlaybackAudio) return voicePlaybackAudio;
+  voicePlaybackAudio = new Audio();
+  voicePlaybackAudio.preload = 'metadata';
+  voicePlaybackAudio.addEventListener('loadedmetadata', updateAudioPlaybackState);
+  voicePlaybackAudio.addEventListener('timeupdate', updateAudioPlaybackState);
+  voicePlaybackAudio.addEventListener('play', updateAudioPlaybackState);
+  voicePlaybackAudio.addEventListener('pause', updateAudioPlaybackState);
+  voicePlaybackAudio.addEventListener('ended', () => {
+    audioPlayback.value = {
+      msgId: audioPlayback.value.msgId,
+      currentTimeMs: 0,
+      durationMs: audioPlayback.value.durationMs,
+      playing: false,
+    };
+    if (voicePlaybackAudio) {
+      voicePlaybackAudio.currentTime = 0;
+    }
+  });
+  return voicePlaybackAudio;
+};
+
+const stopAudioPlayback = () => {
+  if (!voicePlaybackAudio) return;
+  voicePlaybackAudio.pause();
+  voicePlaybackAudio.currentTime = 0;
+  audioPlayback.value = { msgId: '', currentTimeMs: 0, durationMs: 0, playing: false };
+};
+
+const toggleAudioPlayback = async (msg) => {
+  if (!msg?.audioData || !msg.msgId) return;
+  const audio = ensureVoicePlaybackAudio();
+  if (audioPlayback.value.msgId === msg.msgId) {
+    if (audio.paused) {
+      await audio.play().catch(() => {});
+    } else {
+      audio.pause();
+    }
+    return;
+  }
+  audio.pause();
+  audio.src = msg.audioData;
+  audioPlayback.value = {
+    msgId: msg.msgId,
+    currentTimeMs: 0,
+    durationMs: Number(msg.audioDurationMs) || 0,
+    playing: false,
+  };
+  try {
+    await audio.play();
+  } catch {
+    toast('音频播放失败。', 'error');
+  }
+};
+
+const resetVoiceComposer = () => {
+  voiceComposer.value = {
+    state: 'idle',
+    startedAt: 0,
+    elapsedMs: 0,
+    mimeType: '',
+    waveform: [],
+    level: 0,
+  };
+};
+
+const stopVoiceMeter = () => {
+  if (voiceMeterRaf) {
+    window.cancelAnimationFrame(voiceMeterRaf);
+    voiceMeterRaf = 0;
+  }
+  if (voiceElapsedTimer) {
+    window.clearInterval(voiceElapsedTimer);
+    voiceElapsedTimer = 0;
+  }
+  if (voiceSourceNode) {
+    try {
+      voiceSourceNode.disconnect();
+    } catch {
+      // no-op
+    }
+    voiceSourceNode = null;
+  }
+  if (voiceAnalyser) {
+    try {
+      voiceAnalyser.disconnect();
+    } catch {
+      // no-op
+    }
+    voiceAnalyser = null;
+  }
+  if (voiceAudioContext) {
+    void voiceAudioContext.close().catch(() => {});
+    voiceAudioContext = null;
+  }
+};
+
+const stopVoiceTracks = () => {
+  if (voiceMediaStream) {
+    for (const track of voiceMediaStream.getTracks()) {
+      track.stop();
+    }
+    voiceMediaStream = null;
+  }
+};
+
+const sampleVoiceMeter = () => {
+  if (!voiceAnalyser || voiceComposeState.value !== 'recording') return;
+  const bins = new Uint8Array(voiceAnalyser.frequencyBinCount);
+  voiceAnalyser.getByteFrequencyData(bins);
+  const stride = Math.max(1, Math.floor(bins.length / 24));
+  let total = 0;
+  for (let idx = 0; idx < bins.length; idx += stride) {
+    total += bins[idx];
+  }
+  const normalized = Math.max(0.08, Math.min(1, total / Math.max(1, Math.ceil(bins.length / stride)) / 180));
+  voiceRecordedSamples.push(normalized);
+  const waveform = normalizeWaveform(voiceRecordedSamples.slice(-VOICE_WAVEFORM_SIZE * 2), VOICE_WAVEFORM_SIZE);
+  voiceComposer.value = {
+    ...voiceComposer.value,
+    level: normalized,
+    waveform,
+  };
+  voiceMeterRaf = window.requestAnimationFrame(sampleVoiceMeter);
+};
+
+const beginVoiceMeter = (stream) => {
+  const AudioContextCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextCtor) return;
+  voiceAudioContext = new AudioContextCtor();
+  voiceAnalyser = voiceAudioContext.createAnalyser();
+  voiceAnalyser.fftSize = 64;
+  voiceSourceNode = voiceAudioContext.createMediaStreamSource(stream);
+  voiceSourceNode.connect(voiceAnalyser);
+  voiceRecordedSamples = [];
+  sampleVoiceMeter();
+  voiceElapsedTimer = window.setInterval(() => {
+    if (voiceComposeState.value !== 'recording') return;
+    voiceComposer.value = {
+      ...voiceComposer.value,
+      elapsedMs: Math.max(0, Date.now() - voiceComposer.value.startedAt),
+    };
+  }, 200);
+};
+
+const finalizeVoiceBlob = async (blob) => {
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const durationMs = Math.min(MAX_AUDIO_DURATION_MS, await measureAudioDurationMs(objectUrl));
+    const dataUrl = await fileToDataUrl(blob);
+    const approxBytes = estimateDataUrlBytes(dataUrl);
+    if (approxBytes > MAX_AUDIO_BYTES) {
+      toast('语音消息过大，请缩短录音时长。', 'error');
+      return null;
+    }
+    return {
+      dataUrl,
+      mimeType: blob.type || voiceComposer.value.mimeType || 'audio/webm',
+      durationMs,
+      waveform: normalizeWaveform(voiceRecordedSamples, VOICE_WAVEFORM_SIZE),
+    };
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
+
+const sendVoiceMessage = async ({ dataUrl, mimeType, durationMs, waveform }) => {
+  const gid = sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
+  const payload = {
+    kind: 'audio',
+    audioData: dataUrl,
+    mimeType,
+    durationMs,
+    waveform,
+    burnAfterRead: burnAfterReadEnabled.value,
+    burnAfterMs: burnAfterReadEnabled.value ? buildAudioBurnDurationMs(durationMs) : 0,
+  };
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    queueOutgoingMessage('audio', payload, gid);
+    return true;
+  }
+  if (!powState.value.verified) {
+    pushSendBlockedTip(gid, {
+      title: '发送前需安全验证',
+      text: '系统正在进行反机器人校验，校验完成后可继续发送。',
+      actions: [
+        buildExplanationAction({
+          label: '为什么要验证',
+          title: '为什么发送前要验证',
+          text: '当前连接需要重新完成安全校验，系统会借此识别异常脚本或刷消息行为，避免群聊被滥用。',
+          tip: '保持页面在线，等待校验完成后再发送即可。',
+        }),
+      ],
+      dedupeKey: 'voice-send-pow-required',
+    });
+    toast('正在进行反机器人验证…', 'info');
+    void startPowSolve();
+    return false;
+  }
+  if (isDirectGroupId(activeGroup.value) && isDmLocked(activeGroup.value)) {
+    pushDmLimitTip(activeGroup.value, getDirectTargetUid(activeGroup.value));
+    toast('你不在对方通讯录：请等待对方回复，或先申请加入对方通讯录。', 'info');
+    return false;
+  }
+  return sendEncryptedPayload('audio', payload);
+};
+
+const cleanupVoiceRecorder = () => {
+  voicePendingSend = false;
+  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+    try {
+      voiceMediaRecorder.stop();
+    } catch {
+      // no-op
+    }
+  }
+  voiceMediaRecorder = null;
+  stopVoiceMeter();
+  stopVoiceTracks();
+  voiceRecordedChunks = [];
+  voiceRecordedSamples = [];
+};
+
+const startVoiceRecording = async () => {
+  if (voiceComposerActive.value) return;
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+    toast('当前浏览器不支持语音录制。', 'error');
+    return;
+  }
+  closeComposerMenu();
+  voiceRequestToken += 1;
+  const token = voiceRequestToken;
+  voiceComposer.value = {
+    state: 'requesting',
+    startedAt: 0,
+    elapsedMs: 0,
+    mimeType: pickVoiceRecorderMimeType(),
+    waveform: makeWaveform(),
+    level: 0,
+  };
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    if (token !== voiceRequestToken) {
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+      return;
+    }
+    const mimeType = pickVoiceRecorderMimeType();
+    voiceMediaStream = stream;
+    voiceRecordedChunks = [];
+    voiceRecordedSamples = [];
+    voicePendingSend = true;
+    voiceMediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+    voiceMediaRecorder.ondataavailable = (event) => {
+      if (event.data?.size) {
+        voiceRecordedChunks.push(event.data);
+      }
+    };
+    voiceMediaRecorder.onstop = async () => {
+      const shouldSend = voicePendingSend;
+      const blob = voiceRecordedChunks.length
+        ? new Blob(voiceRecordedChunks, { type: voiceMediaRecorder?.mimeType || mimeType || 'audio/webm' })
+        : null;
+      stopVoiceMeter();
+      stopVoiceTracks();
+      voiceMediaRecorder = null;
+      if (!shouldSend || !blob || !blob.size) {
+        resetVoiceComposer();
+        voiceRecordedChunks = [];
+        voiceRecordedSamples = [];
+        return;
+      }
+      voiceComposer.value = { ...voiceComposer.value, state: 'encoding' };
+      const prepared = await finalizeVoiceBlob(blob);
+      if (!prepared) {
+        resetVoiceComposer();
+        voiceRecordedChunks = [];
+        voiceRecordedSamples = [];
+        return;
+      }
+      voiceComposer.value = {
+        ...voiceComposer.value,
+        state: 'sending',
+        elapsedMs: prepared.durationMs,
+        waveform: prepared.waveform,
+      };
+      const ok = await sendVoiceMessage(prepared);
+      if (!ok) {
+        toast('语音消息未发送。', 'info');
+      }
+      resetVoiceComposer();
+      voiceRecordedChunks = [];
+      voiceRecordedSamples = [];
+    };
+    voiceMediaRecorder.start(250);
+    voiceComposer.value = {
+      state: 'recording',
+      startedAt: Date.now(),
+      elapsedMs: 0,
+      mimeType: voiceMediaRecorder.mimeType || mimeType || 'audio/webm',
+      waveform: makeWaveform(),
+      level: 0,
+    };
+    beginVoiceMeter(stream);
+  } catch {
+    resetVoiceComposer();
+    toast('未获得麦克风权限或录音启动失败。', 'error');
+  }
+};
+
+const cancelVoiceRecording = () => {
+  if (voiceComposeState.value === 'sending' || voiceComposeState.value === 'encoding') return;
+  if (voiceComposeState.value === 'requesting') {
+    voiceRequestToken += 1;
+    resetVoiceComposer();
+    return;
+  }
+  voicePendingSend = false;
+  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+    voiceMediaRecorder.stop();
+    return;
+  }
+  cleanupVoiceRecorder();
+  resetVoiceComposer();
+};
+
+const finishVoiceRecording = () => {
+  if (voiceComposeState.value !== 'recording') return;
+  const elapsedMs = Date.now() - voiceComposer.value.startedAt;
+  if (elapsedMs < 800) {
+    toast('录音时间太短。', 'info');
+    return;
+  }
+  if (elapsedMs > MAX_AUDIO_DURATION_MS) {
+    toast('语音消息最长 60 秒。', 'info');
+    cancelVoiceRecording();
+    return;
+  }
+  voicePendingSend = true;
+  voiceComposer.value = { ...voiceComposer.value, elapsedMs };
+  if (voiceMediaRecorder && voiceMediaRecorder.state !== 'inactive') {
+    voiceMediaRecorder.stop();
+  }
+};
+
 const clearBurnTimer = (msgId) => {
   const timer = burnTimers.get(msgId);
   if (timer) {
     window.clearTimeout(timer);
     burnTimers.delete(msgId);
+    stopBurnTickerIfIdle();
   }
 };
 
@@ -2537,6 +3343,8 @@ const scheduleBurnMessage = (msg, delayMs = 0) => {
   const timeout = Math.max(1000, Number(delayMs) || Number(msg.burnAfterMs) || 15000);
   msg.burnScheduledAt = Date.now();
   msg.burnAt = msg.burnScheduledAt + timeout;
+  refreshBurnClock();
+  ensureBurnTicker();
   const timer = window.setTimeout(() => {
     removeMessageById(msg.msgId);
   }, timeout);
@@ -2671,9 +3479,9 @@ const systemCardPreviewSummary = (msg) => {
   if (label && users.length) {
     return `${label} · ${users.map((user) => user.nickname || user.uidShort).join('、')}`;
   }
-  if (label) return `${label} · 点击可继续处理`;
+  if (label) return `${label} · 可通过下方按钮继续处理`;
   if (users.length) return users.map((user) => user.nickname || user.uidShort).join('、');
-  return '点击卡片可继续处理这条系统通知。';
+  return '请使用下方按钮处理这条系统通知。';
 };
 
 const systemCardActions = (msg) => {
@@ -2698,17 +3506,6 @@ const systemCardActions = (msg) => {
   }
 
   return actions.slice(0, 3);
-};
-
-const isSystemCardInteractive = (msg) => {
-  return systemCardActions(msg).length > 0;
-};
-
-const openSystemNoticeCard = (msg) => {
-  const [primaryAction] = systemCardActions(msg);
-  if (primaryAction) {
-    handleSystemAction(msg, primaryAction);
-  }
 };
 
 const upsertGroupMeta = (groupId, groupName = '', ownerUid = '') => {
@@ -2738,6 +3535,32 @@ const toast = (text, kind = 'info') => {
 
 const setMigrationStatus = (kind, text) => {
   migrationStatus.value = { kind, text };
+};
+
+const buildExplanationAction = ({
+  label = '了解原因',
+  title = '原因说明',
+  text = '',
+  tip = '',
+} = {}) => ({
+  action: 'show_explanation',
+  label,
+  title,
+  text,
+  tip,
+});
+
+const openExplanationModal = ({ title = '原因说明', text = '', tip = '' } = {}) => {
+  explanationModal.value = {
+    open: true,
+    title: title || '原因说明',
+    text: text || '当前操作暂时无法完成。',
+    tip: tip || '',
+  };
+};
+
+const closeExplanationModal = () => {
+  explanationModal.value = { open: false, title: '', text: '', tip: '' };
 };
 
 const loadOutboxQueue = () => {
@@ -2945,6 +3768,7 @@ const syncContactsOnlineStatus = () => {
       nickname: user && typeof user.nickname === 'string' ? user.nickname : (typeof contact.nickname === 'string' ? contact.nickname : ''),
     };
   });
+  refreshDirectGroupNames();
 };
 
 const requestContactByUid = (targetUid, alias = '') => {
@@ -3321,6 +4145,7 @@ const groupPreviewText = (groupId) => {
   const msg = lastMessageByGroup.value[groupId];
   if (!msg) return '';
   if (msg.payloadType === 'image') return msg.name ? `[图片] ${msg.name}` : '[图片]';
+  if (msg.payloadType === 'audio') return `[语音] ${formatDurationMs(msg.audioDurationMs || 0)}`;
   if (msg.payloadType === 'pair') return '群聊邀请';
   if (msg.payloadType === 'invite') {
     const name = msg.inviteGroupName || msg.inviteGroup;
@@ -3416,12 +4241,13 @@ const closeInvitePicker = () => {
 const ensureGroupInList = (groupId, name = '') => {
   if (!groupId) return;
   const existing = groups.value.find((g) => g.id === groupId);
+  const nextName = isDirectGroupId(groupId) ? (name || nameForDirectGroup(groupId)) : (name || groupId);
   if (!existing) {
-    groups.value.push({ id: groupId, name: name || groupId, onlineCount: 0 });
+    groups.value.push({ id: groupId, name: nextName, onlineCount: 0 });
     return;
   }
-  if (name && name !== existing.name) {
-    existing.name = name;
+  if (nextName && nextName !== existing.name) {
+    existing.name = nextName;
   }
 };
 
@@ -3444,8 +4270,18 @@ const nameForDirectGroup = (groupId) => {
   const ids = groupId.slice(3).split(':').filter(Boolean);
   if (ids.length !== 2) return '';
   const other = ids.find((id) => id !== myUid.value) || ids[0];
-  const label = other && other !== 'undefined' ? other : '未知';
-  return `私聊 · ${label.slice(0, 6)}`;
+  if (!other || other === 'undefined') return '私聊';
+  const label = displayNameForUid(other);
+  const finalLabel = String(label || '').trim() || `用户 ${other.slice(0, 6)}`;
+  return `私聊 · ${finalLabel}`;
+};
+
+const refreshDirectGroupNames = () => {
+  groups.value = groups.value.map((group) => {
+    if (!group || !isDirectGroupId(group.id)) return group;
+    const nextName = nameForDirectGroup(group.id);
+    return nextName && nextName !== group.name ? { ...group, name: nextName } : group;
+  });
 };
 
 const getDirectTargetUid = (groupId) => {
@@ -3478,8 +4314,7 @@ const startDirectChat = (user) => {
   }
   const groupId = buildDirectGroupId(myUid.value, user.uid);
   if (!groupId) return;
-  const label = user.uidShort || (user.uid ? user.uid.slice(0, 6) : '未知');
-  ensureGroupInList(groupId, `私聊 · ${label}`);
+  ensureGroupInList(groupId, nameForDirectGroup(groupId));
   activeGroup.value = groupId;
 
   if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -4428,12 +5263,13 @@ const maybeMarkActiveGroupSeen = () => {
   markGroupSeen(activeGroup.value);
 };
 
-const showBanner = ({ groupId, title, text }) => {
+const showBanner = ({ groupId, title, text, clickable = true }) => {
   banner.value = {
     open: true,
     groupId,
     title,
     text,
+    clickable: clickable !== false,
     canEnableNotify:
       'Notification' in window &&
       Notification.permission === 'default' &&
@@ -4451,7 +5287,7 @@ const showBanner = ({ groupId, title, text }) => {
 };
 
 const dismissBanner = () => {
-  banner.value = { open: false, groupId: '', title: '', text: '', canEnableNotify: false };
+  banner.value = { open: false, groupId: '', title: '', text: '', canEnableNotify: false, clickable: true };
 };
 
 const openBannerChat = () => {
@@ -4515,6 +5351,9 @@ const pushLocalMessage = ({
   groupId,
   text = '',
   imageData = '',
+  audioData = '',
+  audioDurationMs = 0,
+  audioWaveform = [],
   name = '',
   inviteCode = '',
   inviteLink = '',
@@ -4539,6 +5378,9 @@ const pushLocalMessage = ({
     groupId,
     text,
     imageData,
+    audioData,
+    audioDurationMs: Number(audioDurationMs) || 0,
+    audioWaveform: normalizeWaveform(audioWaveform, VOICE_WAVEFORM_SIZE),
     name,
     inviteCode,
     inviteLink,
@@ -4634,6 +5476,7 @@ const pushSystemMessage = ({ title, text, action = '', actionLabel = '', actions
       groupId,
       title: groups.value.find((g) => g.id === groupId)?.name || groupId,
       text: preview.slice(0, 80),
+      clickable: false,
     });
     showSystemNotification(groupId, preview.slice(0, 80));
     void playNotifySound();
@@ -4647,6 +5490,20 @@ const handleSystemAction = (msg, actionItem = null) => {
     ? actionItem.action
     : msg?.systemAction || '';
   if (!msg || !action) return;
+  if (action === 'show_explanation') {
+    openExplanationModal({
+      title:
+        (typeof actionItem?.title === 'string' && actionItem.title.trim()) ||
+        msg?.systemTitle ||
+        '原因说明',
+      text:
+        (typeof actionItem?.text === 'string' && actionItem.text.trim()) ||
+        msg?.systemText ||
+        '当前操作暂时无法完成。',
+      tip: typeof actionItem?.tip === 'string' ? actionItem.tip.trim() : '',
+    });
+    return;
+  }
   if (action === 'confirm_migration') {
     const code = msg.systemMeta?.code || migrationConfirm.value.code || migrationCode.value;
     confirmMigration(code);
@@ -4734,7 +5591,7 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
   if (isDirectGroupId(groupId)) {
     return sendDirectEncryptedPayload(payloadType, payload, groupId, options);
   }
-  const serverPayloadType = payloadType === 'image' ? 'image' : 'text';
+  const serverPayloadType = payloadType === 'image' ? 'image' : payloadType === 'audio' ? 'audio' : 'text';
   const recipients = onlineUsers.value.filter(
     (u) =>
       typeof u.uid === 'string' &&
@@ -4781,6 +5638,19 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
         payloadType: 'image',
         groupId,
         imageData: payload.imageData,
+        name: payload.name,
+        clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
+      });
+    } else if (payloadType === 'audio') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'audio',
+        groupId,
+        audioData: payload.audioData,
+        audioDurationMs: payload.durationMs || 0,
+        audioWaveform: payload.waveform || [],
         name: payload.name,
         clientStatus: 'sent',
         burnAfterRead: payload.burnAfterRead === true,
@@ -4884,7 +5754,7 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
   }
 
   const msgId = typeof options.msgId === 'string' && options.msgId ? options.msgId : createMsgId();
-  const serverPayloadType = payloadType === 'image' ? 'image' : 'text';
+  const serverPayloadType = payloadType === 'image' ? 'image' : payloadType === 'audio' ? 'audio' : 'text';
 
   ws.send(
     JSON.stringify({
@@ -4908,6 +5778,19 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
         payloadType: 'image',
         groupId,
         imageData: payload.imageData,
+        name: payload.name,
+        clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
+      });
+    } else if (payloadType === 'audio') {
+      pushLocalMessage({
+        msgId,
+        payloadType: 'audio',
+        groupId,
+        audioData: payload.audioData,
+        audioDurationMs: payload.durationMs || 0,
+        audioWaveform: payload.waveform || [],
         name: payload.name,
         clientStatus: 'sent',
         burnAfterRead: payload.burnAfterRead === true,
@@ -4970,6 +5853,20 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
       groupId: gid,
       imageData: payload.imageData,
       name: payload.name,
+      clientStatus: 'queued',
+      outboxId: msgId,
+      burnAfterRead: payload.burnAfterRead === true,
+      burnAfterMs: payload.burnAfterMs || 0,
+    });
+  } else if (payloadType === 'audio') {
+    pushLocalMessage({
+      msgId,
+      payloadType: 'audio',
+      groupId: gid,
+      audioData: payload.audioData,
+      audioDurationMs: payload.durationMs || 0,
+      audioWaveform: payload.waveform || [],
+      name: payload.name || '',
       clientStatus: 'queued',
       outboxId: msgId,
       burnAfterRead: payload.burnAfterRead === true,
@@ -5064,7 +5961,14 @@ const handleSend = async () => {
     pushSendBlockedTip(gid, {
       title: '发送前需安全验证',
       text: '系统正在进行反机器人校验，校验完成后可继续发送。',
-      actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+      actions: [
+        buildExplanationAction({
+          label: '为什么要验证',
+          title: '为什么发送前要验证',
+          text: '当前连接需要重新完成安全校验，系统会借此识别异常脚本或刷消息行为，避免群聊被滥用。',
+          tip: '保持页面在线，等待校验完成后再发送即可。',
+        }),
+      ],
       dedupeKey: 'send-pow-required',
     });
     toast('正在进行反机器人验证…', 'info');
@@ -5416,6 +6320,7 @@ const connectWS = () => {
         nicknameInput.value = nickname;
       }
       nicknameSaving.value = false;
+      refreshDirectGroupNames();
       return;
     }
 
@@ -5424,6 +6329,7 @@ const connectWS = () => {
       myNickname.value = nickname;
       nicknameInput.value = nickname;
       nicknameSaving.value = false;
+      refreshDirectGroupNames();
       toast('昵称已更新。', 'info');
       pushSystemMessage({
         title: '昵称已更新',
@@ -5444,6 +6350,7 @@ const connectWS = () => {
       contactsLoading.value = false;
       contacts.value = Array.isArray(data.contacts) ? data.contacts : [];
       syncContactsOnlineStatus();
+      refreshDirectGroupNames();
       return;
     }
 
@@ -5451,8 +6358,16 @@ const connectWS = () => {
       pushSystemMessage({
         title: '私聊请求已发送',
         text: '对方尚未同意，待接受后才会建立私聊窗口。',
-        action: 'open_system_notice',
-        actionLabel: '查看通知',
+        action: 'show_explanation',
+        actionLabel: '为什么要等待',
+        actions: [
+          buildExplanationAction({
+            label: '为什么要等待',
+            title: '为什么私聊请求要等待',
+            text: '陌生人私聊现在采用“先请求、后建立会话”的方式，只有对方明确接受后才会创建私聊窗口。',
+            tip: '如果你们已经互加通讯录，对方接受后会立即进入正常私聊。',
+          }),
+        ],
         meta: { kind: 'direct_request_pending', requestId: typeof data.requestId === 'string' ? data.requestId : '' },
       });
       toast('私聊请求已发送。', 'info');
@@ -5513,8 +6428,16 @@ const connectWS = () => {
       pushSystemMessage({
         title: '邀请审批中',
         text: '你的邀请请求已提交给群主，等待确认。',
-        action: 'open_system_notice',
-        actionLabel: '查看系统消息',
+        action: 'show_explanation',
+        actionLabel: '为什么要审批',
+        actions: [
+          buildExplanationAction({
+            label: '为什么要审批',
+            title: '为什么这里需要群主审批',
+            text: '当前群聊的邀请链接只能由群主直接生成，或由群主审批后代为生成，以免普通成员随意扩散邀请。',
+            tip: '等待群主通过后再重试，或者请群主直接为你生成邀请链接。',
+          }),
+        ],
         meta: { kind: 'approval_pending', requestId: typeof data.requestId === 'string' ? data.requestId : '' },
       });
       return;
@@ -5553,8 +6476,23 @@ const connectWS = () => {
       pushSystemMessage({
         title: approved ? '邀请审批通过' : '邀请审批拒绝',
         text: approved ? '群主已通过你的邀请请求。' : '群主拒绝了你的邀请请求。',
-        action: 'open_system_notice',
-        actionLabel: '查看详情',
+        action: 'show_explanation',
+        actionLabel: approved ? '接下来做什么' : '为什么会被拒绝',
+        actions: [
+          approved
+            ? buildExplanationAction({
+                label: '接下来做什么',
+                title: '邀请审批已经通过',
+                text: '群主已经同意这次邀请请求，系统接下来会为当前群聊生成可分享的邀请码或邀请链接。',
+                tip: '如果邀请文案没有立刻出现，可以再点一次“邀请新人”。',
+              })
+            : buildExplanationAction({
+                label: '为什么会被拒绝',
+                title: '这次邀请请求没有通过',
+                text: '群主拒绝了为当前群聊生成邀请链接，常见原因是群聊暂时不希望继续扩员，或当前邀请不合适。',
+                tip: '如有需要，请先和群主确认，再重新发起邀请请求。',
+              }),
+        ],
       });
       return;
     }
@@ -5663,6 +6601,7 @@ const connectWS = () => {
         data.contact.mutual = true;
         upsertContact(data.contact);
         syncContactsOnlineStatus();
+        refreshDirectGroupNames();
         const contactUid =
           (typeof data.contact.onlineUid === 'string' && data.contact.onlineUid) ||
           (typeof data.contact.contactFingerprint === 'string' ? data.contact.contactFingerprint : '');
@@ -5677,6 +6616,7 @@ const connectWS = () => {
       const fp = typeof data.contactFingerprint === 'string' ? data.contactFingerprint : '';
       if (fp) {
         contacts.value = contacts.value.filter((c) => c.contactFingerprint !== fp);
+        refreshDirectGroupNames();
         toast('已移除联系人。', 'info');
       }
       return;
@@ -5835,6 +6775,7 @@ const connectWS = () => {
         group.onlineCount = typeof count === 'number' ? count : 0;
       }
       syncContactsOnlineStatus();
+      refreshDirectGroupNames();
       return;
     }
 
@@ -6059,7 +7000,14 @@ const connectWS = () => {
         pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
           title: '发送前需安全验证',
           text: '连接已重置，需重新完成反机器人校验后再发送。',
-          actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+          actions: [
+            buildExplanationAction({
+              label: '为什么要验证',
+              title: '为什么发送前要重新验证',
+              text: '当前连接已经重置，系统要求重新完成一次安全校验，避免异常连接继续发送消息。',
+              tip: '稍等校验完成后再发送，消息内容不需要重写。',
+            }),
+          ],
           dedupeKey: 'error-pow-required',
         });
         void startPowSolve();
@@ -6074,6 +7022,24 @@ const connectWS = () => {
           dedupeKey: 'error-invite-required',
         });
         toast('该群组需要邀请码才能加入。请使用“邀请新人”生成的链接/邀请码。', 'error');
+        return;
+      }
+
+      if (code === 'INVITE_FORBIDDEN_GROUP') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '当前群聊不能邀请',
+          text: '系统通知会话和私聊窗口不支持生成邀请链接。',
+          actions: [
+            buildExplanationAction({
+              label: '为什么不能邀请',
+              title: '为什么这里不能生成邀请',
+              text: '当前会话属于系统通知或双人私聊，这两类会话不是可扩员的普通群聊，所以系统不会为它们生成邀请链接。',
+              tip: '先切换到普通群聊，再使用“邀请新人”创建可分享的邀请文案。',
+            }),
+          ],
+          dedupeKey: 'error-invite-forbidden-group',
+        });
+        toast('当前会话不支持邀请新人。', 'info');
         return;
       }
 
@@ -6307,7 +7273,14 @@ const connectWS = () => {
       pushSendBlockedTip(currentGroupId, {
         title: `操作失败：${code}`,
         text: message || '请求失败，请稍后重试。',
-        actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+        actions: [
+          buildExplanationAction({
+            label: '为什么失败',
+            title: `操作失败：${code}`,
+            text: message || '系统没有返回更详细的原因，请稍后重试。',
+            tip: '如果多次重复出现，可以先确认当前群聊类型、设备绑定状态和网络连接是否正常。',
+          }),
+        ],
         dedupeKey: `error-generic-${code}`,
       });
       toast(`${code}: ${message}`, 'error');
@@ -6324,6 +7297,8 @@ const connectWS = () => {
       const previewText =
         payload.kind === 'image'
           ? '[图片]'
+          : payload.kind === 'audio'
+            ? `[语音] ${formatDurationMs(payload.durationMs || 0)}`
           : payload.kind === 'invite'
             ? '群邀请卡'
             : payload.kind === 'pair'
@@ -6336,6 +7311,8 @@ const connectWS = () => {
           payloadType:
             payload.kind === 'image'
               ? 'image'
+              : payload.kind === 'audio'
+                ? 'audio'
               : payload.kind === 'invite'
                 ? 'invite'
                 : payload.kind === 'pair'
@@ -6345,6 +7322,9 @@ const connectWS = () => {
           groupId,
           text: payload.kind === 'text' ? payload.text || '' : '',
           imageData: payload.kind === 'image' ? payload.imageData || '' : '',
+          audioData: payload.kind === 'audio' ? payload.audioData || '' : '',
+          audioDurationMs: payload.kind === 'audio' ? Number(payload.durationMs) || 0 : 0,
+          audioWaveform: payload.kind === 'audio' ? normalizeWaveform(payload.waveform, VOICE_WAVEFORM_SIZE) : [],
           name: payload.kind === 'image' ? payload.name || data.name || '' : '',
           inviteCode: payload.kind === 'invite' ? payload.inviteCode || '' : '',
           inviteLink: payload.kind === 'invite' ? payload.inviteLink || '' : '',
@@ -6383,6 +7363,7 @@ const connectWS = () => {
             groupId,
             title: groups.value.find((g) => g.id === groupId)?.name || groupId,
             text: previewText.slice(0, 80),
+            clickable: groupId !== SYSTEM_NOTICE_GROUP,
           });
           showSystemNotification(groupId, previewText.slice(0, 80));
           void playNotifySound();
@@ -6543,6 +7524,16 @@ onBeforeUnmount(() => {
     window.clearTimeout(timer);
   }
   burnTimers.clear();
+  if (burnTicker) {
+    window.clearInterval(burnTicker);
+    burnTicker = 0;
+  }
+  cleanupVoiceRecorder();
+  stopAudioPlayback();
+  if (voicePlaybackAudio) {
+    voicePlaybackAudio.src = '';
+    voicePlaybackAudio = null;
+  }
 });
 </script>
 
@@ -6572,6 +7563,15 @@ button:hover:not(:disabled) {
 
 button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+.mobile-panel-overlay,
+.mobile-side-drawer,
+.system-notice-backdrop,
+.system-notice-shell,
+.dialog-backdrop,
+.dialog-shell {
+  will-change: transform, opacity, filter;
 }
 
 .emoji-font {
@@ -6607,13 +7607,212 @@ button:active:not(:disabled) {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
 }
 
-.system-card-clickable:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+.voice-message-card {
+  min-width: min(16rem, 68vw);
+  backdrop-filter: blur(20px);
+}
+
+.voice-play-button {
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+}
+
+.voice-waveform-bar {
+  width: 4px;
+  border-radius: 999px;
+  transform-origin: center bottom;
+  transition: height 180ms ease, opacity 180ms ease, background-color 180ms ease;
+}
+
+.voice-waveform-bar-idle {
+  background: rgba(100, 116, 139, 0.35);
+}
+
+.voice-waveform-bar-active {
+  background: rgba(15, 23, 42, 0.75);
+}
+
+.voice-waveform-bar-outgoing {
+  background: rgba(255, 255, 255, 0.38);
+}
+
+.voice-waveform-bar-outgoing-active {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.voice-waveform-bar-live {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.95), rgba(59, 130, 246, 0.35));
+}
+
+.voice-composer-shell {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, background 220ms ease;
+}
+
+.voice-mobile-panel {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(251, 191, 36, 0.16), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.98));
+  backdrop-filter: blur(20px);
+}
+
+.voice-mobile-bar {
+  backdrop-filter: blur(16px);
+}
+
+.voice-status-title,
+.voice-status-subtitle {
+  word-break: break-word;
+}
+
+.voice-status-subtitle {
+  line-height: 1.45;
+}
+
+.voice-shell-requesting {
+  background:
+    radial-gradient(circle at 18% 22%, rgba(125, 211, 252, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(248, 250, 252, 0.98));
+}
+
+.voice-shell-recording {
+  background:
+    radial-gradient(circle at 85% 22%, rgba(251, 191, 36, 0.18), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(241, 245, 249, 0.96));
+  box-shadow: 0 22px 56px rgba(15, 23, 42, 0.14);
+}
+
+.voice-shell-encoding,
+.voice-shell-sending {
+  background:
+    radial-gradient(circle at 82% 18%, rgba(59, 130, 246, 0.2), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(239, 246, 255, 0.96));
+}
+
+.voice-recorder-action {
+  background: linear-gradient(135deg, #0f172a, #334155);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+}
+
+.voice-recorder-dot {
+  animation: voice-recorder-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-waiting-dot {
+  height: 7px;
+  width: 7px;
+  border-radius: 999px;
+  background: #0f172a;
+  opacity: 0.22;
+  animation: voice-waiting-bounce 1.15s ease-in-out infinite;
+}
+
+.voice-waiting-dot:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.voice-waiting-dot:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.voice-start-button {
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
 }
 
 .online-user-card {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+}
+
+.banner-pop-enter-active,
+.banner-pop-leave-active {
+  transition:
+    opacity 260ms ease,
+    transform 380ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 260ms ease;
+}
+
+.banner-pop-enter-from,
+.banner-pop-leave-to {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translate3d(0, -12px, 0) scale(0.985);
+}
+
+.banner-pop-enter-to,
+.banner-pop-leave-from {
+  opacity: 1;
+  filter: blur(0);
+}
+
+.mobile-drawer-enter-active .mobile-panel-overlay,
+.mobile-drawer-leave-active .mobile-panel-overlay,
+.notice-panel-enter-active .system-notice-backdrop,
+.notice-panel-leave-active .system-notice-backdrop,
+.dialog-pop-enter-active .dialog-backdrop,
+.dialog-pop-leave-active .dialog-backdrop {
+  transition: opacity 260ms ease;
+}
+
+.mobile-drawer-enter-from .mobile-panel-overlay,
+.mobile-drawer-leave-to .mobile-panel-overlay,
+.notice-panel-enter-from .system-notice-backdrop,
+.notice-panel-leave-to .system-notice-backdrop,
+.dialog-pop-enter-from .dialog-backdrop,
+.dialog-pop-leave-to .dialog-backdrop {
+  opacity: 0;
+}
+
+.mobile-drawer-enter-active .mobile-side-drawer,
+.mobile-drawer-leave-active .mobile-side-drawer {
+  transition:
+    opacity 280ms ease,
+    transform 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 320ms ease;
+}
+
+.mobile-drawer-enter-from .mobile-side-drawer,
+.mobile-drawer-leave-to .mobile-side-drawer {
+  opacity: 0;
+  filter: blur(10px);
+  transform: translate3d(-24px, 0, 0) scale(0.985);
+}
+
+.notice-panel-enter-active .system-notice-shell,
+.notice-panel-leave-active .system-notice-shell,
+.dialog-pop-enter-active .dialog-shell,
+.dialog-pop-leave-active .dialog-shell {
+  transition:
+    opacity 280ms ease,
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 320ms ease;
+}
+
+.notice-panel-enter-from .system-notice-shell,
+.notice-panel-leave-to .system-notice-shell,
+.dialog-pop-enter-from .dialog-shell,
+.dialog-pop-leave-to .dialog-shell {
+  opacity: 0;
+  filter: blur(12px);
+}
+
+.notice-panel-enter-from .system-notice-shell,
+.notice-panel-leave-to .system-notice-shell {
+  transform: translate3d(0, 22px, 0) scale(0.985);
+}
+
+.dialog-pop-enter-from .dialog-shell,
+.dialog-pop-leave-to .dialog-shell {
+  transform: translate3d(0, 18px, 0) scale(0.985);
+}
+
+@media (min-width: 768px) {
+  .notice-panel-enter-from .system-notice-shell,
+  .notice-panel-leave-to .system-notice-shell {
+    transform: translate3d(0, 12px, 0) scale(0.98);
+  }
+
+  .dialog-pop-enter-from .dialog-shell,
+  .dialog-pop-leave-to .dialog-shell {
+    transform: translate3d(0, 10px, 0) scale(0.98);
+  }
 }
 
 @keyframes message-in {
@@ -6627,11 +7826,40 @@ button:active:not(:disabled) {
   }
 }
 
+@keyframes voice-waiting-bounce {
+  0%, 80%, 100% {
+    opacity: 0.22;
+    transform: translateY(0) scale(0.9);
+  }
+  40% {
+    opacity: 0.82;
+    transform: translateY(-2px) scale(1.04);
+  }
+}
+
+@keyframes voice-recorder-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(1.18);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .message-item {
     animation: none;
   }
   .message-bubble {
+    transition: none;
+  }
+  .voice-waveform-bar,
+  .voice-composer-shell,
+  .voice-waiting-dot,
+  .voice-recorder-dot {
+    animation: none;
     transition: none;
   }
 }

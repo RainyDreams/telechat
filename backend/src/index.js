@@ -1469,7 +1469,15 @@ export class ChatRoom {
         type: 'system_notice',
         title: '已提交邀请审批',
         text: `你不是群主，邀请请求已提交，等待群主确认。`,
-        actions: [{ action: 'open_system_notice', label: '查看系统消息' }],
+        actions: [
+          {
+            action: 'show_explanation',
+            label: '为什么要审批',
+            title: '为什么这里需要群主审批',
+            text: '当前群聊的邀请链接只能由群主直接生成，或由群主审批后代为生成，以免普通成员随意扩散邀请。',
+            tip: '等待群主通过后再重试，或者请群主直接为你生成邀请链接。',
+          },
+        ],
       });
       return;
     }
@@ -2548,9 +2556,16 @@ export class ChatRoom {
       return;
     }
 
-    const payloadType = data.payloadType === 'image' ? 'image' : data.payloadType === 'text' ? 'text' : null;
+    const payloadType =
+      data.payloadType === 'image'
+        ? 'image'
+        : data.payloadType === 'audio'
+          ? 'audio'
+          : data.payloadType === 'text'
+            ? 'text'
+            : null;
     if (!payloadType) {
-      this.handleInvalidAction(ws, 'INVALID_PAYLOAD_TYPE', 'payloadType must be text or image', reqId);
+      this.handleInvalidAction(ws, 'INVALID_PAYLOAD_TYPE', 'payloadType must be text, image or audio', reqId);
       return;
     }
 
