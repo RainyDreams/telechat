@@ -43,13 +43,25 @@
       </div>
       <div
         v-if="banner.open"
-        class="fixed left-1/2 top-11 z-40 w-[min(94vw,640px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur"
+        class="fixed left-1/2 top-11 z-40 w-[min(92vw,420px)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur md:left-auto md:right-4 md:top-4 md:w-[360px] md:translate-x-0"
       >
-        <button type="button" class="w-full text-left px-4 py-3" @click="openBannerChat">
-          <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">新消息</p>
-          <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ banner.title }}</p>
-          <p class="mt-1 clamp-2 text-xs text-slate-500">{{ banner.text }}</p>
-        </button>
+        <div class="flex items-start justify-between gap-2 px-4 pb-1 pt-3">
+          <button type="button" class="min-w-0 flex-1 text-left" @click="openBannerChat">
+            <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">新消息</p>
+            <p class="mt-1 truncate text-sm font-semibold text-slate-800">{{ banner.title }}</p>
+            <p class="mt-1 clamp-2 text-xs text-slate-500">{{ banner.text }}</p>
+          </button>
+          <button
+            type="button"
+            @click="dismissBanner"
+            class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 hover:bg-slate-100"
+            aria-label="Close banner"
+          >
+            <svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 6l12 12M18 6 6 18"/>
+            </svg>
+          </button>
+        </div>
         <div class="flex items-center justify-between px-4 py-3">
           <button
             v-if="banner.canEnableNotify"
@@ -155,7 +167,7 @@
             @click="openGroup(group.id)"
             class="mb-2 flex w-full items-center justify-between rounded-xl border px-3 py-3 text-left transition"
             :class="
-              activeGroup === group.id
+              isGroupSelected(group.id)
                 ? 'border-sky-200 bg-sky-50 text-sky-700 shadow-sm'
                 : 'border-transparent bg-slate-100/70 text-slate-700 hover:border-slate-200 hover:bg-white'
             "
@@ -179,7 +191,11 @@
             {{ group.onlineCount }}
           </span>
           <span
-            v-if="getUnreadCount(group.id)"
+            v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
+            class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
+          ></span>
+          <span
+            v-else-if="getUnreadCount(group.id)"
             class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white"
           >
             {{ formatUnreadCount(getUnreadCount(group.id)) }}
@@ -187,13 +203,39 @@
         </button>
         </div>
 
-        <div class="mt-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-          <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
-          <p class="mt-1 leading-5 text-slate-500">
-            为了安全，我们只信任首次加载的状态，任何其他状态都会被视为可能伪装。
-            刷新页面或更换浏览器后，历史群聊不会自动恢复。
-            尽量不要频繁刷新；如需长期聊天，请把对方加入通讯录。
-          </p>
+        <div class="mt-3 flex justify-end">
+          <div class="relative">
+            <button
+              type="button"
+              @click="groupRestoreHintOpen = !groupRestoreHintOpen"
+              class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-500 shadow-sm transition hover:border-sky-300 hover:text-sky-600"
+              aria-label="为什么我的群聊消失了"
+            >
+              ?
+            </button>
+            <div
+              v-if="groupRestoreHintOpen"
+              class="absolute right-0 top-9 z-10 w-[min(78vw,18rem)] rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600 shadow-xl"
+            >
+              <div class="flex items-start justify-between gap-3">
+                <div>
+                  <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
+                  <p class="mt-1 leading-5 text-slate-500">
+                    为了安全，我们只信任首次加载的状态，任何其他状态都会被视为可能伪装。
+                    刷新页面或更换浏览器后，历史群聊不会自动恢复。
+                    尽量不要频繁刷新；如需长期聊天，请把对方加入通讯录。
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  @click="groupRestoreHintOpen = false"
+                  class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+                >
+                  关
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <button
@@ -233,6 +275,18 @@
               </button>
               <button
                 type="button"
+                @click="openSystemNoticePanel"
+                class="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-rose-300 hover:text-rose-700"
+              >
+                通知
+                <span
+                  v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
+                  class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
+                  aria-hidden="true"
+                ></span>
+              </button>
+              <button
+                type="button"
                 @click="copyInviteLink"
                 class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
               >
@@ -256,48 +310,54 @@
             </div>
           </div>
 
-          <div class="mt-2 grid grid-cols-2 gap-2 md:hidden">
-            <button
-              type="button"
-              @click="showMobilePanel = true"
-              class="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-700"
+          <div class="mt-2 flex items-center justify-between gap-2 md:hidden">
+            <div
+              class="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-medium"
+              :class="connectionPillClass"
             >
-              菜单
-            </button>
-            <button
-              type="button"
-              @click="copyInviteLink"
-              class="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-700"
-            >
-              邀请新人
-            </button>
-            <button
-              type="button"
-              @click="openContacts"
-              class="relative inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-700"
-            >
-              通讯录
-              <span
-                v-if="hasPendingContactRequests"
-                class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
-                aria-hidden="true"
-              ></span>
-            </button>
-            <button
-              type="button"
-              @click="settingsOpen = true"
-              class="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-700"
-            >
-              设置
-            </button>
-            <button
-              v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
-              type="button"
-              @click="openGroupManage"
-              class="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-2 text-[12px] font-medium text-slate-700"
-            >
-              群设置
-            </button>
+              <span class="h-2 w-2 rounded-full" :class="connectionDotClass"></span>
+              {{ connectionLabel }}
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
+                type="button"
+                @click="openGroupManage"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
+                aria-label="Open group settings"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M10.33 3.25h3.34l.48 2.03c.3.09.58.21.86.35l1.82-1.06 2.36 2.36-1.06 1.82c.14.28.26.56.35.86l2.03.48v3.34l-2.03.48c-.09.3-.21.58-.35.86l1.06 1.82-2.36 2.36-1.82-1.06c-.28.14-.56.26-.86.35l-.48 2.03h-3.34l-.48-2.03a6.8 6.8 0 0 1-.86-.35l-1.82 1.06-2.36-2.36 1.06-1.82a6.8 6.8 0 0 1-.35-.86l-2.03-.48V10.1l2.03-.48c.09-.3.21-.58.35-.86L4.57 6.94l2.36-2.36 1.82 1.06c.28-.14.56-.26.86-.35l.72-2.04Z"/>
+                  <circle cx="12" cy="12" r="2.6"/>
+                </svg>
+              </button>
+              <button
+                type="button"
+                @click="openSystemNoticePanel"
+                class="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
+                aria-label="Open notifications"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M12 4.75a4 4 0 0 0-4 4v1.28c0 .57-.16 1.13-.46 1.61L6.5 13.25c-.4.64.06 1.5.82 1.5h9.36c.76 0 1.22-.86.82-1.5l-1.04-1.61a3.1 3.1 0 0 1-.46-1.61V8.75a4 4 0 0 0-4-4Z"/>
+                  <path d="M9.75 17.25a2.25 2.25 0 0 0 4.5 0"/>
+                </svg>
+                <span
+                  v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
+                  class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
+                  aria-hidden="true"
+                ></span>
+              </button>
+              <button
+                type="button"
+                @click="showMobilePanel = true"
+                class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
+                aria-label="Open mobile panel"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M4 7h16M4 12h16M4 17h16"/>
+                </svg>
+              </button>
+            </div>
           </div>
         </header>
 
@@ -308,7 +368,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close group panel"
           ></button>
-          <div class="absolute inset-x-2 flex flex-col top-2 max-h-[76dvh] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-y-2 left-2 flex w-[min(84vw,22rem)] flex-col overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-2xl">
            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
              <div class="min-w-0">
                <p class="text-xs uppercase tracking-wide text-slate-400">Group Panel</p>
@@ -331,6 +391,82 @@
                 关闭
               </button>
            </div>
+           <div class="border-b border-slate-100 px-3 py-3">
+             <div class="grid grid-cols-2 gap-2">
+               <button
+                 type="button"
+                 @click="copyInviteLink(); showMobilePanel = false"
+                 class="flex min-h-[72px] flex-col items-start justify-center rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left text-slate-700"
+                 aria-label="Invite"
+               >
+                 <div class="flex items-center gap-2">
+                   <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100">
+                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                       <path d="M12 5v14M5 12h14"/>
+                     </svg>
+                   </span>
+                   <span class="text-sm font-semibold text-slate-800">邀请新人</span>
+                 </div>
+                 <span class="mt-2 text-[11px] leading-4 text-slate-400">复制当前群邀请文案</span>
+               </button>
+               <button
+                 type="button"
+                 @click="openContacts(); showMobilePanel = false"
+                 class="relative flex min-h-[72px] flex-col items-start justify-center rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left text-slate-700"
+                 aria-label="Contacts"
+               >
+                 <div class="flex items-center gap-2">
+                   <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100">
+                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                       <path d="M16.5 19.25v-1a3.5 3.5 0 0 0-3.5-3.5h-2a3.5 3.5 0 0 0-3.5 3.5v1"/>
+                       <circle cx="12" cy="8.5" r="3.25"/>
+                     </svg>
+                   </span>
+                   <span class="text-sm font-semibold text-slate-800">通讯录</span>
+                 </div>
+                 <span class="mt-2 text-[11px] leading-4 text-slate-400">查看联系人与请求</span>
+                 <span
+                   v-if="hasPendingContactRequests"
+                   class="absolute right-3 top-3 h-2 w-2 rounded-full bg-rose-500"
+                   aria-hidden="true"
+                 ></span>
+               </button>
+               <button
+                 type="button"
+                 @click="settingsOpen = true; showMobilePanel = false"
+                 class="flex min-h-[72px] flex-col items-start justify-center rounded-2xl border border-slate-200 bg-white px-3 py-3 text-left text-slate-700"
+                 aria-label="Settings"
+               >
+                 <div class="flex items-center gap-2">
+                   <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100">
+                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                       <path d="M10.33 3.25h3.34l.48 2.03c.3.09.58.21.86.35l1.82-1.06 2.36 2.36-1.06 1.82c.14.28.26.56.35.86l2.03.48v3.34l-2.03.48c-.09.3-.21.58-.35.86l1.06 1.82-2.36 2.36-1.82-1.06c-.28.14-.56.26-.86.35l-.48 2.03h-3.34l-.48-2.03a6.8 6.8 0 0 1-.86-.35l-1.82 1.06-2.36-2.36 1.06-1.82a6.8 6.8 0 0 1-.35-.86l-2.03-.48V10.1l2.03-.48c.09-.3.21-.58.35-.86L4.57 6.94l2.36-2.36 1.82 1.06c.28-.14.56-.26.86-.35l.72-2.04Z"/>
+                       <circle cx="12" cy="12" r="3"/>
+                     </svg>
+                   </span>
+                   <span class="text-sm font-semibold text-slate-800">设置</span>
+                 </div>
+                 <span class="mt-2 text-[11px] leading-4 text-slate-400">通知、提示音与隐私</span>
+               </button>
+               <button
+                 type="button"
+                 @click="createGroup(); showMobilePanel = false"
+                 class="flex min-h-[72px] flex-col items-start justify-center rounded-2xl border border-dashed border-slate-300 bg-white px-3 py-3 text-left text-slate-700"
+                 aria-label="Create timed group"
+               >
+                 <div class="flex items-center gap-2">
+                   <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-slate-100">
+                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                       <path d="M12 7v5l3 3"/>
+                       <circle cx="12" cy="12" r="8"/>
+                     </svg>
+                   </span>
+                   <span class="text-sm font-semibold text-slate-800">时间建群</span>
+                 </div>
+                 <span class="mt-2 text-[11px] leading-4 text-slate-400">用当前时间创建临时群聊</span>
+               </button>
+             </div>
+           </div>
            <div class="border-b border-slate-100 px-3 py-2">
              <input
                v-model="groupQuery"
@@ -347,7 +483,7 @@
                @click="openGroup(group.id)"
                class="mb-2 flex w-full items-center justify-between rounded-xl border px-3 py-3 text-left transition"
                :class="
-                 activeGroup === group.id
+                 isGroupSelected(group.id)
                    ? 'border-sky-200 bg-sky-50 text-sky-700 shadow-sm'
                    : 'border-transparent bg-slate-100/70 text-slate-700'
                "
@@ -371,30 +507,51 @@
                  {{ group.onlineCount }}
                </span>
                <span
-                 v-if="getUnreadCount(group.id)"
+                 v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
+                 class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
+               ></span>
+               <span
+                 v-else-if="getUnreadCount(group.id)"
                  class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white"
                >
                  {{ formatUnreadCount(getUnreadCount(group.id)) }}
                </span>
              </button>
-             <div class="mt-3 rounded-2xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600">
-               <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
-               <p class="mt-1 leading-5 text-slate-500">
-                 为了安全，我们只信任首次加载的状态，任何其他状态都会被视为可能伪装。
-                 刷新页面或更换浏览器后，历史群聊不会自动恢复。
-                 尽量不要频繁刷新；如需长期聊天，请把对方加入通讯录。
-               </p>
-             </div>
-           </div>
-            <div class="border-t border-slate-100 p-3">
-              <button
-                type="button"
-                @click="createGroup"
-                class="rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5 text-xs font-semibold text-slate-700"
-              >
-                时间建群
-              </button>
+            <div class="mt-3 flex justify-end">
+              <div class="relative">
+                <button
+                  type="button"
+                  @click="groupRestoreHintOpen = !groupRestoreHintOpen"
+                  class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-500 shadow-sm transition hover:border-sky-300 hover:text-sky-600"
+                  aria-label="为什么我的群聊消失了"
+                >
+                  ?
+                </button>
+                <div
+                  v-if="groupRestoreHintOpen"
+                  class="absolute bottom-9 right-0 z-10 w-[min(72vw,17rem)] rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600 shadow-xl"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
+                      <p class="mt-1 leading-5 text-slate-500">
+                        为了安全，我们只信任首次加载的状态，任何其他状态都会被视为可能伪装。
+                        刷新页面或更换浏览器后，历史群聊不会自动恢复。
+                        尽量不要频繁刷新；如需长期聊天，请把对方加入通讯录。
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      @click="groupRestoreHintOpen = false"
+                      class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+                    >
+                      关
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
+           </div>
           </div>
         </div>
 
@@ -461,87 +618,159 @@
                 </p>
               </div>
 
-              <div class="mt-5 grid gap-4 md:grid-cols-2">
-                <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 text-left">
-                  <div class="flex items-center justify-between">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">设备绑定</p>
-                    <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
-                      已绑定
-                    </span>
+              <div class="mt-5 space-y-4">
+                <div class="overflow-hidden rounded-[30px] border border-slate-200 bg-white/92 shadow-sm">
+                  <div class="bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.14),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.14),_transparent_26%)] px-4 py-4 md:px-5">
+                    <div class="flex flex-col gap-4">
+                      <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                        <div class="min-w-0">
+                          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Live Lobby</p>
+                          <p class="mt-1 text-lg font-semibold text-slate-900">实时在线设备</p>
+                          <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                            把设备状态压成顶部概览，下面整块区域只做在线列表。这样人数增加时，用户卡片仍保持足够宽度，不会继续被摘要区挤压。
+                          </p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                          <div class="rounded-2xl border border-white/70 bg-white/85 px-3 py-2 shadow-sm">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">设备绑定</p>
+                            <div class="mt-1 flex items-center gap-2">
+                              <span class="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">已绑定</span>
+                              <span class="text-xs font-semibold text-slate-700">指纹 {{ deviceFingerprintShort || '生成中...' }}</span>
+                            </div>
+                            <p class="mt-1 text-[11px] text-slate-500">仅展示部分指纹，服务器不展示 IP。</p>
+                          </div>
+                          <div class="grid grid-cols-3 gap-2 rounded-2xl border border-white/70 bg-white/85 p-2 shadow-sm">
+                            <div class="min-w-[76px] rounded-2xl bg-slate-50 px-3 py-2 text-center">
+                              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">在线</p>
+                              <p class="mt-1 text-base font-semibold text-slate-800">{{ onlineUserSummary.total }}</p>
+                            </div>
+                            <div class="min-w-[76px] rounded-2xl bg-slate-50 px-3 py-2 text-center">
+                              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">通讯录</p>
+                              <p class="mt-1 text-base font-semibold text-slate-800">{{ onlineUserSummary.contacts }}</p>
+                            </div>
+                            <div class="min-w-[76px] rounded-2xl bg-slate-50 px-3 py-2 text-center">
+                              <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">已验证</p>
+                              <p class="mt-1 text-base font-semibold text-slate-800">{{ onlineUserSummary.verified }}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        v-if="onlineSnapshotUsers.length"
+                        class="flex flex-col gap-3 rounded-[24px] border border-white/70 bg-white/78 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div class="flex items-center gap-3">
+                          <div class="flex -space-x-2">
+                            <div
+                              v-for="user in onlineSnapshotUsers"
+                              :key="`online-preview-${user.uid}`"
+                              class="avatar h-10 w-10 rounded-full border-2 border-white text-[11px] font-semibold text-white"
+                              :style="{ background: avatarColor(user.uid || user.nickname) }"
+                            >
+                              {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                            </div>
+                          </div>
+                          <div class="min-w-0">
+                            <p class="text-sm font-semibold text-slate-800">当前在线 {{ onlineUsers.length }} 台设备</p>
+                            <p class="text-xs leading-5 text-slate-500">
+                              {{ hiddenOnlineUserCount ? `已优先展示前 ${visibleOnlineUserCards.length} 位，剩余 ${hiddenOnlineUserCount} 位可继续展开。` : '全部在线设备都能直接展开查看与操作。' }}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          v-if="hiddenOnlineUserCount || onlineRosterExpanded"
+                          type="button"
+                          @click="onlineRosterExpanded = !onlineRosterExpanded"
+                          class="w-fit rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                        >
+                          {{ onlineRosterExpanded ? '收起在线列表' : `查看更多 ${hiddenOnlineUserCount} 人` }}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                  <p class="mt-2 text-sm font-semibold text-slate-800">
-                    指纹：{{ deviceFingerprintShort || '生成中...' }}
-                  </p>
-                  <p class="mt-1 text-xs text-slate-500">
-                    仅展示部分指纹，服务器不展示 IP。
-                  </p>
                 </div>
 
-                <div class="rounded-2xl border border-slate-200 bg-white/90 p-4 text-left">
-                  <div class="flex items-center justify-between">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">实时在线</p>
-                    <span class="text-[11px] font-semibold text-slate-500">
-                      {{ onlineUsers.length }} 人
-                    </span>
+                <div class="rounded-[30px] border border-slate-200 bg-white/92 p-4 shadow-sm md:p-5">
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">在线列表</p>
+                      <p class="mt-1 text-sm font-semibold text-slate-800">每张卡片独占一整行，操作区和身份信息分层展示</p>
+                    </div>
+                    <p class="text-xs text-slate-500">自己、通讯录、可交互设备优先排序</p>
                   </div>
-                  <div v-if="onlineUserCards.length" class="mt-3 grid gap-3">
+
+                  <div v-if="visibleOnlineUserCards.length" class="mt-4 grid gap-3">
                     <div
-                      v-for="user in onlineUserCards"
+                      v-for="user in visibleOnlineUserCards"
                       :key="`online-${user.uid}`"
-                      class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2"
+                      class="online-user-card rounded-[26px] border border-slate-200/80 bg-slate-50/90 p-4"
                     >
-                      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="min-w-0 flex flex-1 items-center gap-2">
+                      <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div class="min-w-0 flex flex-1 items-start gap-3">
                           <div
-                            class="avatar h-9 w-9 rounded-full text-[12px] font-semibold text-white"
+                            class="avatar h-12 w-12 rounded-full text-[14px] font-semibold text-white"
                             :style="{ background: avatarColor(user.uid || user.nickname) }"
                           >
                             {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
                           </div>
                           <div class="min-w-0 flex-1">
-                          <p class="truncate text-sm font-semibold text-slate-800">
-                            {{ user.isSelf ? (myNickname ? `${myNickname}（你）` : '你') : (user.nickname || `用户 ${user.uidShort}`) }}
-                          </p>
-                          <p class="truncate text-[11px] text-slate-400">
-                            ID: {{ user.uidShort }}
-                          </p>
-                          <p class="truncate text-xs text-slate-500">
-                            {{ user.os }} · {{ user.location }}
-                          </p>
-                          </div>
-                        </div>
-                        <div class="flex flex-wrap items-center justify-between gap-3 sm:flex-col sm:items-end">
-                          <div class="text-right">
-                            <p class="text-[11px] font-semibold text-slate-500">指纹</p>
-                            <p class="text-xs font-mono text-slate-700 break-all sm:max-w-[120px]">
-                              {{ user.fingerprintShort }}
+                            <div class="flex flex-wrap items-center gap-2">
+                              <p class="truncate text-base font-semibold text-slate-800">
+                                {{ user.isSelf ? (myNickname ? `${myNickname}（你）` : '你') : (user.nickname || `用户 ${user.uidShort}`) }}
+                              </p>
+                              <span
+                                v-if="!user.isSelf"
+                                class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                :class="
+                                  !user.identityValid
+                                    ? 'bg-rose-100 text-rose-700'
+                                    : user.keyChanged
+                                      ? 'bg-rose-100 text-rose-700'
+                                      : user.verified
+                                        ? 'bg-emerald-100 text-emerald-700'
+                                        : user.unverified
+                                          ? 'bg-amber-100 text-amber-700'
+                                          : 'bg-slate-200 text-slate-600'
+                                "
+                              >
+                                {{ user.statusText }}
+                              </span>
+                              <span v-if="user.isSelf" class="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-700">
+                                当前设备
+                              </span>
+                              <span
+                                v-else-if="!user.inContacts"
+                                class="rounded-full bg-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600"
+                              >
+                                陌生设备
+                              </span>
+                            </div>
+                            <div v-if="user.isSelf || user.inContacts" class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                              <span>ID: {{ user.uidShort }}</span>
+                              <span>指纹: {{ user.fingerprintShort }}</span>
+                              <span>{{ user.os }} · {{ user.location }}</span>
+                            </div>
+                            <p v-else class="mt-2 text-xs text-slate-500">
+                              已对陌生设备隐藏指纹、系统与地区信息。
                             </p>
                           </div>
-                          <span
-                            v-if="!user.isSelf"
-                            class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                            :class="
-                              !user.identityValid
-                                ? 'bg-rose-100 text-rose-700'
-                                : user.keyChanged
-                                  ? 'bg-rose-100 text-rose-700'
-                                  : user.verified
-                                    ? 'bg-emerald-100 text-emerald-700'
-                                    : user.unverified
-                                      ? 'bg-amber-100 text-amber-700'
-                                      : 'bg-slate-100 text-slate-600'
-                            "
-                          >
-                            {{ user.statusText }}
-                          </span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2 lg:max-w-[40%] lg:justify-end">
                           <button
-                            v-if="!user.isSelf"
+                            v-if="!user.isSelf && user.canDirectRequest"
                             type="button"
                             @click="startDirectChat(user)"
                             class="rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white"
                           >
-                            临时对话
+                            {{ user.inContacts ? '临时对话' : '私聊请求' }}
                           </button>
+                          <span
+                            v-else-if="!user.isSelf && !user.canDirectRequest"
+                            class="rounded-full bg-slate-200 px-3 py-1.5 text-[11px] font-semibold text-slate-600"
+                          >
+                            仅限通讯录
+                          </span>
                           <button
                             v-if="!user.isSelf && !user.inContacts && !user.requestPending"
                             type="button"
@@ -574,7 +803,7 @@
                       </div>
                     </div>
                   </div>
-                  <p v-else class="mt-3 text-xs text-slate-500">暂无在线用户。</p>
+                  <p v-else class="mt-4 text-xs text-slate-500">暂无在线用户。</p>
                 </div>
               </div>
             </div>
@@ -587,17 +816,19 @@
             </div>
           </div>
 
-          <div v-else class="mx-auto flex w-full max-w-4xl flex-col gap-3">
+          <div v-else class="mx-auto flex w-full max-w-4xl flex-col">
             <article
-              v-for="msg in filteredMessages"
+              v-for="msg in displayMessages"
               :key="`${msg.msgId}-${msg.sender}-${msg.groupId || 'system'}`"
               class="flex message-item"
               :class="
                 msg.payloadType === 'dm_limit_tip' || msg.payloadType === 'send_block_tip'
-                  ? 'justify-center'
-                  : msg.isSystem || msg.sender !== myUid
-                    ? 'justify-start'
-                    : 'justify-end'
+                  ? `justify-center ${messageSpacingClass(msg)}`
+                  : msg.payloadType === 'system'
+                    ? `justify-center ${messageSpacingClass(msg)}`
+                    : msg.isSystem || msg.sender !== myUid
+                      ? `justify-start ${messageSpacingClass(msg)}`
+                      : `justify-end ${messageSpacingClass(msg)}`
               "
             >
               <div v-if="msg.payloadType === 'dm_limit_tip'" class="w-full max-w-xl px-2">
@@ -631,148 +862,167 @@
                   </div>
                 </div>
               </div>
-              <div v-else class="max-w-[92%] sm:max-w-[75%] flex items-end gap-2">
-                <div
-                  v-if="!msg.isSystem && msg.sender !== myUid"
-                  class="avatar h-8 w-8 shrink-0 rounded-full text-[11px] font-semibold text-white"
-                  :style="{ background: avatarColor(msg.sender) }"
-                >
-                  {{ avatarInitial(displayNameForUid(msg.sender) || msg.sender) }}
+              <div v-else-if="msg.payloadType === 'system'" class="w-full max-w-[min(100%,36rem)] px-1.5 sm:px-4">
+                <div class="rounded-[26px] border px-4 py-4 shadow-sm" :class="systemCardSurfaceClass(msg)">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                      <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
+                      <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
+                        {{ systemCardEyebrow(msg) }}
+                      </p>
+                    </div>
+                    <p class="shrink-0 text-[11px] text-slate-400">{{ formatTime(msg.ts) }}</p>
+                  </div>
+                  <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="min-w-0">
+                      <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
+                      <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
+                      <div v-if="systemCardPreviewUsers(msg).length" class="mt-3 flex items-center gap-3">
+                        <div class="flex -space-x-2">
+                          <div
+                            v-for="(user, idx) in systemCardPreviewUsers(msg)"
+                            :key="`inline-system-preview-${msg.msgId}-${user.uid || idx}`"
+                            class="avatar h-8 w-8 rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                            :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
+                          >
+                            {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                          </div>
+                        </div>
+                        <p class="min-w-0 text-xs text-slate-500 clamp-1">{{ systemCardPreviewSummary(msg) }}</p>
+                      </div>
+                    </div>
+                    <div
+                      v-if="systemMessageTargetLabel(msg)"
+                      class="shrink-0 rounded-2xl bg-white/80 px-3 py-2 text-right"
+                    >
+                      <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">前往</p>
+                      <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
+                    </div>
+                  </div>
+                  <div v-if="systemCardActions(msg).length" class="mt-4 flex flex-wrap gap-2">
+                    <button
+                      v-for="(item, idx) in systemCardActions(msg)"
+                      :key="`sys-action-${msg.msgId}-${idx}`"
+                      type="button"
+                      @click.stop="handleSystemAction(msg, item)"
+                      class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                      :class="idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
+                    >
+                      {{ item.label || item.action || '处理' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="max-w-[94%] sm:max-w-[78%] flex items-end gap-2">
+                <div v-if="msg.sender !== myUid" class="shrink-0">
+                  <div
+                    v-if="msg.showAvatar"
+                    class="avatar h-8 w-8 rounded-full text-[11px] font-semibold text-white"
+                    :style="{ background: avatarColor(msg.sender) }"
+                  >
+                    {{ avatarInitial(displayNameForUid(msg.sender) || msg.sender) }}
+                  </div>
+                  <div v-else class="h-8 w-8"></div>
                 </div>
                 <div class="min-w-0">
                   <p
-                    v-if="!msg.isSystem && msg.sender !== myUid"
+                    v-if="msg.sender !== myUid && msg.showSenderMeta"
                     class="mb-1 px-1 text-[11px] font-medium text-slate-500 break-all"
                   >
                     {{ displayNameForUid(msg.sender) }}
                   </p>
-                  <div
-                    class="message-bubble rounded-2xl px-3.5 py-2.5 shadow-sm ring-1"
-                    :class="
-                      msg.sender === myUid
-                        ? 'rounded-br-md bg-gradient-to-br from-sky-500 to-sky-600 text-white ring-sky-400/30'
-                        : 'rounded-bl-md bg-white text-slate-800 ring-slate-200/80'
-                    "
-                  >
-                  <template v-if="msg.payloadType === 'image' && msg.imageData">
-                    <img
-                      :src="msg.imageData"
-                      :alt="msg.name || '图片消息'"
-                      class="max-h-80 w-auto max-w-full rounded-xl object-contain"
-                    />
-                    <p v-if="msg.name" class="mt-2 text-xs" :class="msg.sender === myUid ? 'text-sky-100' : 'text-slate-500'">
-                      {{ msg.name }}
-                    </p>
-                  </template>
-                  <div v-else-if="msg.payloadType === 'pair'" class="invite-card rounded-xl bg-white/80 p-3 text-sm text-slate-800">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群聊邀请</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">
-                      {{ msg.pairGroupName || '新群聊' }}
-                    </p>
-                    <p class="mt-1 text-xs text-slate-500">
-                      通过同意后，你们会加入同一个群聊。
-                    </p>
-                    <div class="mt-3 flex flex-wrap items-center gap-2">
-                      <button
-                        v-if="msg.sender !== myUid && msg.pairStatus !== 'accepted'"
-                        type="button"
-                        @click="acceptPairInvite(msg)"
-                        class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white"
-                      >
-                        同意并进入
-                      </button>
-                      <span v-else class="text-xs text-slate-500">
-                        {{ msg.pairStatus === 'accepted' ? '已同意' : '等待对方同意' }}
-                      </span>
+                  <div class="message-bubble shadow-sm ring-1" :class="messageBubbleClass(msg)">
+                    <template v-if="msg.payloadType === 'image' && msg.imageData">
+                      <img
+                        :src="msg.imageData"
+                        :alt="msg.name || '图片消息'"
+                        class="max-h-80 w-auto max-w-full rounded-xl object-contain"
+                      />
+                      <p v-if="msg.name" class="mt-2 text-xs" :class="msg.sender === myUid ? 'text-sky-100' : 'text-slate-500'">
+                        {{ msg.name }}
+                      </p>
+                    </template>
+                    <div v-else-if="msg.payloadType === 'pair'" class="invite-card rounded-xl bg-white/80 p-3 text-sm text-slate-800">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群聊邀请</p>
+                      <p class="mt-1 text-sm font-semibold text-slate-800">
+                        {{ msg.pairGroupName || '新群聊' }}
+                      </p>
+                      <p class="mt-1 text-xs text-slate-500">
+                        通过同意后，你们会加入同一个群聊。
+                      </p>
+                      <div class="mt-3 flex flex-wrap items-center gap-2">
+                        <button
+                          v-if="msg.sender !== myUid && msg.pairStatus !== 'accepted'"
+                          type="button"
+                          @click="acceptPairInvite(msg)"
+                          class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white"
+                        >
+                          同意并进入
+                        </button>
+                        <span v-else class="text-xs text-slate-500">
+                          {{ msg.pairStatus === 'accepted' ? '已同意' : '等待对方同意' }}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <div v-else-if="msg.payloadType === 'invite'" class="invite-card rounded-xl bg-white/80 p-3 text-sm text-slate-800">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群邀请卡</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">
-                      {{ msg.inviteGroupName || msg.inviteGroup || '未知群组' }}
-                    </p>
-                    <p class="mt-1 text-xs text-slate-500">
-                      邀请码：<br/><span class="font-mono break-all">{{ msg.inviteCode || '--' }}</span>
-                    </p>
-                    <!-- <p v-if="msg.inviteLink" class="mt-2 text-xs text-slate-500 line-clamp-3">
-                      {{ formatInviteLinkDisplay(msg.inviteLink) }}
-                    </p> -->
-                    <div class="mt-3 flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        @click="joinFromInvite(msg.inviteCode)"
-                        class="rounded-full bg-sky-500 hover:text-white/80 transition px-3 py-1.5 text-xs font-semibold text-white"
-                      >
-                        立即加入
-                      </button>
-                      <button
-                        type="button"
-                        @click="copyInviteFromMessage(msg.inviteCode, msg.inviteLink)"
-                        class="rounded-full border border-slate-200 hover:bg-slate-100 transition bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        复制链接
-                      </button>
+                    <div v-else-if="msg.payloadType === 'invite'" class="invite-card rounded-xl bg-white/80 p-3 text-sm text-slate-800">
+                      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群邀请卡</p>
+                      <p class="mt-1 text-sm font-semibold text-slate-800">
+                        {{ msg.inviteGroupName || msg.inviteGroup || '未知群组' }}
+                      </p>
+                      <p class="mt-1 text-xs text-slate-500">
+                        邀请码：<br/><span class="font-mono break-all">{{ msg.inviteCode || '--' }}</span>
+                      </p>
+                      <div class="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          @click="joinFromInvite(msg.inviteCode)"
+                          class="rounded-full bg-sky-500 px-3 py-1.5 text-xs font-semibold text-white transition hover:text-white/80"
+                        >
+                          立即加入
+                        </button>
+                        <button
+                          type="button"
+                          @click="copyInviteFromMessage(msg.inviteCode, msg.inviteLink)"
+                          class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                        >
+                          复制链接
+                        </button>
+                      </div>
+                      <p v-if="msg.expiresAt" class="mt-2 text-[11px] text-slate-400">
+                        有效期至 {{ formatDateTime(msg.expiresAt) }}
+                      </p>
                     </div>
-                    <p v-if="msg.expiresAt" class="mt-2 text-[11px] text-slate-400">
-                      有效期至 {{ formatDateTime(msg.expiresAt) }}
-                    </p>
-                  </div>
-                  <div
-                    v-else-if="msg.payloadType === 'system'"
-                    class="invite-card rounded-xl bg-white/90 p-3 text-sm text-slate-800"
-                  >
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">系统消息</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">
-                      {{ msg.systemTitle || '提醒' }}
-                    </p>
-                    <p class="mt-1 text-xs text-slate-500">
-                      {{ msg.systemText || '' }}
-                    </p>
+                    <p v-else class="emoji-font whitespace-pre-wrap break-words text-[14px] leading-[1.45]">{{ msg.text }}</p>
                     <div
-                      v-if="(Array.isArray(msg.systemActions) && msg.systemActions.length) || msg.systemAction"
-                      class="mt-3 flex flex-wrap gap-2"
-                    >
-                      <button
-                        v-for="(item, idx) in (Array.isArray(msg.systemActions) && msg.systemActions.length
-                          ? msg.systemActions
-                          : [{ action: msg.systemAction, label: msg.systemActionLabel || '处理' }])"
-                        :key="`sys-action-${msg.msgId}-${idx}`"
-                        type="button"
-                        @click="handleSystemAction(msg, item)"
-                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                      >
-                        {{ item.label || item.action || '处理' }}
-                      </button>
-                    </div>
-                  </div>
-                  <p v-else class="emoji-font whitespace-pre-wrap break-words text-[15px] leading-6">{{ msg.text }}</p>
-                    <div
-                      class="mt-1.5 flex items-center justify-end gap-1 text-[11px]"
+                      class="mt-1.5 flex items-center justify-end gap-1 text-[10px]"
                       :class="msg.sender === myUid ? 'text-sky-100/90' : 'text-slate-400'"
                     >
-                    <span>{{ formatTime(msg.ts) }}</span>
-                    <button
-                      v-if="msg.sender === myUid"
-                      type="button"
-                      class="cursor-pointer"
-                      :class="msg.readBy && msg.readBy.length ? 'underline decoration-dotted' : ''"
-                      @click="msg.readBy && msg.readBy.length ? openReadReceipts(msg) : null"
-                    >
-                      {{ outgoingStatusLabel(msg) }}
-                    </button>
-                    <button
-                      v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
-                      type="button"
-                      @click="retryMessage(msg)"
-                      class="rounded-full border border-white/40 px-2 py-0.5 text-[10px] font-semibold hover:bg-white/15"
-                    >
-                      重试
-                    </button>
+                      <span v-if="msg.burnAfterRead" class="rounded-full border px-1.5 py-0.5" :class="msg.sender === myUid ? 'border-white/25' : 'border-slate-200'">
+                        焚
+                      </span>
+                      <span>{{ formatTime(msg.ts) }}</span>
+                      <button
+                        v-if="msg.sender === myUid"
+                        type="button"
+                        class="cursor-pointer"
+                        :class="msg.readBy && msg.readBy.length ? 'underline decoration-dotted' : ''"
+                        @click="msg.readBy && msg.readBy.length ? openReadReceipts(msg) : null"
+                      >
+                        {{ outgoingStatusLabel(msg) }}
+                      </button>
+                      <button
+                        v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
+                        type="button"
+                        @click="retryMessage(msg)"
+                        class="rounded-full border border-white/40 px-2 py-0.5 text-[10px] font-semibold hover:bg-white/15"
+                      >
+                        重试
+                      </button>
                     </div>
                   </div>
                 </div>
                 <div
-                  v-if="!msg.isSystem && msg.sender === myUid"
+                  v-if="msg.sender === myUid"
                   class="avatar h-8 w-8 shrink-0 rounded-full text-[11px] font-semibold text-white"
                   :style="{ background: avatarColor(myUid || myNickname || 'me') }"
                 >
@@ -790,7 +1040,7 @@
             class="absolute inset-0 bg-slate-900/35"
             aria-label="Close read receipts"
           ></button>
-          <div class="absolute inset-x-3 top-16 mx-auto max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="absolute inset-x-3 top-10 mx-auto max-w-4xl rounded-[28px] border border-slate-200 bg-white shadow-2xl">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
               <div>
                 <p class="text-xs uppercase tracking-wide text-slate-400">已读详情</p>
@@ -1107,9 +1357,130 @@
                 </button>
               </div>
 
+              <div class="mt-3 flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-semibold text-slate-800">陌生人私聊</p>
+                  <p class="text-xs text-slate-500">开启后，陌生设备只能向你发送私聊请求；关闭后，仅通讯录可向你发起私聊。</p>
+                </div>
+                <button
+                  type="button"
+                  @click="toggleDmPreference"
+                  :disabled="dmPreferenceSaving"
+                  class="rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-60"
+                  :class="dmContactsOnly ? 'bg-slate-900 text-white' : 'bg-emerald-500 text-white'"
+                >
+                  {{ dmContactsOnly ? '仅通讯录' : '允许请求' }}
+                </button>
+              </div>
+
               <p class="mt-3 text-xs text-slate-500">
                 横幅提示默认开启，点击横幅可进入聊天。
               </p>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="systemNoticeOpen" class="absolute inset-0 z-30">
+          <button
+            type="button"
+            @click="closeSystemNoticePanel"
+            class="absolute inset-0 bg-slate-900/25 md:bg-transparent"
+            aria-label="Close system notices"
+          ></button>
+          <div
+            class="absolute inset-x-0 bottom-0 flex max-h-[68dvh] flex-col overflow-hidden rounded-t-[30px] border border-slate-200 bg-white/95 shadow-2xl backdrop-blur md:inset-x-auto md:bottom-4 md:right-4 md:max-h-[76dvh] md:w-[26rem] md:rounded-[30px]"
+          >
+            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <div class="min-w-0">
+                <p class="text-xs uppercase tracking-wide text-slate-400">系统通知</p>
+                <p class="truncate text-sm font-semibold text-slate-800">推荐操作会在这里集中展示</p>
+              </div>
+              <button
+                type="button"
+                @click="closeSystemNoticePanel"
+                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+              >
+                关闭
+              </button>
+            </div>
+            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+              <p class="text-xs text-slate-500">
+                {{ systemNoticeMessages.length ? `最近 ${systemNoticeMessages.length} 条通知` : '暂无系统通知' }}
+              </p>
+              <button
+                v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
+                type="button"
+                @click="clearUnread(SYSTEM_NOTICE_GROUP)"
+                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
+              >
+                标为已读
+              </button>
+            </div>
+            <div class="max-h-[calc(68dvh-7rem)] overflow-y-auto px-3 py-3 md:max-h-[calc(76dvh-7rem)]">
+              <div v-if="!systemNoticeMessages.length" class="rounded-[24px] border border-slate-200 bg-slate-50 px-4 py-8 text-center">
+                <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
+                <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
+              </div>
+              <div v-else class="grid gap-3">
+                <button
+                  v-for="msg in systemNoticeMessages"
+                  :key="`system-panel-${msg.msgId}`"
+                  type="button"
+                  class="w-full rounded-[24px] border px-4 py-4 text-left shadow-sm transition"
+                  :class="[systemCardSurfaceClass(msg), isSystemCardInteractive(msg) ? 'system-card-clickable' : 'cursor-default']"
+                  @click="openSystemNoticeCard(msg)"
+                >
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                      <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
+                      <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
+                        {{ systemCardEyebrow(msg) }}
+                      </p>
+                    </div>
+                    <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(msg.ts) }}</p>
+                  </div>
+                  <div class="mt-3 flex flex-col gap-3">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
+                      </div>
+                      <div
+                        v-if="systemMessageTargetLabel(msg)"
+                        class="shrink-0 rounded-2xl bg-white/85 px-3 py-2 text-right"
+                      >
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">跳转</p>
+                        <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
+                      </div>
+                    </div>
+                    <div v-if="systemCardPreviewUsers(msg).length" class="flex items-center gap-3">
+                      <div class="flex -space-x-2">
+                        <div
+                          v-for="(user, idx) in systemCardPreviewUsers(msg)"
+                          :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
+                          class="avatar h-9 w-9 rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                          :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
+                        >
+                          {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                        </div>
+                      </div>
+                      <p class="min-w-0 text-xs leading-5 text-slate-500 clamp-2">{{ systemCardPreviewSummary(msg) }}</p>
+                    </div>
+                  </div>
+                  <div v-if="systemCardActions(msg).length" class="mt-4 flex flex-wrap gap-2">
+                    <button
+                      v-for="(item, idx) in systemCardActions(msg)"
+                      :key="`system-panel-action-${msg.msgId}-${idx}`"
+                      type="button"
+                      @click.stop="handleSystemAction(msg, item)"
+                      class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                      :class="idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
+                    >
+                      {{ item.label || item.action || '处理' }}
+                    </button>
+                  </div>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1135,16 +1506,36 @@
                 关闭
               </button>
             </div>
-            <div class="max-h-[65dvh] overflow-y-auto px-4 py-4">
-              <div class="flex items-center justify-between">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">联系人列表</p>
-                <button
-                  type="button"
-                  @click="requestContacts"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
-                >
-                  刷新
-                </button>
+            <div class="max-h-[76dvh] overflow-y-auto px-4 py-4">
+              <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div class="grid grid-cols-3 gap-2">
+                  <div class="rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">联系人</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">在线</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ onlineContactCards.length }}</p>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    v-model="contactQuery"
+                    class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400 sm:w-72"
+                    placeholder="搜索联系人、指纹、地区"
+                  />
+                  <button
+                    type="button"
+                    @click="requestContacts"
+                    class="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                  >
+                    刷新
+                  </button>
+                </div>
               </div>
               <div
                 v-if="contactRequestCards.length"
@@ -1190,77 +1581,119 @@
               <div v-if="contactsLoading" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
                 正在加载通讯录…
               </div>
-              <div v-else-if="!contactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                暂无联系人，可在“实时在线”列表中添加。
+              <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
+                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人，可在“实时在线”列表中添加。' }}
               </div>
-              <div v-else class="mt-3 grid gap-2">
-                <div
-                  v-for="contact in contactCards"
-                  :key="`contact-${contact.contactFingerprint}`"
-                  class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
-                >
-                  <div class="min-w-0 flex items-center gap-2">
-                    <div
-                      class="avatar h-9 w-9 rounded-full text-[12px] font-semibold text-white"
-                      :style="{ background: avatarColor(contact.contactFingerprint || contact.alias) }"
-                    >
-                      {{ avatarInitial(contact.alias || contact.fingerprintShort || 'U') }}
+              <div v-else class="mt-3 grid gap-4">
+                <div v-if="onlineContactCards.length" class="grid gap-2">
+                  <div class="flex items-center justify-between px-1">
+                    <p class="text-xs font-semibold text-emerald-700">在线联系人</p>
+                    <p class="text-[11px] text-slate-400">{{ onlineContactCards.length }} 位</p>
+                  </div>
+                  <div
+                    v-for="contact in onlineContactCards"
+                    :key="`contact-online-${contact.contactFingerprint}`"
+                    class="flex flex-col gap-3 rounded-[22px] border border-emerald-100 bg-emerald-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="min-w-0 flex items-center gap-3">
+                      <div
+                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
+                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
+                      >
+                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
+                      </div>
+                      <div class="min-w-0">
+                        <p
+                          class="cursor-pointer text-sm font-semibold text-slate-800"
+                          :class="
+                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                        >
+                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
+                        </p>
+                        <p
+                          class="cursor-pointer text-[11px] font-mono text-slate-500"
+                          :class="
+                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
+                        >
+                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
+                        </p>
+                        <p class="truncate text-xs text-slate-500">{{ `${contact.os} · ${contact.location}` }}</p>
+                      </div>
                     </div>
-                    <div class="min-w-0">
-                      <p
-                        class="cursor-pointer text-sm font-semibold text-slate-800"
-                        :class="
-                          isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                            ? 'whitespace-normal break-all'
-                            : 'truncate'
-                        "
-                        @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        @click="startContactChat(contact)"
+                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
                       >
-                        {{
-                          formatIdentityDisplay(
-                            contact.alias,
-                            `contact-alias-${contact.contactFingerprint}`,
-                            12,
-                            10
-                          )
-                        }}
-                      </p>
-                      <p
-                        class="cursor-pointer text-xs text-slate-500 font-mono"
-                        :class="
-                          isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                            ? 'whitespace-normal break-all'
-                            : 'truncate'
-                        "
-                        @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
+                        私聊
+                      </button>
+                      <button
+                        type="button"
+                        @click="removeContact(contact)"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
                       >
-                        指纹：{{
-                          formatIdentityDisplay(
-                            contact.contactFingerprint,
-                            `contact-fp-${contact.contactFingerprint}`,
-                            8,
-                            8
-                          )
-                        }}
-                      </p>
-                      <p class="truncate text-xs text-slate-500">
-                        {{ contact.online ? `${contact.os} · ${contact.location}` : '离线' }}
-                      </p>
+                        移除
+                      </button>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      v-if="contact.online"
-                      type="button"
-                      @click="startContactChat(contact)"
-                      class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white"
-                    >
-                      私聊
-                    </button>
+                </div>
+
+                <div v-if="offlineContactCards.length" class="grid gap-2">
+                  <div class="flex items-center justify-between px-1">
+                    <p class="text-xs font-semibold text-slate-600">离线联系人</p>
+                    <p class="text-[11px] text-slate-400">{{ offlineContactCards.length }} 位</p>
+                  </div>
+                  <div
+                    v-for="contact in offlineContactCards"
+                    :key="`contact-offline-${contact.contactFingerprint}`"
+                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="min-w-0 flex items-center gap-3">
+                      <div
+                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
+                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
+                      >
+                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
+                      </div>
+                      <div class="min-w-0">
+                        <p
+                          class="cursor-pointer text-sm font-semibold text-slate-800"
+                          :class="
+                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                        >
+                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
+                        </p>
+                        <p
+                          class="cursor-pointer text-[11px] font-mono text-slate-500"
+                          :class="
+                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
+                        >
+                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
+                        </p>
+                        <p class="truncate text-xs text-slate-500">离线 · {{ contact.os }} · {{ contact.location }}</p>
+                      </div>
+                    </div>
                     <button
                       type="button"
                       @click="removeContact(contact)"
-                      class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700"
+                      class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
                     >
                       移除
                     </button>
@@ -1395,7 +1828,7 @@
           v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP"
           class="mobile-safe-footer relative z-10 border-t border-white/70 bg-white/75 p-3 backdrop-blur sm:p-4 md:px-6 md:py-4"
         >
-          <div class="mx-auto flex w-full max-w-4xl items-end gap-2.5">
+          <div class="mx-auto flex w-full max-w-4xl items-end gap-2">
             <input
               ref="imagePicker"
               type="file"
@@ -1441,6 +1874,17 @@
                   发起群聊
                   <span class="text-xs text-slate-400">需同意</span>
                 </button>
+                <button
+                  type="button"
+                  @click="burnAfterReadEnabled = !burnAfterReadEnabled"
+                  class="mt-1 flex w-full items-center justify-between rounded-xl px-3 py-2 text-sm font-medium transition"
+                  :class="burnAfterReadEnabled ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-100'"
+                >
+                  阅后即焚
+                  <span class="text-xs" :class="burnAfterReadEnabled ? 'text-white/70' : 'text-slate-400'">
+                    {{ burnAfterReadEnabled ? burnAfterReadPreviewText : '关闭' }}
+                  </span>
+                </button>
                 <div class="mt-2 rounded-xl bg-slate-50 px-3 py-2">
                   <p class="text-xs font-semibold text-slate-400">表情</p>
                   <div class="mt-2 grid max-h-40 grid-cols-7 gap-1.5 overflow-y-auto pr-1">
@@ -1457,20 +1901,39 @@
                 </div>
               </div>
             </div>
+            <button
+              type="button"
+              @click="burnAfterReadEnabled = !burnAfterReadEnabled"
+              class="inline-flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-2xl border text-slate-700 transition md:hidden"
+              :class="burnAfterReadEnabled ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white'"
+              aria-label="Toggle burn after read"
+            >
+              <!-- <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                <path d="M12 3.75c2.4 2.33 3.92 4.46 3.92 7.05A3.92 3.92 0 1 1 8.08 10.8c0-1.1.32-2.14.9-3.08"/>
+                <path d="M12 13.25a2.35 2.35 0 0 1 0 4.7 2.35 2.35 0 0 1 0-4.7Z"/>
+              </svg> -->
+              <svg  class="h-4 w-4" width="24" height="24" stroke-width="1.8" viewBox="0 0 48 48" fill="none" stroke="currentColor" >
+                <path d="M24 44C32.2347 44 38.9998 37.4742 38.9998 29.0981C38.9998 27.0418 38.8953 24.8375 37.7555 21.4116C36.6157 17.9858 36.3861 17.5436 35.1809 15.4279C34.666 19.7454 31.911 21.5448 31.2111 22.0826C31.2111 21.5231 29.5445 15.3359 27.0176 11.6339C24.537 8 21.1634 5.61592 19.1853 4C19.1853 7.06977 18.3219 11.6339 17.0854 13.9594C15.8489 16.2849 15.6167 16.3696 14.0722 18.1002C12.5278 19.8308 11.8189 20.3653 10.5274 22.4651C9.23596 24.565 9 27.3618 9 29.4181C9 37.7942 15.7653 44 24 44Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+              </svg>
+            </button>
             <textarea
               v-model="inputMsg"
               @keydown="onInputKeydown"
               ref="textInput"
               rows="1"
-              class="emoji-font max-h-36 min-h-[46px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-              placeholder="输入加密消息，Enter 发送，Shift+Enter 换行"
+              class="emoji-font max-h-36 min-h-[46px] flex-1 resize-none rounded-2xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+              :placeholder="composerPlaceholder"
             ></textarea>
             <button
               type="button"
               @click="handleSend"
-              class="inline-flex h-[46px] items-center justify-center rounded-2xl bg-slate-900 px-5 text-sm font-medium text-white transition hover:bg-slate-800"
+              class="inline-flex h-[46px] min-w-[46px] items-center justify-center rounded-2xl bg-slate-900 px-4 text-sm font-medium text-white transition hover:bg-slate-800"
             >
-              发送
+              <svg viewBox="0 0 24 24" class="h-4 w-4 md:hidden" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 12h13"/>
+                <path d="m12 5 7 7-7 7"/>
+              </svg>
+              <span class="hidden md:inline">发送</span>
             </button>
           </div>
         </footer>
@@ -1514,6 +1977,7 @@ const groups = ref([
 const pendingJoin = ref({ groupId: '', inviteCode: '', select: true, groupName: '' });
 const connectionState = ref('connecting'); // connecting | verifying | connected | reconnecting
 const showMobilePanel = ref(false);
+const groupRestoreHintOpen = ref(false);
 const isSendingImage = ref(false);
 const msgBox = ref(null);
 const imagePicker = ref(null);
@@ -1523,6 +1987,8 @@ const powState = ref({ nonce: '', difficulty: 0, verified: false, solving: false
 const powUid = ref('');
 const soundEnabled = ref(false);
 const soundUnlocked = ref(false);
+const dmContactsOnly = ref(true);
+const dmPreferenceSaving = ref(false);
 const groupQuery = ref('');
 const inviteJoinInput = ref('');
 const deviceFingerprint = ref('');
@@ -1546,11 +2012,14 @@ const groupMembersLoading = ref(false);
 const groupRenameInput = ref('');
 const groupMetaMap = ref({});
 const pendingInviteApprovals = ref([]);
+const systemNoticeOpen = ref(false);
 const contactsOpen = ref(false);
 const contacts = ref([]);
 const contactsLoading = ref(false);
 const contactRequests = ref([]);
 const outgoingContactRequests = ref([]);
+const contactQuery = ref('');
+const onlineRosterExpanded = ref(false);
 const deviceBound = ref(false);
 const identityExpandMap = ref({});
 const migrationCode = ref('');
@@ -1579,12 +2048,15 @@ const outboxQueue = ref([]);
 const isFlushingOutbox = ref(false);
 const isKeyboardOpen = ref(false);
 const viewportNarrow = ref(false);
+const mobileViewport = ref(false);
 const suppressReconnect = ref(false);
+const burnAfterReadEnabled = ref(false);
 let powSolveToken = 0;
 let ws = null;
 let notificationAudio = null;
 const joinedGroups = new Set([SYSTEM_GROUP, SYSTEM_NOTICE_GROUP]);
 const dmSessions = new Map();
+const burnTimers = new Map();
 
 const importedPublicKeyCache = new Map();
 const handleNetworkOnline = () => {
@@ -1593,6 +2065,10 @@ const handleNetworkOnline = () => {
 const handleViewportResize = () => {
   updateViewportState();
 };
+
+const composerPlaceholder = computed(() => {
+  return mobileViewport.value ? '' : '输入加密消息，Enter 发送，Shift+Enter 换行';
+});
 
 const activeGroupName = computed(() => {
   return groups.value.find((g) => g.id === activeGroup.value)?.name || activeGroup.value;
@@ -1621,6 +2097,44 @@ const visibleGroups = computed(() => {
 
 const filteredMessages = computed(() => {
   return messages.value.filter((m) => (m.groupId || SYSTEM_GROUP) === activeGroup.value);
+});
+
+const isClusterableMessage = (msg) => {
+  return Boolean(
+    msg &&
+    msg.payloadType !== 'dm_limit_tip' &&
+    msg.payloadType !== 'send_block_tip' &&
+    msg.payloadType !== 'system' &&
+    !msg.isSystem
+  );
+};
+
+const sameMessageCluster = (current, sibling) => {
+  if (!isClusterableMessage(current) || !isClusterableMessage(sibling)) return false;
+  return current.sender === sibling.sender && (current.groupId || SYSTEM_GROUP) === (sibling.groupId || SYSTEM_GROUP);
+};
+
+const displayMessages = computed(() => {
+  return filteredMessages.value.map((msg, index, list) => {
+    const prev = list[index - 1];
+    const next = list[index + 1];
+    const clusterWithPrev = sameMessageCluster(msg, prev);
+    const clusterWithNext = sameMessageCluster(msg, next);
+    return {
+      ...msg,
+      clusterStart: !clusterWithPrev,
+      clusterEnd: !clusterWithNext,
+      showSenderMeta: msg.sender !== myUid.value && !clusterWithPrev,
+      showAvatar: msg.sender !== myUid.value && !clusterWithNext,
+    };
+  });
+});
+
+const systemNoticeMessages = computed(() => {
+  return messages.value
+    .filter((msg) => (msg.groupId || SYSTEM_GROUP) === SYSTEM_NOTICE_GROUP)
+    .slice()
+    .sort((a, b) => (b.ts || 0) - (a.ts || 0));
 });
 
 const lastMessageByGroup = computed(() => {
@@ -1747,7 +2261,9 @@ const onlineUserCards = computed(() => {
       verified,
       unverified,
       statusText,
-      inContacts: fpFull ? contactSet.has(fpFull) : false,
+      inContacts: Boolean(user.inContacts) || (fpFull ? contactSet.has(fpFull) : false),
+      canDirectRequest: user.canDirectRequest !== false,
+      dmContactsOnly: user.dmContactsOnly !== false,
       requestPending: uid ? isOutgoingContactPending(uid) : false,
     };
   });
@@ -1761,13 +2277,68 @@ const onlineUserCards = computed(() => {
   return cards;
 });
 
+const onlinePreviewLimit = computed(() => (viewportNarrow.value ? 4 : 6));
+
+const visibleOnlineUserCards = computed(() => {
+  return onlineRosterExpanded.value
+    ? onlineUserCards.value
+    : onlineUserCards.value.slice(0, onlinePreviewLimit.value);
+});
+
+const hiddenOnlineUserCount = computed(() => {
+  return Math.max(0, onlineUserCards.value.length - visibleOnlineUserCards.value.length);
+});
+
+const onlineSnapshotUsers = computed(() => {
+  return onlineUserCards.value.slice(0, Math.min(6, onlineUserCards.value.length));
+});
+
+const onlineUserSummary = computed(() => {
+  let contactsOnline = 0;
+  let verifiedOnline = 0;
+  for (const user of onlineUserCards.value) {
+    if (user.inContacts) contactsOnline += 1;
+    if (user.verified) verifiedOnline += 1;
+  }
+  return {
+    total: onlineUserCards.value.length,
+    contacts: contactsOnline,
+    verified: verifiedOnline,
+  };
+});
+
+const isGeneratedContactAlias = (alias, uid = '') => {
+  const text = typeof alias === 'string' ? alias.trim() : '';
+  if (!text) return true;
+  const normalizedUid = typeof uid === 'string' ? uid.trim() : '';
+  if (normalizedUid && (text === `用户 ${normalizedUid}` || text === `用户 ${normalizedUid.slice(0, 6)}`)) {
+    return true;
+  }
+  return /^用户\s+[A-Za-z0-9_-]{4,}$/.test(text);
+};
+
+const contactDisplayName = (contact) => {
+  if (!contact || typeof contact !== 'object') return '未知联系人';
+  const nickname = typeof contact.nickname === 'string' ? contact.nickname.trim() : '';
+  const alias = typeof contact.alias === 'string' ? contact.alias.trim() : '';
+  const onlineUid = typeof contact.onlineUid === 'string' ? contact.onlineUid : '';
+  if (nickname && isGeneratedContactAlias(alias, onlineUid)) return nickname;
+  if (alias) return alias;
+  if (nickname) return nickname;
+  const fingerprint = typeof contact.contactFingerprint === 'string' ? contact.contactFingerprint : '';
+  return fingerprint ? `设备 ${fingerprint.slice(0, 6)}` : '未知联系人';
+};
+
 const contactCards = computed(() => {
   const cards = contacts.value.map((contact) => {
     const fingerprint = contact.contactFingerprint || '';
-    const alias = contact.alias || `设备 ${fingerprint.slice(0, 6)}`;
+    const alias = typeof contact.alias === 'string' ? contact.alias : '';
+    const nickname = typeof contact.nickname === 'string' ? contact.nickname : '';
     return {
       contactFingerprint: fingerprint,
       alias,
+      nickname,
+      displayName: contactDisplayName({ ...contact, alias, nickname, contactFingerprint: fingerprint }),
       fingerprintShort: fingerprint ? fingerprint.slice(0, 10) : '--',
       online: Boolean(contact.onlineUid),
       onlineUid: contact.onlineUid || '',
@@ -1779,9 +2350,27 @@ const contactCards = computed(() => {
   cards.sort((a, b) => {
     if (a.online && !b.online) return -1;
     if (!a.online && b.online) return 1;
-    return (a.alias || '').localeCompare(b.alias || '');
+    return (a.displayName || '').localeCompare(b.displayName || '');
   });
   return cards;
+});
+
+const filteredContactCards = computed(() => {
+  const query = contactQuery.value.trim().toLowerCase();
+  if (!query) return contactCards.value;
+  return contactCards.value.filter((contact) =>
+    [contact.displayName, contact.alias, contact.nickname, contact.contactFingerprint, contact.os, contact.location]
+      .filter(Boolean)
+      .some((value) => String(value).toLowerCase().includes(query))
+  );
+});
+
+const onlineContactCards = computed(() => {
+  return filteredContactCards.value.filter((contact) => contact.online);
+});
+
+const offlineContactCards = computed(() => {
+  return filteredContactCards.value.filter((contact) => !contact.online);
 });
 
 const contactRequestCards = computed(() => {
@@ -1866,13 +2455,23 @@ const avatarInitial = (text) => {
 };
 
 const avatarColor = (seed) => {
+  const palette = [
+    ['#64748b', '#475569'],
+    ['#6b7280', '#4b5563'],
+    ['#7c6f64', '#5b5047'],
+    ['#6d7f72', '#516154'],
+    ['#6f7f8f', '#536271'],
+    ['#7b6d8d', '#5d526d'],
+    ['#7d7a6a', '#5f5c50'],
+    ['#6e7f86', '#506168'],
+  ];
   const raw = String(seed || 'seed');
   let hash = 0;
   for (let i = 0; i < raw.length; i += 1) {
     hash = (hash * 31 + raw.charCodeAt(i)) >>> 0;
   }
-  const hue = hash % 360;
-  return `linear-gradient(135deg, hsl(${hue} 75% 58%), hsl(${(hue + 36) % 360} 70% 48%))`;
+  const [from, to] = palette[hash % palette.length];
+  return `linear-gradient(135deg, ${from}, ${to})`;
 };
 
 const displayNameForUid = (uid) => {
@@ -1882,8 +2481,234 @@ const displayNameForUid = (uid) => {
   const user = onlineUsers.value.find((u) => u && u.uid === id);
   if (user?.nickname) return user.nickname;
   const contact = contacts.value.find((c) => c && c.onlineUid === id);
-  if (contact?.alias) return contact.alias;
+  if (contact) return contactDisplayName(contact);
   return `用户 ${id.slice(0, 6)}`;
+};
+
+const defaultGroupNameForMembers = (...uids) => {
+  const names = [];
+  const seen = new Set();
+  for (const uid of uids) {
+    const id = typeof uid === 'string' ? uid.trim() : '';
+    if (!id) continue;
+    const rawName = id === myUid.value ? (myNickname.value || '你') : displayNameForUid(id);
+    const name = String(rawName || '').trim() || `用户 ${id.slice(0, 6)}`;
+    if (seen.has(name)) continue;
+    seen.add(name);
+    names.push(name);
+  }
+  if (!names.length) return '未命名群聊';
+  if (names.length === 1) return `${names[0]}的群聊`;
+  return `${names.slice(0, 2).join('与')}的群聊`;
+};
+
+const estimateReadDurationMs = ({ text = '', payloadType = 'text', imageData = '', name = '' } = {}) => {
+  const contentLength = String(text || '').trim().length + String(name || '').trim().length;
+  const imageBonus = payloadType === 'image' || imageData ? 4500 : 0;
+  const readingMs = 3500 + contentLength * 220 + imageBonus;
+  return Math.max(10000, Math.min(45000, readingMs)) + 10000;
+};
+
+const burnAfterReadPreviewText = computed(() => {
+  const payloadType = 'text';
+  const ms = estimateReadDurationMs({ text: inputMsg.value, payloadType });
+  return `${Math.ceil(ms / 1000)}s 后焚毁`;
+});
+
+const clearBurnTimer = (msgId) => {
+  const timer = burnTimers.get(msgId);
+  if (timer) {
+    window.clearTimeout(timer);
+    burnTimers.delete(msgId);
+  }
+};
+
+const removeMessageById = (msgId) => {
+  if (!msgId) return;
+  clearBurnTimer(msgId);
+  messages.value = messages.value.filter((msg) => msg.msgId !== msgId);
+  if (readReceiptModal.value.msgId === msgId) {
+    closeReadReceipts();
+  }
+};
+
+const scheduleBurnMessage = (msg, delayMs = 0) => {
+  if (!msg?.msgId || msg.burnScheduledAt) return;
+  const timeout = Math.max(1000, Number(delayMs) || Number(msg.burnAfterMs) || 15000);
+  msg.burnScheduledAt = Date.now();
+  msg.burnAt = msg.burnScheduledAt + timeout;
+  const timer = window.setTimeout(() => {
+    removeMessageById(msg.msgId);
+  }, timeout);
+  burnTimers.set(msg.msgId, timer);
+};
+
+const isGroupSelected = (groupId) => {
+  const gid = sanitizeGroupId(groupId);
+  if (!gid) return false;
+  return gid === SYSTEM_NOTICE_GROUP ? systemNoticeOpen.value : activeGroup.value === gid;
+};
+
+const messageSpacingClass = (msg) => {
+  if (!msg) return 'mt-3 first:mt-0';
+  if (msg.payloadType === 'dm_limit_tip' || msg.payloadType === 'send_block_tip' || msg.payloadType === 'system') {
+    return 'mt-3 first:mt-0';
+  }
+  return msg.clusterStart ? 'mt-2.5 first:mt-0' : 'mt-1';
+};
+
+const messageBubbleClass = (msg) => {
+  const outgoing = msg?.sender === myUid.value;
+  const classes = ['rounded-2xl', 'px-3', 'py-2'];
+  if (outgoing) {
+    classes.push('bg-[#4c93ff]', 'text-white', 'ring-sky-400/25');
+    classes.push(msg?.clusterStart ? 'rounded-tr-2xl' : 'rounded-tr-lg');
+    classes.push(msg?.clusterEnd ? 'rounded-br-md' : 'rounded-br-lg');
+  } else {
+    classes.push('bg-white', 'text-slate-800', 'ring-slate-200/80');
+    classes.push(msg?.clusterStart ? 'rounded-tl-2xl' : 'rounded-tl-lg');
+    classes.push(msg?.clusterEnd ? 'rounded-bl-md' : 'rounded-bl-lg');
+  }
+  return classes.join(' ');
+};
+
+const systemMessageKind = (msg) => {
+  const metaKind = typeof msg?.systemMeta?.kind === 'string' ? msg.systemMeta.kind : '';
+  if (metaKind) return metaKind;
+  const text = `${msg?.systemTitle || ''} ${msg?.systemText || ''}`;
+  if (text.includes('群')) return 'group';
+  if (text.includes('通讯录')) return 'contact';
+  if (text.includes('迁移')) return 'migration';
+  if (text.includes('通知') || text.includes('提醒')) return 'notice';
+  return 'default';
+};
+
+const systemMessageTargetGroupId = (msg) => {
+  return sanitizeGroupId(msg?.systemMeta?.groupId || msg?.systemMeta?.pairGroupId || '');
+};
+
+const systemMessageTargetLabel = (msg) => {
+  const gid = systemMessageTargetGroupId(msg);
+  if (!gid) return '';
+  return (
+    groups.value.find((group) => group.id === gid)?.name ||
+    (typeof msg?.systemMeta?.groupName === 'string' ? msg.systemMeta.groupName : '') ||
+    gid
+  );
+};
+
+const systemCardEyebrow = (msg) => {
+  const kind = systemMessageKind(msg);
+  if (kind.startsWith('group')) return '群聊动态';
+  if (kind.startsWith('contact')) return '通讯录';
+  if (kind.startsWith('migration')) return '设备迁移';
+  if (kind.includes('approval') || kind.includes('request')) return '待处理';
+  if (kind === 'notice') return '通知';
+  return '系统消息';
+};
+
+const systemCardEyebrowClass = (msg) => {
+  const kind = systemMessageKind(msg);
+  if (kind.startsWith('group')) return 'text-sky-600';
+  if (kind.startsWith('contact')) return 'text-emerald-600';
+  if (kind.startsWith('migration')) return 'text-amber-600';
+  if (kind.includes('approval') || kind.includes('request')) return 'text-rose-600';
+  return 'text-slate-500';
+};
+
+const systemCardDotClass = (msg) => {
+  const kind = systemMessageKind(msg);
+  if (kind.startsWith('group')) return 'bg-sky-500';
+  if (kind.startsWith('contact')) return 'bg-emerald-500';
+  if (kind.startsWith('migration')) return 'bg-amber-500';
+  if (kind.includes('approval') || kind.includes('request')) return 'bg-rose-500';
+  return 'bg-slate-400';
+};
+
+const systemCardSurfaceClass = (msg) => {
+  const kind = systemMessageKind(msg);
+  if (kind.startsWith('group')) return 'border-sky-100 bg-sky-50/85';
+  if (kind.startsWith('contact')) return 'border-emerald-100 bg-emerald-50/80';
+  if (kind.startsWith('migration')) return 'border-amber-100 bg-amber-50/80';
+  if (kind.includes('approval') || kind.includes('request')) return 'border-rose-100 bg-rose-50/80';
+  return 'border-slate-200 bg-slate-50/90';
+};
+
+const systemCardPreviewUsers = (msg) => {
+  const output = [];
+  const seen = new Set();
+  const pushUser = (uid, nickname = '') => {
+    const id = typeof uid === 'string' ? uid : '';
+    if (!id || seen.has(id)) return;
+    seen.add(id);
+    output.push({
+      uid: id,
+      uidShort: id.slice(0, 6) || '未知',
+      nickname: typeof nickname === 'string' ? nickname : '',
+    });
+  };
+
+  const previewUsers = Array.isArray(msg?.systemMeta?.previewUsers) ? msg.systemMeta.previewUsers : [];
+  for (const user of previewUsers) {
+    pushUser(user?.uid, user?.nickname || '');
+    if (output.length >= 4) return output;
+  }
+
+  pushUser(msg?.systemMeta?.ownerUid, msg?.systemMeta?.ownerNickname || '');
+  pushUser(msg?.systemMeta?.requesterUid, msg?.systemMeta?.requesterNickname || '');
+  pushUser(msg?.systemMeta?.peerUid, msg?.systemMeta?.peerNickname || '');
+
+  if (systemMessageTargetGroupId(msg) && myUid.value) {
+    pushUser(myUid.value, myNickname.value || '你');
+  }
+
+  return output.slice(0, 4);
+};
+
+const systemCardPreviewSummary = (msg) => {
+  const label = systemMessageTargetLabel(msg);
+  const users = systemCardPreviewUsers(msg);
+  if (label && users.length) {
+    return `${label} · ${users.map((user) => user.nickname || user.uidShort).join('、')}`;
+  }
+  if (label) return `${label} · 点击可继续处理`;
+  if (users.length) return users.map((user) => user.nickname || user.uidShort).join('、');
+  return '点击卡片可继续处理这条系统通知。';
+};
+
+const systemCardActions = (msg) => {
+  const actions = normalizeSystemActions(msg?.systemActions, msg?.systemAction, msg?.systemActionLabel)
+    .filter((item) => item.action !== 'open_system_notice')
+    .map((item) => ({ ...item }));
+  const targetGroupId = systemMessageTargetGroupId(msg);
+  const kind = systemMessageKind(msg);
+
+  if (targetGroupId && !actions.some((item) => item.action === 'open_related_group')) {
+    actions.unshift({
+      action: 'open_related_group',
+      label: '进入群聊',
+      groupId: targetGroupId,
+    });
+  }
+  if (kind.startsWith('contact') && !actions.some((item) => item.action === 'open_contacts')) {
+    actions.push({ action: 'open_contacts', label: '打开通讯录' });
+  }
+  if (kind.startsWith('migration') && msg?.systemMeta?.code && !actions.some((item) => item.action === 'confirm_migration')) {
+    actions.unshift({ action: 'confirm_migration', label: '确认迁移', code: msg.systemMeta.code });
+  }
+
+  return actions.slice(0, 3);
+};
+
+const isSystemCardInteractive = (msg) => {
+  return systemCardActions(msg).length > 0;
+};
+
+const openSystemNoticeCard = (msg) => {
+  const [primaryAction] = systemCardActions(msg);
+  if (primaryAction) {
+    handleSystemAction(msg, primaryAction);
+  }
 };
 
 const upsertGroupMeta = (groupId, groupName = '', ownerUid = '') => {
@@ -2032,11 +2857,45 @@ const requestContacts = () => {
 };
 
 const openContacts = () => {
+  systemNoticeOpen.value = false;
   contactsOpen.value = true;
   if (!powState.value.verified) {
     toast('正在验证连接，通讯录稍后加载。', 'info');
   }
   requestContacts();
+};
+
+const openSystemNoticePanel = () => {
+  systemNoticeOpen.value = true;
+  if (banner.value.groupId === SYSTEM_NOTICE_GROUP) {
+    banner.value.open = false;
+  }
+  clearUnread(SYSTEM_NOTICE_GROUP);
+};
+
+const closeSystemNoticePanel = () => {
+  systemNoticeOpen.value = false;
+};
+
+const toggleDmPreference = () => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    toast('连接未就绪，稍后重试。', 'error');
+    return;
+  }
+  if (!deviceBound.value) {
+    toast('请先完成设备绑定。', 'info');
+    return;
+  }
+  dmPreferenceSaving.value = true;
+  ws.send(JSON.stringify({ type: 'set_dm_pref', contactsOnly: !dmContactsOnly.value }));
+};
+
+const respondDirectRequest = (requestId, approve) => {
+  if (!requestId || !ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({
+    type: approve ? 'direct_request_accept' : 'direct_request_decline',
+    requestId,
+  }));
 };
 
 const submitNickname = () => {
@@ -2083,6 +2942,7 @@ const syncContactsOnlineStatus = () => {
       onlineUid,
       os: user ? user.os : '',
       location: user ? user.location : '',
+      nickname: user && typeof user.nickname === 'string' ? user.nickname : (typeof contact.nickname === 'string' ? contact.nickname : ''),
     };
   });
 };
@@ -2102,20 +2962,21 @@ const requestContactByUid = (targetUid, alias = '') => {
     toast('已发送请求，等待对方同意。', 'info');
     return false;
   }
-  const finalAlias = alias || `用户 ${uid.slice(0, 6) || uid}`;
-  ws.send(
-    JSON.stringify({
-      type: 'contacts_add',
-      targetUid: uid,
-      alias: finalAlias,
-    })
-  );
+  const finalAlias = typeof alias === 'string' ? alias.trim() : '';
+  const payload = {
+    type: 'contacts_add',
+    targetUid: uid,
+  };
+  if (finalAlias && !isGeneratedContactAlias(finalAlias, uid)) {
+    payload.alias = finalAlias;
+  }
+  ws.send(JSON.stringify(payload));
   return true;
 };
 
 const addContact = (user) => {
   if (!user || !user.uid) return;
-  requestContactByUid(user.uid, `用户 ${user.uidShort || user.uid}`);
+  requestContactByUid(user.uid);
 };
 
 const removeContact = (contact) => {
@@ -2396,11 +3257,13 @@ const updateViewportState = () => {
   if (!vv) {
     isKeyboardOpen.value = false;
     viewportNarrow.value = window.innerWidth < 380;
+    mobileViewport.value = window.innerWidth < 768;
     return;
   }
   const heightDiff = window.innerHeight - vv.height;
   isKeyboardOpen.value = heightDiff > 120;
   viewportNarrow.value = vv.width < 380;
+  mobileViewport.value = vv.width < 768;
 };
 
 const sanitizeGroupId = (value) => {
@@ -2566,6 +3429,9 @@ const selectGroup = (groupId) => {
   const gid = sanitizeGroupId(groupId);
   if (!gid) return;
   activeGroup.value = gid;
+  if (gid !== SYSTEM_NOTICE_GROUP) {
+    systemNoticeOpen.value = false;
+  }
   showMobilePanel.value = false;
   nextTick(() => {
     scrollToBottom();
@@ -2602,6 +3468,10 @@ const sendDirectStart = (groupId, targetUid) => {
 
 const startDirectChat = (user) => {
   if (!user || !user.uid || user.uid === myUid.value) return;
+  if (user.canDirectRequest === false) {
+    toast('对方仅接受通讯录私聊。', 'info');
+    return;
+  }
   if (!user.identityDh || !user.identitySign) {
     toast('对方身份信息未就绪。', 'error');
     return;
@@ -2700,9 +3570,10 @@ const sendPairGroupCard = (targetOverride = '') => {
     return;
   }
   const groupId = generateTimeGroupId();
+  const groupName = defaultGroupNameForMembers(myUid.value, targetUid);
   pendingPairGroup.value = { groupId, targetUid };
-  ensureGroupInList(groupId, `群聊 · ${targetUid.slice(0, 6)}`);
-  joinGroup(groupId, '', { select: false });
+  ensureGroupInList(groupId, groupName);
+  joinGroup(groupId, '', { select: false, groupName });
 };
 
 const requestPairInvite = (groupId, targetUid) => {
@@ -3543,6 +4414,9 @@ const markGroupSeen = (groupId) => {
     msg.localSeen = true;
     if (!msg.isSystem && msg.msgId && msg.sender) {
       sendReadReceipt(msg.sender, msg.msgId, gid);
+      if (msg.burnAfterRead) {
+        scheduleBurnMessage(msg, msg.burnAfterMs || estimateReadDurationMs(msg));
+      }
     }
   }
   clearUnread(gid);
@@ -3576,10 +4450,18 @@ const showBanner = ({ groupId, title, text }) => {
   }, 10000);
 };
 
+const dismissBanner = () => {
+  banner.value = { open: false, groupId: '', title: '', text: '', canEnableNotify: false };
+};
+
 const openBannerChat = () => {
   const gid = banner.value.groupId;
   if (!gid) return;
-  banner.value.open = false;
+  dismissBanner();
+  if (gid === SYSTEM_NOTICE_GROUP) {
+    openSystemNoticePanel();
+    return;
+  }
   openGroup(gid);
   nextTick(() => {
     scrollToBottom();
@@ -3598,13 +4480,20 @@ const showSystemNotification = (groupId, previewText) => {
   });
   notification.onclick = () => {
     window.focus();
-    joinGroup(groupId);
+    if (groupId === SYSTEM_NOTICE_GROUP) {
+      openSystemNoticePanel();
+    } else {
+      joinGroup(groupId);
+    }
     notification.close();
   };
 };
 
 const handleVisibilityChange = () => {
   if (!document.hidden) {
+    if (systemNoticeOpen.value) {
+      clearUnread(SYSTEM_NOTICE_GROUP);
+    }
     nextTick(() => {
       maybeMarkActiveGroupSeen();
     });
@@ -3640,6 +4529,8 @@ const pushLocalMessage = ({
   clientStatus = 'sending',
   clientError = '',
   outboxId = '',
+  burnAfterRead = false,
+  burnAfterMs = 0,
 }) => {
   messages.value.push({
     msgId,
@@ -3666,6 +4557,10 @@ const pushLocalMessage = ({
     clientStatus,
     clientError,
     outboxId: outboxId || '',
+    burnAfterRead: Boolean(burnAfterRead),
+    burnAfterMs: Number(burnAfterMs) || 0,
+    burnScheduledAt: 0,
+    burnAt: 0,
   });
 };
 
@@ -3729,6 +4624,10 @@ const pushSystemMessage = ({ title, text, action = '', actionLabel = '', actions
     isSystem: true,
   });
   const preview = title || text || '系统提醒';
+  if (systemNoticeOpen.value && !document.hidden) {
+    markGroupSeen(groupId);
+    return;
+  }
   if (document.hidden || activeGroup.value !== groupId || !isNearBottom()) {
     incrementUnread(groupId);
     showBanner({
@@ -3766,7 +4665,16 @@ const handleSystemAction = (msg, actionItem = null) => {
     return;
   }
   if (action === 'open_system_notice') {
-    openGroup(SYSTEM_NOTICE_GROUP);
+    openSystemNoticePanel();
+    return;
+  }
+  if (action === 'open_related_group') {
+    const groupId = sanitizeGroupId(
+      actionItem?.groupId || msg?.systemMeta?.groupId || msg?.systemMeta?.pairGroupId || ''
+    );
+    if (!groupId) return;
+    closeSystemNoticePanel();
+    openGroup(groupId);
     return;
   }
   if (action === 'create_group') {
@@ -3793,6 +4701,13 @@ const handleSystemAction = (msg, actionItem = null) => {
         approve: action === 'approve_group_invite',
       })
     );
+    return;
+  }
+  if (action === 'accept_direct_request' || action === 'decline_direct_request') {
+    const requestId =
+      (typeof actionItem?.requestId === 'string' && actionItem.requestId) ||
+      (typeof msg?.systemMeta?.requestId === 'string' ? msg.systemMeta.requestId : '');
+    respondDirectRequest(requestId, action === 'accept_direct_request');
     return;
   }
   if (action === 'toggle_notify') {
@@ -3854,6 +4769,8 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
       keys: encrypted.keys,
       mimeType: payload.mimeType || null,
       name: payload.name || null,
+      burnAfterRead: payload.burnAfterRead === true,
+      burnAfterMs: Number(payload.burnAfterMs) || 0,
     })
   );
 
@@ -3866,6 +4783,8 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
         imageData: payload.imageData,
         name: payload.name,
         clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
       });
     } else if (payloadType === 'pair') {
       pushLocalMessage({
@@ -3891,6 +4810,8 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
         inviteGroupName: payload.inviteGroupName || '',
         expiresAt: payload.expiresAt || null,
         clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
       });
     } else {
       pushLocalMessage({
@@ -3899,6 +4820,8 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
         groupId,
         text: payload.text,
         clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
       });
     }
   } else {
@@ -3973,6 +4896,8 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
       ciphertext: encrypted.ciphertext,
       keys: { [targetUid]: encrypted.header },
       encType: 'dm',
+      burnAfterRead: payload.burnAfterRead === true,
+      burnAfterMs: Number(payload.burnAfterMs) || 0,
     })
   );
 
@@ -3985,6 +4910,8 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
         imageData: payload.imageData,
         name: payload.name,
         clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
       });
     } else if (payloadType === 'pair') {
       pushLocalMessage({
@@ -4010,6 +4937,8 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
         inviteGroupName: payload.inviteGroupName || '',
         expiresAt: payload.expiresAt || null,
         clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
       });
     } else {
       pushLocalMessage({
@@ -4018,6 +4947,8 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
         groupId,
         text: payload.text,
         clientStatus: 'sent',
+        burnAfterRead: payload.burnAfterRead === true,
+        burnAfterMs: payload.burnAfterMs || 0,
       });
     }
   } else {
@@ -4041,6 +4972,8 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
       name: payload.name,
       clientStatus: 'queued',
       outboxId: msgId,
+      burnAfterRead: payload.burnAfterRead === true,
+      burnAfterMs: payload.burnAfterMs || 0,
     });
   } else {
     pushLocalMessage({
@@ -4050,6 +4983,8 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
       text: payload.text || '',
       clientStatus: 'queued',
       outboxId: msgId,
+      burnAfterRead: payload.burnAfterRead === true,
+      burnAfterMs: payload.burnAfterMs || 0,
     });
   }
   pushSendBlockedTip(gid, {
@@ -4116,7 +5051,12 @@ const handleSend = async () => {
     return;
   }
   if (!ws || ws.readyState !== WebSocket.OPEN) {
-    queueOutgoingMessage('text', { kind: 'text', text }, gid);
+    queueOutgoingMessage('text', {
+      kind: 'text',
+      text,
+      burnAfterRead: burnAfterReadEnabled.value,
+      burnAfterMs: burnAfterReadEnabled.value ? estimateReadDurationMs({ text, payloadType: 'text' }) : 0,
+    }, gid);
     inputMsg.value = '';
     return;
   }
@@ -4141,7 +5081,14 @@ const handleSend = async () => {
     return;
   }
 
-  const ok = await sendEncryptedPayload('text', { kind: 'text', text });
+  const payload = {
+    kind: 'text',
+    text,
+    burnAfterRead: burnAfterReadEnabled.value,
+    burnAfterMs: burnAfterReadEnabled.value ? estimateReadDurationMs({ text, payloadType: 'text' }) : 0,
+  };
+
+  const ok = await sendEncryptedPayload('text', payload);
   if (ok) {
     inputMsg.value = '';
   }
@@ -4242,6 +5189,10 @@ const onPickImage = async (event) => {
           imageData: prepared.dataUrl,
           mimeType: prepared.mimeType,
           name: file.name,
+          burnAfterRead: burnAfterReadEnabled.value,
+          burnAfterMs: burnAfterReadEnabled.value
+            ? estimateReadDurationMs({ payloadType: 'image', imageData: prepared.dataUrl, name: file.name })
+            : 0,
         },
         sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP
       );
@@ -4253,6 +5204,10 @@ const onPickImage = async (event) => {
       imageData: prepared.dataUrl,
       mimeType: prepared.mimeType,
       name: file.name,
+      burnAfterRead: burnAfterReadEnabled.value,
+      burnAfterMs: burnAfterReadEnabled.value
+        ? estimateReadDurationMs({ payloadType: 'image', imageData: prepared.dataUrl, name: file.name })
+        : 0,
     });
     if (!ok) {
       toast('图片发送未完成。', 'info');
@@ -4320,9 +5275,10 @@ const openGroup = (groupId) => {
   if (!gid) return;
   if (gid === SYSTEM_NOTICE_GROUP) {
     ensureGroupInList(gid, '系统消息');
-    selectGroup(gid);
+    openSystemNoticePanel();
     return;
   }
+  systemNoticeOpen.value = false;
   joinGroup(gid);
 };
 
@@ -4339,7 +5295,7 @@ const closeCreateGroupModal = () => {
 
 const submitCreateGroup = () => {
   const gid = generateTimeGroupId();
-  const groupName = createGroupModal.value.name.trim();
+  const groupName = createGroupModal.value.name.trim() || defaultGroupNameForMembers(myUid.value);
   createGroupModal.value.open = false;
   joinGroup(gid, '', { groupName });
 };
@@ -4478,10 +5434,60 @@ const connectWS = () => {
       return;
     }
 
+    if (data.type === 'dm_pref_state') {
+      dmContactsOnly.value = data.contactsOnly !== false;
+      dmPreferenceSaving.value = false;
+      return;
+    }
+
     if (data.type === 'contacts_list') {
       contactsLoading.value = false;
       contacts.value = Array.isArray(data.contacts) ? data.contacts : [];
       syncContactsOnlineStatus();
+      return;
+    }
+
+    if (data.type === 'direct_request_pending') {
+      pushSystemMessage({
+        title: '私聊请求已发送',
+        text: '对方尚未同意，待接受后才会建立私聊窗口。',
+        action: 'open_system_notice',
+        actionLabel: '查看通知',
+        meta: { kind: 'direct_request_pending', requestId: typeof data.requestId === 'string' ? data.requestId : '' },
+      });
+      toast('私聊请求已发送。', 'info');
+      return;
+    }
+
+    if (data.type === 'direct_request') {
+      const fromUid = typeof data.fromUid === 'string' ? data.fromUid : '';
+      const fromNickname = typeof data.fromNickname === 'string' ? data.fromNickname : '';
+      const requestId = typeof data.requestId === 'string' ? data.requestId : '';
+      const fromLabel = fromNickname || `用户 ${fromUid.slice(0, 6)}`;
+      pushSystemMessage({
+        title: '收到私聊请求',
+        text: `${fromLabel} 想和你建立临时私聊。接受后才会创建私聊窗口。`,
+        actions: [
+          { action: 'accept_direct_request', label: '接受', requestId },
+          { action: 'decline_direct_request', label: '拒绝', requestId },
+        ],
+        meta: { kind: 'direct_request', requestId, peerUid: fromUid, peerNickname: fromNickname, groupId: typeof data.groupId === 'string' ? data.groupId : '' },
+      });
+      toast('收到私聊请求。', 'info');
+      return;
+    }
+
+    if (data.type === 'direct_request_result') {
+      const approved = data.approved === true;
+      const who = typeof data.targetUid === 'string' ? data.targetUid : '';
+      pushSystemMessage({
+        title: approved ? '私聊请求已通过' : '私聊请求已拒绝',
+        text: approved
+          ? `设备 ${who.slice(0, 6) || who} 已接受你的私聊请求。`
+          : `设备 ${who.slice(0, 6) || who} 拒绝了你的私聊请求。`,
+        meta: { kind: 'direct_request_result', peerUid: who, groupId: typeof data.groupId === 'string' ? data.groupId : '' },
+      });
+      toast(approved ? '对方已接受私聊请求。' : '对方拒绝了私聊请求。', approved ? 'info' : 'error');
       return;
     }
 
@@ -4491,12 +5497,14 @@ const connectWS = () => {
       const action = typeof data.action === 'string' ? data.action : '';
       const actionLabel = typeof data.actionLabel === 'string' ? data.actionLabel : '';
       const actions = Array.isArray(data.actions) ? data.actions : [];
+      const meta = data.meta && typeof data.meta === 'object' ? data.meta : {};
       pushSystemMessage({
         title,
         text,
         action,
         actionLabel,
         actions,
+        meta,
       });
       return;
     }
@@ -4507,7 +5515,7 @@ const connectWS = () => {
         text: '你的邀请请求已提交给群主，等待确认。',
         action: 'open_system_notice',
         actionLabel: '查看系统消息',
-        meta: { requestId: typeof data.requestId === 'string' ? data.requestId : '' },
+        meta: { kind: 'approval_pending', requestId: typeof data.requestId === 'string' ? data.requestId : '' },
       });
       return;
     }
@@ -4529,7 +5537,7 @@ const connectWS = () => {
           { action: 'approve_group_invite', label: '同意', requestId },
           { action: 'reject_group_invite', label: '拒绝', requestId },
         ],
-        meta: { requestId },
+        meta: { kind: 'group_invite_request', requestId, groupId: data.groupId || '', groupName, requesterUid, requesterNickname },
       });
       return;
     }
@@ -4575,6 +5583,7 @@ const connectWS = () => {
             text: fromText ? `设备 ${fromUid}（${fromText}）请求加入通讯录。` : `设备 ${fromUid} 请求加入通讯录。`,
             action: 'open_contacts',
             actionLabel: '查看通讯录',
+            meta: { kind: 'contact_request', requestId, peerUid: fromUid },
           });
           toast('收到通讯录请求。', 'info');
         }
@@ -4625,11 +5634,13 @@ const connectWS = () => {
           pushSystemMessage({
             title: '通讯录申请已同意',
             text: `设备 ${who} 于 ${formatDateTime(eventTs)} 同意了你的通讯录申请。`,
+            meta: { kind: 'contact_result', peerUid: who },
           });
         } else {
           pushSystemMessage({
             title: '通讯录已建立',
             text: `你于 ${formatDateTime(eventTs)} 同意了设备 ${who} 的通讯录申请，双方已互为通讯录。`,
+            meta: { kind: 'contact_result', peerUid: who },
           });
         }
       } else if (status === 'declined') {
@@ -4639,6 +5650,7 @@ const connectWS = () => {
           pushSystemMessage({
             title: '通讯录申请被拒绝',
             text: `设备 ${who} 于 ${formatDateTime(eventTs)} 拒绝了你的通讯录申请。`,
+            meta: { kind: 'contact_result', peerUid: who },
           });
         }
       }
@@ -4650,6 +5662,7 @@ const connectWS = () => {
       if (data.contact) {
         data.contact.mutual = true;
         upsertContact(data.contact);
+        syncContactsOnlineStatus();
         const contactUid =
           (typeof data.contact.onlineUid === 'string' && data.contact.onlineUid) ||
           (typeof data.contact.contactFingerprint === 'string' ? data.contact.contactFingerprint : '');
@@ -4694,6 +5707,7 @@ const connectWS = () => {
       pushSystemMessage({
         title: '通讯录迁移已授权',
         text: transferNickname ? '等待新设备确认后将完成迁移，昵称将一并转让。' : '等待新设备确认后将完成迁移。',
+        meta: { kind: 'migration_waiting' },
       });
       return;
     }
@@ -4723,7 +5737,7 @@ const connectWS = () => {
           : `旧设备已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`,
         action: 'confirm_migration',
         actionLabel: '确认迁移',
-        meta: { code: migrationConfirm.value.code },
+        meta: { kind: 'migration_request', code: migrationConfirm.value.code, peerNickname: oldNickname || '', peerUid: typeof data.fromFingerprintShort === 'string' ? data.fromFingerprintShort : '' },
       });
       return;
     }
@@ -4744,6 +5758,7 @@ const connectWS = () => {
         text: transferredNickname
           ? `已同步 ${count} 位联系人，昵称“${transferredNickname}”已完成转让。`
           : `已同步 ${count} 位联系人。`,
+        meta: { kind: 'migration_done', peerNickname: transferredNickname },
       });
       migrationCode.value = '';
       migrationExpiresAt.value = 0;
@@ -4875,6 +5890,7 @@ const connectWS = () => {
         text: '群主已将你移出当前群聊。',
         action: 'open_home',
         actionLabel: '回首页',
+        meta: { kind: 'group_removed' },
       });
       return;
     }
@@ -4902,6 +5918,18 @@ const connectWS = () => {
         if (gid !== SYSTEM_GROUP && gid !== SYSTEM_NOTICE_GROUP) {
           const name = groups.value.find((g) => g.id === gid)?.name || gid;
           toast(`已加入群组：${name}`, 'info');
+          pushSystemMessage({
+            title: '已加入群聊',
+            text: `你现在已进入“${name}”。后续群动态会在聊天中同步。`,
+            actions: [{ action: 'open_related_group', label: '进入群聊', groupId: gid }],
+            meta: {
+              kind: 'group_joined',
+              groupId: gid,
+              groupName: name,
+              ownerUid: typeof data.ownerUid === 'string' ? data.ownerUid : '',
+              ownerNickname: '',
+            },
+          });
         }
       }
       clearUnread(gid);
@@ -5021,6 +6049,7 @@ const connectWS = () => {
       const code = typeof data.code === 'string' ? data.code : 'ERROR';
       const message = typeof data.message === 'string' ? data.message : '请求失败';
       const currentGroupId = sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
+      dmPreferenceSaving.value = false;
       if (code.startsWith('GROUP_')) {
         groupMembersLoading.value = false;
       }
@@ -5055,6 +6084,22 @@ const connectWS = () => {
           dedupeKey: 'error-user-offline',
         });
         toast('对方当前不在线，无法发起临时对话。', 'error');
+        return;
+      }
+
+      if (code === 'DM_CONTACTS_ONLY') {
+        pushSendBlockedTip(currentGroupId, {
+          title: '私聊被限制',
+          text: '对方仅接受通讯录私聊，你暂时不能向其发起陌生人私聊请求。',
+          actions: [{ action: 'open_contacts', label: '打开通讯录' }],
+          dedupeKey: 'error-dm-contacts-only',
+        });
+        toast('对方仅接受通讯录私聊。', 'info');
+        return;
+      }
+
+      if (code === 'DIRECT_REQUEST_EXPIRED') {
+        toast('私聊请求已过期，请重新发起。', 'error');
         return;
       }
 
@@ -5311,6 +6356,10 @@ const connectWS = () => {
           pairGroupName: payload.kind === 'pair' ? payload.pairGroupName || '' : '',
           pairStatus: payload.kind === 'pair' ? payload.pairStatus || 'pending' : 'pending',
           expiresAt: payload.kind === 'invite' ? payload.expiresAt || null : null,
+          burnAfterRead: payload.burnAfterRead === true,
+          burnAfterMs: Number(payload.burnAfterMs) || 0,
+          burnScheduledAt: 0,
+          burnAt: 0,
           ts: data.ts || Date.now(),
           read: false,
           localSeen: false,
@@ -5402,6 +6451,9 @@ const connectWS = () => {
             ts: data.ts || Date.now(),
           });
         }
+        if (local.burnAfterRead) {
+          scheduleBurnMessage(local, local.burnAfterMs || estimateReadDurationMs(local));
+        }
       }
       return;
     }
@@ -5487,6 +6539,10 @@ onBeforeUnmount(() => {
   } else {
     window.removeEventListener('resize', handleViewportResize);
   }
+  for (const timer of burnTimers.values()) {
+    window.clearTimeout(timer);
+  }
+  burnTimers.clear();
 });
 </script>
 
@@ -5542,12 +6598,22 @@ button:active:not(:disabled) {
 }
 
 .message-bubble {
+  max-width: min(34rem, 82vw);
   transition: transform 160ms ease, box-shadow 160ms ease;
 }
 
 .message-bubble:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.system-card-clickable:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.1);
+}
+
+.online-user-card {
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 @keyframes message-in {
@@ -5584,7 +6650,7 @@ button:active:not(:disabled) {
 }
 
 .viewport-narrow .message-bubble {
-  max-width: 78vw;
+  max-width: 80vw;
 }
 
 @media (min-width: 640px) {

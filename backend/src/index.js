@@ -18,6 +18,7 @@ const GROUP_NAME_MAX = 40;
 const MIGRATION_TTL_MS = 10 * 60 * 1000;
 const CONTACT_REQUEST_TTL_MS = 10 * 60 * 1000;
 const GROUP_INVITE_APPROVAL_TTL_MS = 10 * 60 * 1000;
+const DIRECT_REQUEST_TTL_MS = 10 * 60 * 1000;
 
 const MAX_BASE64_FIELD_LENGTH = 1_500_000;
 const MAX_ENCRYPTED_KEY_LENGTH = 4096;
@@ -129,6 +130,80 @@ const randomHex = (lenBytes = 8) => {
   return Array.from(bytes).map((v) => v.toString(16).padStart(2, '0')).join('');
 };
 
+const FRIENDLY_NICKNAME_PREFIXES = [
+  '晴空',
+  '南风',
+  '晚星',
+  '晨雾',
+  '松弛',
+  '远山',
+  '微光',
+  '流云',
+  '海盐',
+  '初雪',
+  '蓝桥',
+  '长夏',
+];
+
+const FRIENDLY_NICKNAME_SUFFIXES = [
+  '松果',
+  '云朵',
+  '小满',
+  '月见',
+  '木棉',
+  '青柚',
+  '可可',
+  '铃兰',
+  '花火',
+  '竹枝',
+  '星砂',
+  '橘子',
+];
+
+const randomIndex = (size) => {
+  if (!Number.isFinite(size) || size <= 0) return 0;
+  return crypto.getRandomValues(new Uint32Array(1))[0] % size;
+};
+
+const createFriendlyNicknameCandidate = () => {
+  const prefix = FRIENDLY_NICKNAME_PREFIXES[randomIndex(FRIENDLY_NICKNAME_PREFIXES.length)] || '微光';
+  const suffix = FRIENDLY_NICKNAME_SUFFIXES[randomIndex(FRIENDLY_NICKNAME_SUFFIXES.length)] || '云朵';
+  const serial = String(randomIndex(90) + 10);
+  return `${prefix}${suffix}${serial}`;
+};
+
+const defaultGroupNameForSender = (sender, groupId = '') => {
+  const nickname = typeof sender?.nickname === 'string' ? sender.nickname.trim() : '';
+  if (nickname) return `${nickname}的群聊`;
+  const uid = typeof sender?.uid === 'string' ? sender.uid : '';
+  if (uid) return `用户 ${uid.slice(0, 6)} 的群聊`;
+  return groupId && groupId.startsWith('grp-') ? `群聊 ${groupId.slice(-6)}` : (groupId || '未命名群聊');
+};
+
+const isGeneratedContactAlias = (alias, uid = '') => {
+  const text = typeof alias === 'string' ? alias.trim() : '';
+  if (!text) return true;
+  const normalizedUid = typeof uid === 'string' ? uid.trim() : '';
+  if (normalizedUid && (text === `用户 ${normalizedUid}` || text === `用户 ${normalizedUid.slice(0, 6)}`)) {
+    return true;
+  }
+  return /^用户\s+[A-Za-z0-9_-]{4,}$/.test(text);
+};
+
+const defaultContactAliasForSession = (session, fallbackUid = '') => {
+  const nickname = typeof session?.nickname === 'string' ? session.nickname.trim() : '';
+  if (nickname) return nickname;
+  const uid = typeof session?.uid === 'string' ? session.uid : (typeof fallbackUid === 'string' ? fallbackUid : '');
+  return uid ? `用户 ${uid}` : '用户';
+};
+
+const resolveContactAlias = (candidate, session, fallbackUid = '') => {
+  const alias = sanitizeOptionalText(candidate, CONTACT_ALIAS_MAX);
+  const uid = typeof session?.uid === 'string' ? session.uid : (typeof fallbackUid === 'string' ? fallbackUid : '');
+  if (alias && !isGeneratedContactAlias(alias, uid)) return alias;
+  return defaultContactAliasForSession(session, fallbackUid);
+};
+
 const getOsFromUserAgent = (ua) => {
   if (typeof ua !== 'string') return 'Unknown';
   const agent = ua.toLowerCase();
@@ -213,6 +288,7 @@ export class ChatRoom {
     this.groupMetaById = new Map();
     this.groupMetaLoaded = false;
     this.groupInviteApprovals = new Map();
+    this.directRequests = new Map();
   }
 
   async fetch(request) {
@@ -243,6 +319,7 @@ export class ChatRoom {
       deviceFingerprint: '',
       deviceBound: false,
       nickname: '',
+      dmContactsOnly: true,
       os: getOsFromUserAgent(request.headers.get('user-agent') || ''),
       location: formatLocation(request.cf),
       groups: new Set([SYSTEM_GROUP, SYSTEM_NOTICE_GROUP]),
@@ -434,6 +511,79 @@ export class ChatRoom {
     }
   }
 
+  async getContactFingerprintSet(deviceFp) {
+    if (!deviceFp) return new Set();
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return new Set();
+    await this.ensureContactsSchema();
+    try {
+      const res = await this.env.DB.prepare(
+        'SELECT contact_fp FROM contacts WHERE device_fp = ?'
+      )
+        .bind(deviceFp)
+        .all();
+      return new Set((res.results || []).map((row) => row.contact_fp).filter(Boolean));
+    } catch {
+      return new Set();
+    }
+  }
+
+  async getContactMapForDevices(deviceFps) {
+    const valid = Array.from(new Set((deviceFps || []).filter(Boolean)));
+    const out = new Map();
+    for (const fp of valid) out.set(fp, new Set());
+    if (!valid.length || !this.env.DB || typeof this.env.DB.prepare !== 'function') {
+      return out;
+    }
+    await this.ensureContactsSchema();
+    try {
+      const placeholders = valid.map(() => '?').join(',');
+      const res = await this.env.DB.prepare(
+        `SELECT device_fp, contact_fp FROM contacts WHERE device_fp IN (${placeholders})`
+      )
+        .bind(...valid)
+        .all();
+      for (const row of res.results || []) {
+        const deviceFp = row.device_fp;
+        const contactFp = row.contact_fp;
+        if (!deviceFp || !contactFp) continue;
+        if (!out.has(deviceFp)) out.set(deviceFp, new Set());
+        out.get(deviceFp).add(contactFp);
+      }
+    } catch {
+      // no-op
+    }
+    return out;
+  }
+
+  async getDmPreference(deviceFp) {
+    if (!deviceFp) return { contactsOnly: true };
+    try {
+      const raw = await this.state.storage.get(`dm_pref:${deviceFp}`);
+      return { contactsOnly: raw?.contactsOnly !== false };
+    } catch {
+      return { contactsOnly: true };
+    }
+  }
+
+  async saveDmPreference(deviceFp, pref) {
+    if (!deviceFp) return { contactsOnly: true };
+    const normalized = { contactsOnly: pref?.contactsOnly !== false };
+    try {
+      await this.state.storage.put(`dm_pref:${deviceFp}`, normalized);
+    } catch {
+      // no-op
+    }
+    return normalized;
+  }
+
+  sendDmPreferenceState(ws, contactsOnly = true, reqId = null) {
+    this.sendTo(ws, {
+      type: 'dm_pref_state',
+      contactsOnly: contactsOnly !== false,
+      reqId,
+    });
+  }
+
   async getDeviceNickname(deviceFp) {
     if (!deviceFp) return '';
     if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return '';
@@ -450,12 +600,62 @@ export class ChatRoom {
     }
   }
 
+  async getDeviceNicknames(deviceFps = []) {
+    const fps = Array.from(new Set((Array.isArray(deviceFps) ? deviceFps : []).filter(Boolean)));
+    const out = new Map();
+    if (!fps.length) return out;
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return out;
+    await this.ensureContactsSchema();
+    try {
+      const placeholders = fps.map(() => '?').join(',');
+      const res = await this.env.DB.prepare(
+        `SELECT device_fp, nickname FROM device_nicknames WHERE device_fp IN (${placeholders})`
+      )
+        .bind(...fps)
+        .all();
+      for (const row of res.results || []) {
+        if (row?.device_fp && typeof row.nickname === 'string') {
+          out.set(row.device_fp, row.nickname);
+        }
+      }
+    } catch {
+      return out;
+    }
+    return out;
+  }
+
   sendNicknameState(ws, nickname = '', reqId = null) {
     this.sendTo(ws, {
       type: 'nickname_state',
       nickname: typeof nickname === 'string' ? nickname : '',
       reqId,
     });
+  }
+
+  async ensureDeviceNickname(deviceFp) {
+    if (!deviceFp) return '';
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return '';
+    await this.ensureContactsSchema();
+
+    const existing = await this.getDeviceNickname(deviceFp);
+    if (existing) return existing;
+
+    const now = Date.now();
+    for (let attempt = 0; attempt < 32; attempt += 1) {
+      const nickname = createFriendlyNicknameCandidate();
+      try {
+        await this.env.DB.prepare(
+          'INSERT INTO device_nicknames (nickname, device_fp, created_at, updated_at) VALUES (?, ?, ?, ?)'
+        )
+          .bind(nickname, deviceFp, now, now)
+          .run();
+        return nickname;
+      } catch {
+        // Retry on nickname collision.
+      }
+    }
+
+    return '';
   }
 
   async transferDeviceNickname(oldDeviceFp, newDeviceFp) {
@@ -531,7 +731,7 @@ export class ChatRoom {
     let meta = this.groupMetaById.get(groupId);
     if (!meta) {
       const now = Date.now();
-      const fallback = groupId.startsWith('grp-') ? `群聊 ${groupId.slice(-6)}` : groupId;
+      const fallback = defaultGroupNameForSender(sender, groupId);
       meta = {
         groupId,
         name: sanitizeGroupName(preferredName) || fallback,
@@ -568,6 +768,30 @@ export class ChatRoom {
     }
   }
 
+  cleanupDirectRequests() {
+    const now = Date.now();
+    for (const [requestId, req] of this.directRequests.entries()) {
+      if (!req || now - req.createdAt > DIRECT_REQUEST_TTL_MS) {
+        this.directRequests.delete(requestId);
+      }
+    }
+  }
+
+  notifyPendingDirectRequests(ws, sender) {
+    if (!sender?.uid) return;
+    this.cleanupDirectRequests();
+    for (const req of this.directRequests.values()) {
+      if (!req || req.targetUid !== sender.uid) continue;
+      this.sendTo(ws, {
+        type: 'direct_request',
+        requestId: req.requestId,
+        groupId: req.groupId,
+        fromUid: req.fromUid,
+        fromNickname: req.fromNickname || '',
+      });
+    }
+  }
+
   sendGroupSystemNotice(groupId, payload) {
     const members = this.getGroupMembers(groupId);
     for (const { ws } of members) {
@@ -600,7 +824,7 @@ export class ChatRoom {
       },
       {
         title: '先做这 3 件事',
-        text: '1) 给自己设置昵称和头像；2) 加几个联系人避免失联；3) 开启系统通知，消息不漏看。',
+        text: '1) 调整昵称到你喜欢的样子；2) 加几个联系人避免失联；3) 开启系统通知，消息不漏看。',
         actions: [
           { action: 'open_settings', label: '去设置' },
           { action: 'create_group_modal', label: '创建群聊' },
@@ -627,35 +851,56 @@ export class ChatRoom {
     return false;
   }
 
-  broadcastSystemStatus() {
-    const users = Array.from(this.sessions.values()).map((u) => ({
-      uid: u.deviceBound && u.deviceFingerprint ? u.deviceFingerprint : '',
-      nickname: u.deviceBound && u.deviceFingerprint ? u.nickname || '' : '',
-      publicKey: u.publicKey,
-      identitySign: u.identitySign,
-      identityDh: u.identityDh,
-      identitySig: u.identitySig,
-      os: u.os,
-      location: u.location,
-      deviceFingerprint: u.deviceBound && u.deviceFingerprint ? u.deviceFingerprint.slice(0, 10) : '',
-      deviceFingerprintFull: u.deviceBound && u.deviceFingerprint ? u.deviceFingerprint : '',
-    }));
+  async broadcastSystemStatus() {
+    const sessions = Array.from(this.sessions.values());
+    const onlineFps = sessions
+      .map((session) => (session.deviceBound && session.deviceFingerprint ? session.deviceFingerprint : ''))
+      .filter(Boolean);
+    const contactMap = await this.getContactMapForDevices(onlineFps);
 
     const groupCounts = {};
-    for (const session of this.sessions.values()) {
+    for (const session of sessions) {
       for (const groupId of session.groups) {
         groupCounts[groupId] = (groupCounts[groupId] || 0) + 1;
       }
     }
 
-    const payload = JSON.stringify({
-      type: 'status',
-      users,
-      onlineCount: users.length,
-      groupCounts,
-    });
+    for (const [ws, viewer] of this.sessions.entries()) {
+      const viewerFp = viewer.deviceBound && viewer.deviceFingerprint ? viewer.deviceFingerprint : '';
+      const viewerContacts = viewerFp ? (contactMap.get(viewerFp) || new Set()) : new Set();
 
-    for (const [ws] of this.sessions.entries()) {
+      const users = sessions.map((session) => {
+        const targetFp = session.deviceBound && session.deviceFingerprint ? session.deviceFingerprint : '';
+        const isSelf = Boolean(viewerFp && targetFp && viewerFp === targetFp);
+        const inContacts = Boolean(viewerFp && targetFp && viewerContacts.has(targetFp));
+        const targetContacts = targetFp ? (contactMap.get(targetFp) || new Set()) : new Set();
+        const targetKnowsViewer = Boolean(viewerFp && targetFp && targetContacts.has(viewerFp));
+        const allowRequest = Boolean(targetFp) && (targetKnowsViewer || session.dmContactsOnly === false);
+
+        return {
+          uid: session.deviceBound && session.deviceFingerprint ? session.deviceFingerprint : '',
+          nickname: session.deviceBound && session.deviceFingerprint ? session.nickname || '' : '',
+          publicKey: session.publicKey,
+          identitySign: session.identitySign,
+          identityDh: session.identityDh,
+          identitySig: session.identitySig,
+          os: isSelf || inContacts ? session.os : '',
+          location: isSelf || inContacts ? session.location : '',
+          deviceFingerprint: isSelf || inContacts ? targetFp.slice(0, 10) : '',
+          deviceFingerprintFull: isSelf || inContacts ? targetFp : '',
+          inContacts,
+          canDirectRequest: !isSelf && allowRequest,
+          dmContactsOnly: session.dmContactsOnly !== false,
+        };
+      });
+
+      const payload = JSON.stringify({
+        type: 'status',
+        users,
+        onlineCount: sessions.length,
+        groupCounts,
+      });
+
       try {
         ws.send(payload);
       } catch {
@@ -788,6 +1033,12 @@ export class ChatRoom {
       case 'direct_start':
         await this.handleDirectStart(ws, sender, data, reqId);
         break;
+      case 'direct_request_accept':
+        await this.handleDirectRequestDecision(ws, sender, data, reqId, true);
+        break;
+      case 'direct_request_decline':
+        await this.handleDirectRequestDecision(ws, sender, data, reqId, false);
+        break;
       case 'pair_accept':
         await this.handlePairAccept(ws, sender, data, reqId);
         break;
@@ -817,6 +1068,9 @@ export class ChatRoom {
         break;
       case 'set_nickname':
         await this.handleSetNickname(ws, sender, data, reqId);
+        break;
+      case 'set_dm_pref':
+        await this.handleSetDmPreference(ws, sender, data, reqId);
         break;
       case 'chat':
         await this.handleChat(ws, sender, data, reqId);
@@ -907,10 +1161,13 @@ export class ChatRoom {
     sender.deviceFingerprint = fingerprint;
     sender.uid = fingerprint;
     sender.deviceBound = true;
-    sender.nickname = await this.getDeviceNickname(fingerprint);
+    sender.nickname = await this.ensureDeviceNickname(fingerprint);
+    const dmPref = await this.getDmPreference(fingerprint);
+    sender.dmContactsOnly = dmPref.contactsOnly !== false;
     this.deviceSessions.set(fingerprint, ws);
     this.sendTo(ws, { type: 'device_fingerprint_registered', reqId });
     this.sendNicknameState(ws, sender.nickname, reqId);
+    this.sendDmPreferenceState(ws, sender.dmContactsOnly, reqId);
     if (isFirstBind) {
       this.sendFirstDeviceGuide(ws, sender);
     }
@@ -918,6 +1175,7 @@ export class ChatRoom {
     void this.notifyPendingMigration(ws, sender);
     this.notifyPendingContactRequests(ws, sender);
     void this.notifyPendingInviteApprovals(ws, sender);
+    this.notifyPendingDirectRequests(ws, sender);
   }
 
   async handleSetNickname(ws, sender, data, reqId) {
@@ -971,6 +1229,15 @@ export class ChatRoom {
     } catch {
       this.sendError(ws, 'NICKNAME_TAKEN', 'Nickname already taken', reqId);
     }
+  }
+
+  async handleSetDmPreference(ws, sender, data, reqId) {
+    if (!this.requireDeviceBound(ws, sender, reqId)) return;
+    const contactsOnly = data.contactsOnly !== false;
+    const saved = await this.saveDmPreference(sender.deviceFingerprint, { contactsOnly });
+    sender.dmContactsOnly = saved.contactsOnly !== false;
+    this.sendDmPreferenceState(ws, sender.dmContactsOnly, reqId);
+    this.broadcastSystemStatus();
   }
 
   notifyPendingContactRequests(ws, sender) {
@@ -1110,6 +1377,14 @@ export class ChatRoom {
           this.sendGroupSystemNotice(groupId, {
             title: '群聊已创建',
             text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 创建了群聊“${meta.name}”。`,
+            actions: [{ action: 'open_related_group', label: '进入群聊', groupId }],
+            meta: {
+              kind: 'group_created',
+              groupId,
+              groupName: meta.name || groupId,
+              ownerUid: sender.uid,
+              ownerNickname: sender.nickname || '',
+            },
           });
         }
       }
@@ -1338,6 +1613,14 @@ export class ChatRoom {
     this.sendGroupSystemNotice(groupId, {
       title: '群名称已更新',
       text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 将群名从“${oldName}”改为“${groupName}”。`,
+      actions: [{ action: 'open_related_group', label: '查看群聊', groupId }],
+      meta: {
+        kind: 'group_updated',
+        groupId,
+        groupName,
+        ownerUid: sender.uid,
+        ownerNickname: sender.nickname || '',
+      },
     });
   }
 
@@ -1430,8 +1713,32 @@ export class ChatRoom {
     this.sendGroupSystemNotice(groupId, {
       title: '成员已移出',
       text: `${target.nickname || `用户 ${target.uid.slice(0, 6)}`} 已被群主移出群聊。`,
+      actions: [{ action: 'open_related_group', label: '查看群聊', groupId }],
+      meta: {
+        kind: 'group_member_removed',
+        groupId,
+        groupName: meta?.name || groupId,
+        peerUid: target.uid,
+        peerNickname: target.nickname || '',
+      },
     });
     this.broadcastSystemStatus();
+  }
+
+  activateDirectGroup(senderWs, sender, targetWs, target, groupId, reqId = null) {
+    if (!sender || !target || !groupId) return false;
+    const pairKey = buildDmPairKey(sender.deviceFingerprint, target.deviceFingerprint);
+    if (pairKey) {
+      this.dmPairByGroup.set(groupId, pairKey);
+    }
+
+    sender.groups.add(groupId);
+    target.groups.add(groupId);
+
+    this.sendTo(senderWs, { type: 'group_joined', groupId, reqId });
+    this.sendTo(targetWs, { type: 'group_joined', groupId, reqId });
+    this.broadcastSystemStatus();
+    return true;
   }
 
   async handleDirectStart(ws, sender, data, reqId) {
@@ -1489,19 +1796,126 @@ export class ChatRoom {
       }
     }
 
-    const pairKey = buildDmPairKey(sender.deviceFingerprint, target.deviceFingerprint);
-    if (pairKey) {
-      this.dmPairByGroup.set(groupId, pairKey);
+    const targetHasSender = await this.hasContactEntry(target.deviceFingerprint, sender.deviceFingerprint);
+    if (targetHasSender) {
+      this.activateDirectGroup(ws, sender, targetWs, target, groupId, reqId);
+      void this.logAction('DIRECT_START', `from=${sender.uid},to=${target.uid},group=${groupId}`);
+      return;
     }
 
-    sender.groups.add(groupId);
-    target.groups.add(groupId);
+    if (target.dmContactsOnly !== false) {
+      this.sendError(ws, 'DM_CONTACTS_ONLY', 'Target only accepts DMs from contacts', reqId);
+      return;
+    }
 
-    this.sendTo(ws, { type: 'group_joined', groupId, reqId });
-    this.sendTo(targetWs, { type: 'group_joined', groupId, reqId });
-    this.broadcastSystemStatus();
+    this.cleanupDirectRequests();
+    let existing = null;
+    for (const req of this.directRequests.values()) {
+      if (!req) continue;
+      if (req.fromUid === sender.uid && req.targetUid === target.uid && req.groupId === groupId) {
+        existing = req;
+        break;
+      }
+    }
+    if (!existing) {
+      let requestId = `dr-${randomHex(6)}`;
+      while (this.directRequests.has(requestId)) {
+        requestId = `dr-${randomHex(6)}`;
+      }
+      existing = {
+        requestId,
+        groupId,
+        fromUid: sender.uid,
+        fromNickname: sender.nickname || '',
+        fromFingerprint: sender.deviceFingerprint,
+        targetUid: target.uid,
+        targetFingerprint: target.deviceFingerprint,
+        createdAt: Date.now(),
+      };
+      this.directRequests.set(requestId, existing);
+    }
 
-    void this.logAction('DIRECT_START', `from=${sender.uid},to=${target.uid},group=${groupId}`);
+    this.sendTo(ws, {
+      type: 'direct_request_pending',
+      requestId: existing.requestId,
+      groupId,
+      targetUid: target.uid,
+      reqId,
+    });
+    this.sendTo(targetWs, {
+      type: 'direct_request',
+      requestId: existing.requestId,
+      groupId,
+      fromUid: sender.uid,
+      fromNickname: sender.nickname || '',
+      reqId,
+    });
+    void this.logAction('DIRECT_REQUEST', `from=${sender.uid},to=${target.uid},group=${groupId}`);
+  }
+
+  async handleDirectRequestDecision(ws, sender, data, reqId, approve) {
+    if (!this.requireDeviceBound(ws, sender, reqId)) return;
+    const requestId = sanitizeText(data.requestId, 80);
+    if (!requestId) {
+      this.handleInvalidAction(ws, 'INVALID_DIRECT_REQUEST', 'requestId required', reqId);
+      return;
+    }
+
+    this.cleanupDirectRequests();
+    const request = this.directRequests.get(requestId);
+    if (!request) {
+      this.sendError(ws, 'DIRECT_REQUEST_EXPIRED', 'Direct request expired', reqId);
+      return;
+    }
+    if (request.targetUid !== sender.uid || request.targetFingerprint !== sender.deviceFingerprint) {
+      this.sendError(ws, 'DIRECT_REQUEST_FORBIDDEN', 'Request does not belong to this user', reqId);
+      return;
+    }
+
+    this.directRequests.delete(requestId);
+    const requesterWs = this.findWsByUid(request.fromUid);
+    const requester = requesterWs ? this.sessions.get(requesterWs) : null;
+
+    if (!approve) {
+      if (requesterWs) {
+        this.sendTo(requesterWs, {
+          type: 'direct_request_result',
+          requestId,
+          groupId: request.groupId,
+          approved: false,
+          targetUid: sender.uid,
+          reqId,
+        });
+      }
+      return;
+    }
+
+    if (!requesterWs || !requester) {
+      this.sendError(ws, 'USER_OFFLINE', 'Requester is offline', reqId);
+      return;
+    }
+    if (requester.groups.size >= MAX_GROUPS_PER_USER || sender.groups.size >= MAX_GROUPS_PER_USER) {
+      this.sendError(ws, 'GROUP_LIMIT', `Maximum ${MAX_GROUPS_PER_USER} groups`, reqId);
+      return;
+    }
+
+    this.activateDirectGroup(requesterWs, requester, ws, sender, request.groupId, reqId);
+    this.sendTo(requesterWs, {
+      type: 'direct_request_result',
+      requestId,
+      groupId: request.groupId,
+      approved: true,
+      targetUid: sender.uid,
+      reqId,
+    });
+    this.sendTo(ws, {
+      type: 'direct_request_result',
+      requestId,
+      groupId: request.groupId,
+      approved: true,
+      targetUid: requester.uid,
+      reqId,
+    });
   }
 
   async handlePairAccept(ws, sender, data, reqId) {
@@ -1577,6 +1991,7 @@ export class ChatRoom {
 
       const rows = res.results || [];
       const contactFps = rows.map((row) => row.contact_fp).filter(Boolean);
+      const nicknameMap = await this.getDeviceNicknames(contactFps);
       let mutualSet = new Set();
       if (contactFps.length) {
         const placeholders = contactFps.map(() => '?').join(',');
@@ -1594,6 +2009,7 @@ export class ChatRoom {
         return {
           contactFingerprint: contactFp,
           alias: row.alias || '',
+          nickname: (online && online.nickname) || nicknameMap.get(contactFp) || '',
           createdAt: row.created_at,
           updatedAt: row.updated_at,
           onlineUid: online ? online.uid : '',
@@ -1681,7 +2097,7 @@ export class ChatRoom {
         }
       }
       const now = Date.now();
-      const alias = sanitizeOptionalText(data.alias, CONTACT_ALIAS_MAX) || `用户 ${target.uid}`;
+      const alias = resolveContactAlias(data.alias, target, target.uid);
       try {
         await this.env.DB.prepare(
           'INSERT INTO contacts (device_fp, contact_fp, alias, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(device_fp, contact_fp) DO UPDATE SET alias = excluded.alias, updated_at = excluded.updated_at'
@@ -1700,6 +2116,7 @@ export class ChatRoom {
           contact: {
             contactFingerprint: target.deviceFingerprint,
             alias,
+            nickname: target.nickname || '',
             createdAt: now,
             updatedAt: now,
             onlineUid: target.uid,
@@ -1715,6 +2132,7 @@ export class ChatRoom {
           contact: {
             contactFingerprint: sender.deviceFingerprint,
             alias: targetSideRow?.alias || `用户 ${sender.uid}`,
+            nickname: sender.nickname || '',
             createdAt: targetSideRow?.created_at || now,
             updatedAt: now,
             onlineUid: sender.uid,
@@ -1747,7 +2165,7 @@ export class ChatRoom {
       requestId = `cr-${randomHex(6)}`;
     }
 
-    const alias = sanitizeOptionalText(data.alias, CONTACT_ALIAS_MAX) || `用户 ${target.uid}`;
+    const alias = resolveContactAlias(data.alias, target, target.uid);
     const now = Date.now();
     this.contactRequests.set(requestId, {
       requestId,
@@ -1832,6 +2250,15 @@ export class ChatRoom {
     const now = Date.now();
     await this.ensureContactsSchema();
     try {
+      const requesterWs = this.deviceSessions.get(request.fromFingerprint);
+      const requester = requesterWs ? this.sessions.get(requesterWs) : null;
+      const requesterUid = requester?.uid || request.fromUid || '';
+      const requesterNickname = requester?.nickname || await this.getDeviceNickname(request.fromFingerprint);
+      const senderNickname = sender.nickname || await this.getDeviceNickname(sender.deviceFingerprint);
+      const reverseAlias = defaultContactAliasForSession(
+        requester ? { ...requester, nickname: requesterNickname } : { uid: requesterUid, nickname: requesterNickname },
+        requesterUid
+      );
       await this.env.DB.prepare(
         'INSERT INTO contacts (device_fp, contact_fp, alias, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(device_fp, contact_fp) DO UPDATE SET alias = excluded.alias, updated_at = excluded.updated_at'
       )
@@ -1840,18 +2267,15 @@ export class ChatRoom {
       await this.env.DB.prepare(
         'INSERT INTO contacts (device_fp, contact_fp, alias, created_at, updated_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(device_fp, contact_fp) DO UPDATE SET alias = excluded.alias, updated_at = excluded.updated_at'
       )
-        .bind(request.toFingerprint, request.fromFingerprint, `用户 ${request.fromUid}`, now, now)
+        .bind(request.toFingerprint, request.fromFingerprint, reverseAlias, now, now)
         .run();
-
-      const requesterWs = this.deviceSessions.get(request.fromFingerprint);
-      const requester = requesterWs ? this.sessions.get(requesterWs) : null;
-      const requesterUid = requester?.uid || request.fromUid || '';
 
       this.sendTo(ws, {
         type: 'contacts_saved',
         contact: {
           contactFingerprint: request.fromFingerprint,
-          alias: requesterUid ? `用户 ${requesterUid}` : '用户',
+          alias: reverseAlias,
+          nickname: requesterNickname || '',
           createdAt: now,
           updatedAt: now,
           onlineUid: requesterUid,
@@ -1868,6 +2292,7 @@ export class ChatRoom {
           contact: {
             contactFingerprint: request.toFingerprint,
             alias: request.alias,
+            nickname: senderNickname || '',
             createdAt: now,
             updatedAt: now,
             onlineUid: sender.uid,
@@ -2098,14 +2523,14 @@ export class ChatRoom {
 
       await this.env.DB.prepare('DELETE FROM contact_migrations WHERE code = ?').bind(code).run();
 
-      sender.nickname = await this.getDeviceNickname(sender.deviceFingerprint);
+      sender.nickname = await this.ensureDeviceNickname(sender.deviceFingerprint);
       this.sendNicknameState(ws, sender.nickname);
       this.sendTo(ws, { type: 'contacts_migrate_done', code, count, transferredNickname, reqId });
       const oldWs = this.findWsByFingerprint(row.old_device_fp);
       if (oldWs) {
         const oldSession = this.sessions.get(oldWs);
         if (oldSession) {
-          oldSession.nickname = await this.getDeviceNickname(oldSession.deviceFingerprint);
+          oldSession.nickname = await this.ensureDeviceNickname(oldSession.deviceFingerprint);
           this.sendNicknameState(oldWs, oldSession.nickname);
         }
         this.sendTo(oldWs, { type: 'contacts_migrate_done', code, count, transferredNickname });
@@ -2196,6 +2621,10 @@ export class ChatRoom {
     const ts = Date.now();
     const mimeType = typeof data.mimeType === 'string' ? data.mimeType.slice(0, 80) : null;
     const name = typeof data.name === 'string' ? data.name.slice(0, 120) : null;
+    const burnAfterRead = data.burnAfterRead === true;
+    const burnAfterMs = Number.isFinite(Number(data.burnAfterMs))
+      ? Math.max(0, Math.min(120_000, Math.floor(Number(data.burnAfterMs))))
+      : 0;
 
     let delivered = 0;
     for (const [targetWs, target] of this.sessions.entries()) {
@@ -2218,6 +2647,8 @@ export class ChatRoom {
         encType: encType || undefined,
         mimeType,
         name,
+        burnAfterRead,
+        burnAfterMs,
       });
       delivered += 1;
     }
