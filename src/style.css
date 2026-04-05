@@ -2,11 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 这里可以放一些全局样式 */
-html, body {
+/* 全局基础样式 */
+html,
+body {
     height: 100%;
     margin: 0;
     padding: 0;
-    -webkit-font-smoothing: antialiased; /* 让字体更像 Apple */
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans CJK SC", "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased; /* 让字体在 Apple 设备上更平滑 */
     -moz-osx-font-smoothing: grayscale;
 }
