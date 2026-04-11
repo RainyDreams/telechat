@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div
     class="h-[100dvh] min-h-[100dvh] w-full overflow-hidden bg-slate-100 text-slate-900 antialiased"
     :class="[{ 'keyboard-open': isKeyboardOpen }, { 'viewport-narrow': viewportNarrow }, `ui-scale-${uiScale}`]"
@@ -98,31 +98,37 @@
           </div>
         </div>
       </Transition>
-      <div v-if="deviceKicked.open" class="fixed inset-0 z-[70]">
+      <div v-if="deviceKicked.open" class="fixed inset-0 z-50">
         <button
           type="button"
-          class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+          class="absolute inset-0 bg-slate-900/40"
           @click="dismissDeviceKicked"
           aria-label="Close kicked notice"
         ></button>
         <div class="viewport-modal-scroll">
-          <div class="device-kicked-panel viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 22rem;">
+          <div class="device-kicked-panel viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 32rem;">
             <div class="viewport-modal-body px-5 py-5">
-              <p class="text-sm font-semibold text-slate-800">已下线</p>
-              <p class="mt-2 text-xs leading-5 text-slate-500">
-                你的账号在同一设备被重新登录{{ deviceKicked.reason ? `，${deviceKicked.reason}` : '' }}。
+              <p class="text-xs font-semibold uppercase tracking-wide text-rose-400">已下线</p>
+              <h3 class="mt-1 text-lg font-semibold text-slate-800">你的账号在同一设备被重新登录</h3>
+              <p class="mt-2 text-sm leading-6 text-slate-600">
+                为保证"一台设备一个用户"，本窗口已断开连接。
+                {{ deviceKicked.reason ? `原因：${deviceKicked.reason}` : '' }}
               </p>
-              <div class="mt-4 flex items-center justify-end gap-2">
+              <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
-                  class="rounded-full px-4 py-1.5 text-xs font-medium text-slate-500"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                   @click="dismissDeviceKicked"
-                >离线</button>
+                >
+                  保持离线
+                </button>
                 <button
                   type="button"
-                  class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white"
+                  class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
                   @click="reconnectAfterKick"
-                >重连</button>
+                >
+                  重新连接
+                </button>
               </div>
             </div>
           </div>
@@ -760,73 +766,32 @@
               </div>
             </div>
            </div>
-            <div v-else class="mobile-side-drawer pointer-events-auto flex w-[min(76vw,21rem)] max-w-[calc(100vw-4.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
+            </div>
+           <div v-else class="mobile-side-drawer pointer-events-auto flex w-[min(76vw,21rem)] max-w-[calc(100vw-4.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <div class="min-w-0">
                   <p class="text-xs uppercase tracking-wide text-slate-400">侧边栏</p>
                   <p class="truncate text-xs font-semibold text-slate-700">{{ activeGroupName || '群聊' }}</p>
                 </div>
-                <button
-                  type="button"
-                  @click="showMobilePanel = false"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-                >
-                  关闭
-                </button>
+                <button type="button" @click="showMobilePanel = false" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700">关闭</button>
               </div>
               <div class="border-b border-slate-100 px-3 py-2.5">
                 <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">快捷操作</p>
                 <div class="mt-2 grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    @click="toggleGroupPinned(activeGroup); showMobilePanel = false"
-                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h14l-1.5 9H6.5L5 5Z"/><path d="M8 14v5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-5"/></svg>
-                      </span>
-                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">置顶</span>
-                    </div>
+                  <button type="button" @click="toggleGroupPinned(activeGroup); showMobilePanel = false" class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700">
+                    <div class="flex items-center gap-2"><span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h14l-1.5 9H6.5L5 5Z"/><path d="M8 14v5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-5"/></svg></span><span class="mobile-panel-action-title text-sm font-semibold text-slate-800">置顶</span></div>
                     <span class="mt-1 text-[10px] leading-4 text-slate-400">{{ isGroupPinned(activeGroup) ? '已置顶' : '未置顶' }}</span>
                   </button>
-                  <button
-                    type="button"
-                    @click="toast('功能开发中'); showMobilePanel = false"
-                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18.36 6.64A9 9 0 0 1 20.77 15M5.63 6.64A9 9 0 0 0 3.23 15"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="1" y1="12" x2="3" y2="12"/></svg>
-                      </span>
-                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">免打扰</span>
-                    </div>
+                  <button type="button" @click="toast('功能开发中'); showMobilePanel = false" class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700">
+                    <div class="flex items-center gap-2"><span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span><span class="mobile-panel-action-title text-sm font-semibold text-slate-800">免打扰</span></div>
                     <span class="mt-1 text-[10px] leading-4 text-slate-400">静音通知</span>
                   </button>
-                  <button
-                    type="button"
-                    @click="toast('功能开发中'); showMobilePanel = false"
-                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
-                      </span>
-                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">导出聊天记录</span>
-                    </div>
+                  <button type="button" @click="toast('功能开发中'); showMobilePanel = false" class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700">
+                    <div class="flex items-center gap-2"><span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg></span><span class="mobile-panel-action-title text-sm font-semibold text-slate-800">导出聊天记录</span></div>
                     <span class="mt-1 text-[10px] leading-4 text-slate-400">保存为文件</span>
                   </button>
-                  <button
-                    type="button"
-                    @click="toast('功能开发中'); showMobilePanel = false"
-                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
-                  >
-                    <div class="flex items-center gap-2">
-                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                      </span>
-                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">清空聊天记录</span>
-                    </div>
+                  <button type="button" @click="toast('功能开发中'); showMobilePanel = false" class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700">
+                    <div class="flex items-center gap-2"><span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100"><svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></span><span class="mobile-panel-action-title text-sm font-semibold text-slate-800">清空聊天记录</span></div>
                     <span class="mt-1 text-[10px] leading-4 text-slate-400">不可恢复</span>
                   </button>
                 </div>
@@ -836,37 +801,16 @@
                 <div v-if="groupMembersLoading" class="mt-2 px-1 text-xs text-slate-500">加载中…</div>
                 <div v-else-if="!groupMembers.length" class="mt-2 px-1 text-xs text-slate-500">暂无成员</div>
                 <div v-else class="mt-2 flex flex-wrap gap-2">
-                  <div
-                    v-for="member in groupMembers"
-                    :key="`drawer-member-${member.uid}`"
-                    class="flex flex-col items-center gap-1"
-                  >
-                    <div
-                      class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold leading-9 text-white text-center"
-                      :style="{ background: avatarColor(member.uid) }"
-                    >
-                      {{ avatarInitial(member.nickname || member.uidShort || '?') }}
-                    </div>
+                  <div v-for="member in groupMembers" :key="`drawer-member-${member.uid}`" class="flex flex-col items-center gap-1">
+                    <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold leading-9 text-white text-center" :style="{ background: avatarColor(member.uid) }">{{ avatarInitial(member.nickname || member.uidShort || '?') }}</div>
                     <span class="max-w-[2.5rem] truncate text-[10px] text-slate-500">{{ member.nickname || member.uidShort || '?' }}</span>
                   </div>
                 </div>
               </div>
               <div class="mt-auto border-t border-slate-100 px-3 py-2.5">
                 <div class="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    @click="openGroupManage(); showMobilePanel = false"
-                    class="mobile-panel-action flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-                  >
-                    群设置
-                  </button>
-                  <button
-                    type="button"
-                    @click="openGroup(SYSTEM_GROUP); showMobilePanel = false"
-                    class="mobile-panel-action flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
-                  >
-                    返回首页
-                  </button>
+                  <button type="button" @click="openGroupManage(); showMobilePanel = false" class="mobile-panel-action flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">群设置</button>
+                  <button type="button" @click="openGroup(SYSTEM_GROUP); showMobilePanel = false" class="mobile-panel-action flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700">返回首页</button>
                 </div>
               </div>
             </div>
@@ -1419,14 +1363,13 @@
                     </div>
                     <div
                       v-else-if="msg.payloadType === 'audio' && msg.audioData"
-                      class="voice-message-card rounded-[22px] px-3 py-2.5"
+                      class="voice-message-card rounded-[22px] px-3 py-3"
                       :class="msg.sender === myUid ? 'bg-white/14 text-white' : 'bg-slate-50 text-slate-800'"
                     >
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-3">
                         <button
-                          v-if="msg.sender !== myUid"
                           type="button"
-                          class="voice-play-button inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                          class="voice-play-button inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
                           :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
                           @click="toggleAudioPlayback(msg)"
                           :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
@@ -1439,7 +1382,7 @@
                           </svg>
                         </button>
                         <div class="min-w-0 flex-1">
-                          <div class="voice-waveform flex h-8 items-end gap-[3px]">
+                          <div class="voice-waveform flex h-10 items-end gap-1">
                             <span
                               v-for="(bar, idx) in audioWaveformForMessage(msg)"
                               :key="`voice-wave-${msg.msgId}-${idx}`"
@@ -1448,33 +1391,11 @@
                               :style="audioWaveformBarStyle(bar)"
                             ></span>
                           </div>
+                          <div class="mt-2 flex items-center justify-between text-[11px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
+                            <span>{{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}</span>
+                            <span>{{ audioMessageTimeLabel(msg) }}</span>
+                          </div>
                         </div>
-                        <span class="shrink-0 text-[11px] font-medium" :class="msg.sender === myUid ? 'text-white/70' : 'text-slate-400'">
-                          {{ audioMessageTimeLabel(msg) || '0" ' }}
-                        </span>
-                        <button
-                          v-if="msg.sender === myUid"
-                          type="button"
-                          class="voice-play-button inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                          :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
-                          @click="toggleAudioPlayback(msg)"
-                          :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
-                        >
-                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                            <path d="M7 5h3v14H7zM14 5h3v14h-3z"/>
-                          </svg>
-                          <svg v-else viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                            <path d="M8 6.5v11l9-5.5-9-5.5Z"/>
-                          </svg>
-                        </button>
-                        <span
-                          v-if="msg.sender !== myUid && msg.isUnreadVoice"
-                          class="h-2 w-2 shrink-0 rounded-full bg-sky-500"
-                          aria-label="Unread voice message"
-                        ></span>
-                      </div>
-                      <div class="mt-1 text-center text-[10px]" :class="msg.sender === myUid ? 'text-white/55' : 'text-slate-400'">
-                        {{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}
                       </div>
                     </div>
                     <p v-else class="emoji-font whitespace-pre-wrap break-words text-[14px] leading-[1.45]">{{ msg.text }}</p>
@@ -1549,24 +1470,38 @@
             aria-label="Close read receipts"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <p class="text-sm font-semibold text-slate-800">已读 · {{ readReceiptList.length }}</p>
-                <button type="button" @click="closeReadReceipts" class="text-xs font-medium text-slate-500">完成</button>
+                <div>
+                  <p class="text-xs uppercase tracking-wide text-slate-400">已读详情</p>
+                  <p class="text-sm font-semibold text-slate-800">共 {{ readReceiptList.length }} 人</p>
+                </div>
+                <button
+                  type="button"
+                  @click="closeReadReceipts"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                >
+                  关闭
+                </button>
               </div>
-              <div class="viewport-modal-body" style="--dialog-offset: 6rem;">
-                <div v-if="!readReceiptList.length" class="px-4 py-8 text-center text-xs text-slate-400">暂无已读</div>
-                <div v-else class="divide-y divide-slate-100">
+              <div class="viewport-modal-body px-4 py-3" style="--dialog-offset: 8rem;">
+                <div v-if="!readReceiptList.length" class="py-6 text-center text-sm text-slate-500">
+                  暂无已读记录
+                </div>
+                <div v-else class="grid gap-3">
                   <div
                     v-for="entry in readReceiptList"
                     :key="`read-${entry.uid}-${entry.ts}`"
-                    class="flex items-center justify-between px-4 py-2.5"
+                    class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
                   >
                     <div class="min-w-0">
-                      <p class="truncate text-sm text-slate-800">{{ entry.displayName }}</p>
-                      <p class="truncate text-[11px] text-slate-400">{{ entry.os }} · {{ entry.location }}</p>
+                      <p class="truncate text-sm font-semibold text-slate-800">{{ entry.displayName }}</p>
+                      <p class="truncate text-xs text-slate-500">{{ entry.os }} · {{ entry.location }}</p>
                     </div>
-                    <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(entry.ts) }}</p>
+                    <div class="text-right">
+                      <p class="text-xs text-slate-500">已读时间</p>
+                      <p class="text-xs font-medium text-slate-700">{{ formatDateTime(entry.ts) }}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1582,27 +1517,30 @@
             aria-label="Close invite picker"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 26rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 30rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <p class="text-sm font-semibold text-slate-800">发送群邀请卡</p>
+                <div>
+                  <p class="text-xs uppercase tracking-wide text-slate-400">选择群组</p>
+                  <p class="text-sm font-semibold text-slate-800">发送群邀请卡</p>
+                </div>
                 <button
                   type="button"
                   @click="closeInvitePicker"
-                  class="text-xs font-medium text-slate-500"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
-                  完成
+                  关闭
                 </button>
               </div>
-              <div class="viewport-modal-body" style="--dialog-offset: 7rem;">
-                <div class="divide-y divide-slate-100">
+              <div class="viewport-modal-body px-4 py-3" style="--dialog-offset: 9rem;">
+                <div class="grid gap-2">
                   <label
                     v-for="group in eligibleInviteGroups"
                     :key="`invite-${group.id}`"
-                    class="flex items-center justify-between px-4 py-3 active:bg-slate-50"
+                    class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
                   >
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-slate-800">{{ groupDisplayName(group, group.name) }}</p>
-                      <p class="truncate text-[11px] text-slate-400">{{ group.id }}</p>
+                      <p class="truncate text-xs text-slate-500">{{ group.id }}</p>
                     </div>
                     <input
                       type="radio"
@@ -1618,14 +1556,14 @@
                 <button
                   type="button"
                   @click="closeInvitePicker"
-                  class="text-xs font-medium text-slate-500"
+                  class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
                 >
                   取消
                 </button>
                 <button
                   type="button"
                   @click="confirmInvitePicker"
-                  class="text-xs font-semibold text-sky-600"
+                  class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white"
                 >
                   发送邀请卡
                 </button>
@@ -1642,138 +1580,158 @@
             aria-label="Close invite dialog"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <p class="text-sm font-semibold text-slate-800">{{ groupMetaMap[inviteDialog.groupId]?.groupName || activeGroupName }}</p>
+                <div>
+                  <p class="text-xs uppercase tracking-wide text-slate-400">邀请新成员</p>
+                  <p class="text-sm font-semibold text-slate-800">{{ groupMetaMap[inviteDialog.groupId]?.groupName || activeGroupName }}</p>
+                </div>
                 <button
                   type="button"
                   @click="closeInviteDialog"
-                  class="text-xs font-medium text-slate-500"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
                 >
-                  完成
+                  关闭
                 </button>
               </div>
-              <div class="viewport-modal-body" style="--dialog-offset: 6rem;">
-                <div class="divide-y divide-slate-100">
-                  <div class="flex items-center justify-between px-4 py-3">
-                    <p class="text-sm text-slate-700">有效期</p>
-                    <select v-model="inviteDialog.ttlSec" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-800">
-                      <option v-for="item in inviteTtlOptions" :key="`ttl-${item.value}`" :value="item.value">{{ item.label }}</option>
-                    </select>
+              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
+                <div class="grid gap-3">
+                  <div class="grid gap-3 sm:grid-cols-2">
+                    <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                      <p class="text-xs font-semibold text-slate-600">有效期</p>
+                      <select v-model="inviteDialog.ttlSec" class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+                        <option v-for="item in inviteTtlOptions" :key="`ttl-${item.value}`" :value="item.value">{{ item.label }}</option>
+                      </select>
+                    </label>
+                    <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                      <p class="text-xs font-semibold text-slate-600">最多加入人数</p>
+                      <input
+                        v-model.number="inviteDialog.maxUses"
+                        type="number"
+                        min="1"
+                        max="999"
+                        class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+                      />
+                    </label>
                   </div>
-                  <div class="flex items-center justify-between px-4 py-3">
-                    <p class="text-sm text-slate-700">最大人数</p>
-                    <input
-                      v-model.number="inviteDialog.maxUses"
-                      type="number"
-                      min="1"
-                      max="999"
-                      class="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-800 text-right"
-                    />
-                  </div>
-                  <div class="px-4 py-3">
+
+                  <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                    <p class="text-xs font-semibold text-slate-600">邀请说明</p>
                     <textarea
                       v-model="inviteDialog.inviteStatement"
-                      rows="2"
+                      rows="3"
                       maxlength="180"
-                      class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                      placeholder="邀请说明（可选）"
+                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
+                      placeholder="可选，留给入群申请和群内通知使用"
                     ></textarea>
-                  </div>
-                  <div class="flex items-center justify-between px-4 py-3">
-                    <div class="min-w-0">
-                      <p class="text-sm text-slate-700">加入需审批</p>
-                    </div>
-                    <button
-                      type="button"
-                      role="switch"
-                      :aria-checked="activeGroupInviteApprovalRequired ? 'true' : 'false'"
-                      :disabled="!isActiveGroupOwner"
-                      @click="setLocalActiveGroupInviteApprovalRequired(!activeGroupInviteApprovalRequired)"
-                      class="relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors"
-                      :class="activeGroupInviteApprovalRequired ? 'bg-emerald-500' : 'bg-slate-200'"
-                    >
-                      <span
-                        class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform"
-                        :class="activeGroupInviteApprovalRequired ? 'translate-x-5' : 'translate-x-1'"
-                      ></span>
-                    </button>
-                  </div>
-                </div>
+                  </label>
 
-                <div class="px-4 py-3">
-                  <div class="flex items-center justify-between">
-                    <p class="text-[11px] text-slate-400">同时最多保留 5 条生效链接</p>
+                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-800">加入前是否需要审批</p>
+                        <p class="mt-1 text-xs text-slate-500">默认开启。关闭后，通过此群的分享链接可直接加入。</p>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        :aria-checked="activeGroupInviteApprovalRequired ? 'true' : 'false'"
+                        :disabled="!isActiveGroupOwner"
+                        @click="setLocalActiveGroupInviteApprovalRequired(!activeGroupInviteApprovalRequired)"
+                        class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition"
+                        :class="activeGroupInviteApprovalRequired ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-slate-200'"
+                      >
+                        <span
+                          class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform"
+                          :class="activeGroupInviteApprovalRequired ? 'translate-x-6' : 'translate-x-1'"
+                        ></span>
+                      </button>
+                    </div>
+                    <div v-if="isActiveGroupOwner" class="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        @click="saveInviteApprovalPolicy"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        保存邀请策略
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center justify-end gap-2">
+                    <p class="mr-auto text-[11px] text-slate-500">同一群同时最多保留 5 条生效中的分享链接。</p>
                     <button
                       type="button"
                       @click="createInviteFromDialog"
-                      class="text-xs font-semibold text-sky-600"
+                      class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
                     >
                       生成短链接
                     </button>
                   </div>
-                </div>
 
-                <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="border-t border-slate-100 bg-emerald-50/50 px-4 py-3">
-                  <p class="text-xs font-semibold text-emerald-700">已生成</p>
-                  <p class="mt-1 break-all text-sm text-slate-800">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
-                  <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
-                    <span>至 {{ inviteDialog.generatedExpiresAt ? formatDateTime(inviteDialog.generatedExpiresAt) : '--' }}</span>
-                    <span>上限 {{ inviteDialog.maxUses }} 人</span>
-                  </div>
-                  <div class="mt-2 flex justify-end">
-                    <button
-                      type="button"
-                      @click="copyInviteDialogLink()"
-                      class="text-xs font-semibold text-sky-600"
-                    >
-                      复制链接
-                    </button>
-                  </div>
-                </div>
-
-                <div class="border-t border-slate-100">
-                  <button
-                    type="button"
-                    @click="inviteDialog.showExisting = !inviteDialog.showExisting"
-                    class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50"
-                  >
-                    <p class="text-sm font-semibold text-slate-700">已生成链接</p>
-                    <span class="text-xs text-slate-400">{{ groupInviteEntries.length }} 条</span>
-                  </button>
-                  <div v-if="inviteDialog.showExisting">
-                    <div v-if="groupInviteSettingsLoading" class="px-4 py-3 text-xs text-slate-500">加载中…</div>
-                    <div v-else-if="!groupInviteEntries.length" class="px-4 py-3 text-xs text-slate-400">暂无已生成的分享链接。</div>
-                    <div v-else class="divide-y divide-slate-100">
-                      <div
-                        v-for="entry in groupInviteEntries"
-                        :key="`invite-dialog-entry-${entry.inviteId}`"
-                        class="px-4 py-3"
+                  <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-3">
+                    <p class="text-xs font-semibold text-emerald-700">已生成邀请链接</p>
+                    <p class="mt-2 break-all text-sm text-slate-800">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                      <span>有效至 {{ inviteDialog.generatedExpiresAt ? formatDateTime(inviteDialog.generatedExpiresAt) : '--' }}</span>
+                      <span>上限 {{ inviteDialog.maxUses }} 人</span>
+                    </div>
+                    <div class="mt-3 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        @click="copyInviteDialogLink()"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                       >
-                        <div class="flex items-center justify-between">
-                          <p class="text-sm font-medium text-slate-800">{{ inviteStatusLabel(entry) }}</p>
-                          <p class="text-[11px] text-slate-400">已用 {{ inviteUsageLabel(entry) }}</p>
-                        </div>
-                        <p class="mt-1 break-all text-[11px] leading-5 text-slate-500">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
-                        <div class="mt-1 text-[11px] text-slate-400">
-                          {{ entry.creatorNickname || `用户 ${entry.creatorUid.slice(0, 6)}` }} · {{ formatDateTime(entry.createdAt) }}
-                        </div>
-                        <div class="mt-2 flex items-center gap-3">
-                          <button
-                            type="button"
-                            @click="copyInviteDialogLink(entry)"
-                            class="text-[11px] font-medium text-sky-600"
-                          >
-                            复制
-                          </button>
-                          <button
-                            v-if="isActiveGroupOwner && inviteStatusLabel(entry) === '生效中'"
-                            type="button"
-                            @click="revokeGroupInvite(entry.inviteId)"
-                            class="text-[11px] font-medium text-rose-600"
-                          >
-                            吊销
-                          </button>
+                        复制链接
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="rounded-xl border border-slate-100 bg-white px-3 py-3">
+                    <div class="flex items-center justify-between gap-3">
+                      <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">已生成链接</p>
+                        <p class="mt-1 text-sm font-semibold text-slate-800">邀请管理</p>
+                      </div>
+                    </div>
+                    <div class="mt-3">
+                      <div v-if="groupInviteSettingsLoading" class="text-xs text-slate-500">邀请链接加载中…</div>
+                      <div v-else-if="!groupInviteEntries.length" class="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">
+                        暂无已生成的分享链接。
+                      </div>
+                      <div v-else class="grid gap-2">
+                        <div
+                          v-for="entry in groupInviteEntries"
+                          :key="`invite-dialog-entry-${entry.inviteId}`"
+                          class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3"
+                        >
+                          <div class="flex items-center justify-between gap-2">
+                            <p class="text-sm font-semibold text-slate-800">{{ inviteStatusLabel(entry) }}</p>
+                            <p class="text-[11px] text-slate-500">已用 {{ inviteUsageLabel(entry) }}</p>
+                          </div>
+                          <p class="mt-2 break-all text-xs leading-5 text-slate-600">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
+                          <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+                            <span>创建者 {{ entry.creatorNickname || `用户 ${entry.creatorUid.slice(0, 6)}` }}</span>
+                            <span>创建于 {{ formatDateTime(entry.createdAt) }}</span>
+                            <span>截止 {{ formatDateTime(entry.expiresAt) }}</span>
+                          </div>
+                          <div class="mt-3 flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              @click="copyInviteDialogLink(entry)"
+                              class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                            >
+                              复制
+                            </button>
+                            <button
+                              v-if="isActiveGroupOwner && inviteStatusLabel(entry) === '生效中'"
+                              type="button"
+                              @click="revokeGroupInvite(entry.inviteId)"
+                              class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
+                            >
+                              吊销
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1834,22 +1792,30 @@
             aria-label="Close nickname guide"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 26rem;">
-              <div class="border-b border-slate-100 px-4 py-3">
-                <p class="text-sm font-semibold text-slate-800">确认昵称</p>
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 32rem;">
+              <div class="border-b border-slate-100 px-4 py-4">
+                <p class="text-xs uppercase tracking-wide text-slate-400">首次设置</p>
+                <p class="mt-1 text-base font-semibold text-slate-800">先确认一下你的昵称</p>
+                <p class="mt-2 text-sm leading-6 text-slate-500">
+                  系统已经为这台设备分配了一个默认昵称。你可以直接使用，也可以先改成更顺手的名字。
+                </p>
               </div>
-              <div class="px-4 py-4">
-                <input
-                  v-model="nicknameInput"
-                  maxlength="24"
-                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                  placeholder="请输入昵称（1-24 字）"
-                />
+              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
+                <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+                  <p class="text-sm font-semibold text-slate-800">当前设备昵称</p>
+                  <input
+                    v-model="nicknameInput"
+                    maxlength="24"
+                    class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="请输入昵称（1-24 字）"
+                  />
+                  <p class="mt-2 text-xs text-slate-500">昵称全局唯一，后续也可以在设置里继续修改。</p>
+                </div>
                 <div class="mt-4 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     @click="closeNicknameGuide"
-                    class="text-xs font-medium text-slate-500"
+                    class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700"
                   >
                     先这样进入
                   </button>
@@ -1857,7 +1823,7 @@
                     type="button"
                     @click="submitNicknameGuide"
                     :disabled="nicknameSaving"
-                    class="text-xs font-semibold text-sky-600 disabled:opacity-60"
+                    class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
                   >
                     {{ nicknameGuideSubmitLabel }}
                   </button>
@@ -1875,20 +1841,17 @@
             aria-label="Close identity credential"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
-              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <p class="text-sm font-semibold text-slate-800">
-                  {{ identityCredentialModal.firstBind ? '绑定成功' : '身份凭证' }}
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
+              <div class="border-b border-slate-100 px-4 py-4">
+                <p class="text-xs uppercase tracking-wide text-slate-400">身份凭证</p>
+                <p class="mt-1 text-base font-semibold text-slate-800">
+                  {{ identityCredentialModal.firstBind ? '首次绑定成功，请先保存凭证' : '当前身份凭证' }}
                 </p>
-                <button
-                  type="button"
-                  @click="closeIdentityCredentialModal"
-                  class="text-xs font-medium text-slate-500"
-                >
-                  完成
-                </button>
+                <p class="mt-2 text-sm leading-6 text-slate-500">
+                  这是恢复当前身份的唯一凭证。换浏览器或恢复身份时，需要导入这份 TXT 或 recovery_code。
+                </p>
               </div>
-              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
+              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
                 <div class="mb-3 flex items-center gap-2">
                   <button
                     type="button"
@@ -1907,30 +1870,34 @@
                     English Mnemonic
                   </button>
                 </div>
-                <div class="rounded-xl bg-slate-50 px-3 py-3">
-                  <p class="break-words text-sm leading-7 text-slate-800">
+                <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    {{ identityCredentialModal.language === 'en' ? 'Natural Language Mnemonic' : '自然语言助记词' }}
+                  </p>
+                  <p class="mt-2 break-words text-sm leading-7 text-slate-800">
                     {{ activeIdentityMnemonic }}
                   </p>
-                  <p class="mt-2 text-[11px] text-slate-400">
-                    指纹：{{ formatIdentityDisplay(identityCredentialModal.fingerprint || '生成中...', 'credential-fingerprint', 12, 10) }}
+                  <p class="mt-2 text-[11px] text-slate-500">
+                    当前指纹：{{ formatIdentityDisplay(identityCredentialModal.fingerprint || '生成中...', 'credential-fingerprint', 12, 10) }}
                   </p>
-                  <p class="mt-1 text-[11px] font-medium text-rose-500">请妥善保管助记词和 TXT，泄露后他人可恢复你的身份。</p>
+                  <p class="mt-2 text-[11px] font-semibold text-rose-600">请务必妥善保管好助记词和 TXT 文件，泄露后他人可恢复你的身份。</p>
                 </div>
-                <div class="mt-3 rounded-xl bg-slate-50 px-3 py-3">
-                  <pre class="max-h-56 overflow-auto whitespace-pre-wrap break-words text-[11px] leading-5 text-slate-600">{{ activeIdentityCredentialFileText }}</pre>
+                <div class="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
+                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">TXT 内容预览</p>
+                  <pre class="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white px-3 py-3 text-[11px] leading-5 text-slate-700">{{ activeIdentityCredentialFileText }}</pre>
                 </div>
-                <div class="mt-4 flex items-center justify-end gap-3">
+                <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
                   <button
                     type="button"
                     @click="downloadIdentityCredential"
-                    class="text-xs font-semibold text-sky-600"
+                    class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white"
                   >
                     下载 TXT
                   </button>
                   <button
                     type="button"
                     @click="closeIdentityCredentialModal"
-                    class="text-xs font-medium text-slate-500"
+                    class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700"
                   >
                     我已保存
                   </button>
@@ -2162,56 +2129,57 @@
             aria-label="Close leave group dialog"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
-              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
+              <div class="border-b border-slate-100 px-4 py-3">
                 <p class="text-sm font-semibold text-slate-800">退出群聊</p>
-                <button
-                  type="button"
-                  @click="closeLeaveGroupDialog"
-                  class="text-xs font-medium text-slate-500"
-                >
-                  取消
-                </button>
+                <p class="mt-1 text-xs text-slate-500">确认退出"{{ leaveGroupDialog.name || leaveGroupDialog.groupId }}"？</p>
               </div>
               <div class="px-4 py-4">
-                <p class="text-sm text-slate-600">确认退出"{{ leaveGroupDialog.name || leaveGroupDialog.groupId }}"？</p>
                 <template v-if="leaveGroupDialogIsOwner">
-                  <p class="mt-2 text-sm text-slate-600">你是群主，退出前需要选择后续处理方式。</p>
-                  <div class="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+                  <p class="text-sm leading-6 text-slate-600">你是群主，退出前需要选择群聊后续处理方式。</p>
+                  <div class="mt-4 grid gap-2">
                     <button
                       type="button"
                       @click="leaveGroupDialog.ownerAction = 'inherit'"
-                      class="w-full px-3 py-3 text-left active:bg-slate-50"
-                      :class="leaveGroupDialog.ownerAction === 'inherit' ? 'bg-sky-50/50' : ''"
+                      class="rounded-2xl border px-3 py-3 text-left transition"
+                      :class="leaveGroupDialog.ownerAction === 'inherit' ? 'border-sky-300 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-700'"
                     >
-                      <p class="text-sm font-semibold" :class="leaveGroupDialog.ownerAction === 'inherit' ? 'text-sky-700' : 'text-slate-800'">顺位继承</p>
-                      <p class="mt-0.5 text-xs text-slate-500">
+                      <p class="text-sm font-semibold">顺位继承</p>
+                      <p class="mt-1 text-xs leading-5 text-slate-500">
                         {{
                           leaveGroupDialogSuccessorLabel
-                            ? `将群主转给 ${leaveGroupDialogSuccessorLabel}，然后退出。`
-                            : '按入群顺序自动把群主转给下一位成员，然后退出。'
+                            ? `将按入群顺序把群主转给 ${leaveGroupDialogSuccessorLabel}，然后你退出群聊。`
+                            : '按入群顺序自动把群主转给下一位成员，然后你退出群聊。'
                         }}
                       </p>
                     </button>
                     <button
                       type="button"
                       @click="leaveGroupDialog.ownerAction = 'dissolve'"
-                      class="w-full px-3 py-3 text-left active:bg-slate-50"
-                      :class="leaveGroupDialog.ownerAction === 'dissolve' ? 'bg-rose-50/50' : ''"
+                      class="rounded-2xl border px-3 py-3 text-left transition"
+                      :class="leaveGroupDialog.ownerAction === 'dissolve' ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-slate-200 bg-white text-slate-700'"
                     >
-                      <p class="text-sm font-semibold" :class="leaveGroupDialog.ownerAction === 'dissolve' ? 'text-rose-700' : 'text-slate-800'">解散群聊</p>
-                      <p class="mt-0.5 text-xs text-slate-500">移除全部成员，清空成员关系和邀请链接。</p>
+                      <p class="text-sm font-semibold">解散群聊</p>
+                      <p class="mt-1 text-xs leading-5 text-slate-500">移除全部成员并清空该群的成员关系和邀请链接。</p>
                     </button>
                   </div>
-                  <p v-if="leaveGroupDialog.ownerAction === 'inherit' && !leaveGroupDialogCanInherit" class="mt-2 text-xs text-amber-500">
+                  <p v-if="leaveGroupDialog.ownerAction === 'inherit' && !leaveGroupDialogCanInherit" class="mt-3 text-xs text-amber-600">
                     当前未发现其他成员，顺位继承可能无法执行。
                   </p>
                 </template>
-                <div class="mt-4 flex items-center justify-end">
+                <p v-else class="text-sm leading-6 text-slate-600">退出后当前会话会从列表移除，后续需要邀请链接才能重新加入。</p>
+                <div class="mt-4 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    @click="closeLeaveGroupDialog"
+                    class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700"
+                  >
+                    取消
+                  </button>
                   <button
                     type="button"
                     @click="confirmLeaveGroup"
-                    class="text-xs font-semibold text-rose-600"
+                    class="rounded-full border border-rose-200 bg-rose-50 px-4 py-1.5 text-xs font-semibold text-rose-700"
                   >
                     {{ leaveGroupDialogIsOwner ? '确认处理并退出' : '确认退出' }}
                   </button>
@@ -2374,79 +2342,126 @@
               class="system-notice-shell absolute flex flex-col overflow-hidden border border-slate-200/90 bg-white/100 shadow-[0_24px_56px_rgba(15,23,42,0.16)]"
               :class="
                 mobileViewport
-                  ? 'inset-y-2 left-0 w-[min(88vw,22rem)] rounded-r-2xl rounded-l-none'
+                  ? 'inset-y-2 left-0 w-[min(88vw,22rem)] rounded-r-[30px] rounded-l-none'
                   : systemNoticeFullscreen
                     ? 'inset-4 rounded-2xl'
                     : 'left-1/2 top-1/2 h-[min(82vh,44rem)] w-[min(92vw,42rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl'
               "
             >
-              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <div class="min-w-0 flex items-center gap-2">
-                  <p class="text-sm font-semibold text-slate-800">系统通知</p>
-                  <span v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)" class="rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">{{ getUnreadCount(SYSTEM_NOTICE_GROUP) }}</span>
+              <div class="border-b border-slate-100 px-4 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">系统通知</p>
+                    <p class="truncate text-sm font-semibold text-slate-800">推荐操作会在这里集中展示</p>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      v-if="!mobileViewport"
+                      type="button"
+                      @click="systemNoticeFullscreen = !systemNoticeFullscreen"
+                      class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                    >
+                      {{ systemNoticeFullscreen ? '退出全屏' : '全屏' }}
+                    </button>
+                    <button
+                      type="button"
+                      @click="closeSystemNoticePanel"
+                      class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                    >
+                      关闭
+                    </button>
+                  </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div
+                  class="mt-3 flex items-center justify-between gap-3 bg-slate-50/90"
+                  :class="mobileViewport ? 'rounded-[18px] px-3 py-1.5' : 'rounded-[22px] px-3 py-2'"
+                >
+                  <p class="text-xs text-slate-500">
+                    {{ systemNoticeMessages.length ? `最近 ${systemNoticeMessages.length} 条通知` : '暂无系统通知' }}
+                  </p>
                   <button
-                    v-if="!mobileViewport"
+                    v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
                     type="button"
-                    @click="systemNoticeFullscreen = !systemNoticeFullscreen"
-                    class="text-xs font-medium text-slate-500"
+                    @click="clearUnread(SYSTEM_NOTICE_GROUP)"
+                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
                   >
-                    {{ systemNoticeFullscreen ? '退出全屏' : '全屏' }}
-                  </button>
-                  <button
-                    type="button"
-                    @click="closeSystemNoticePanel"
-                    class="text-xs font-medium text-slate-500"
-                  >
-                    完成
+                    标为已读
                   </button>
                 </div>
               </div>
-              <div class="system-notice-body flex-1 overflow-y-auto" style="--dialog-offset: 6rem;">
+              <div class="system-notice-body flex-1 overflow-y-auto px-3 py-3">
                 <div
                   v-if="!systemNoticeMessages.length"
-                  class="px-4 py-8 text-center"
+                  class="border border-slate-200 bg-slate-50 text-center"
+                  :class="mobileViewport ? 'rounded-[18px] px-3 py-5' : 'rounded-[24px] px-4 py-8'"
                 >
-                  <p class="text-sm text-slate-500">暂无系统通知</p>
+                  <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
+                  <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
                 </div>
-                <div v-else class="divide-y divide-slate-100">
+                <div v-else class="grid" :class="mobileViewport ? 'gap-2' : 'gap-3'">
                   <div
                     v-for="msg in systemNoticeMessages"
                     :key="`system-panel-${msg.msgId}`"
-                    class="px-4 py-3"
+                    class="border text-left shadow-sm"
+                    :class="[systemCardSurfaceClass(msg), mobileViewport ? 'rounded-[18px] px-3 py-3' : 'rounded-[26px] px-4 py-4']"
                   >
-                    <div class="flex items-start justify-between gap-2">
-                      <div class="min-w-0 flex-1">
-                        <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
-                        <p class="mt-0.5 text-xs leading-5 text-slate-500">{{ msg.systemText || '' }}</p>
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-center gap-2">
+                        <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
+                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
+                          {{ systemCardEyebrow(msg) }}
+                        </p>
                       </div>
                       <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(msg.ts) }}</p>
                     </div>
-                    <div v-if="systemCardPreviewUsers(msg).length" class="mt-2 flex items-center gap-2">
-                      <div class="flex -space-x-2">
+                    <div class="flex flex-col" :class="mobileViewport ? 'mt-2 gap-2' : 'mt-3 gap-3'">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
+                          <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
+                        </div>
                         <div
-                          v-for="(user, idx) in systemCardPreviewUsers(msg)"
-                          :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
-                          class="avatar h-7 w-7 rounded-full border-2 border-white text-[10px] font-semibold text-white"
-                          :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
+                          v-if="systemMessageTargetLabel(msg)"
+                          class="shrink-0 bg-white/85 text-right"
+                          :class="mobileViewport ? 'rounded-xl px-2.5 py-1.5' : 'rounded-2xl px-3 py-2'"
                         >
-                          {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                          <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">目标</p>
+                          <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
                         </div>
                       </div>
-                      <p class="min-w-0 truncate text-xs text-slate-500">{{ systemCardPreviewSummary(msg) }}</p>
+                      <div v-if="systemCardPreviewUsers(msg).length" class="flex items-center" :class="mobileViewport ? 'gap-2' : 'gap-3'">
+                        <div class="flex -space-x-2">
+                          <div
+                            v-for="(user, idx) in systemCardPreviewUsers(msg)"
+                            :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
+                            class="avatar rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                            :class="mobileViewport ? 'h-7 w-7' : 'h-9 w-9'"
+                            :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
+                          >
+                            {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
+                          </div>
+                        </div>
+                        <p class="min-w-0 text-xs leading-5 text-slate-500" :class="mobileViewport ? 'clamp-1' : 'clamp-2'">{{ systemCardPreviewSummary(msg) }}</p>
+                      </div>
                     </div>
-                    <div v-if="systemCardActions(msg).length" class="mt-2 flex flex-wrap gap-1.5">
-                      <button
-                        v-for="(item, idx) in systemCardActions(msg)"
-                        :key="`system-panel-action-${msg.msgId}-${idx}`"
-                        type="button"
-                        @click="handleSystemAction(msg, item)"
-                        class="text-xs font-semibold"
-                        :class="idx === 0 ? 'text-sky-600' : 'text-slate-500'"
-                      >
-                        {{ item.label || item.action || '处理' }}
-                      </button>
+                    <div
+                      v-if="systemCardActions(msg).length"
+                      class="bg-white/70"
+                      :class="mobileViewport ? 'mt-3 rounded-[16px] p-1.5' : 'mt-4 rounded-[22px] p-2'"
+                    >
+                      <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">可用操作</p>
+                      <div class="mt-2 flex flex-wrap" :class="mobileViewport ? 'gap-1.5' : 'gap-2'">
+                        <button
+                          v-for="(item, idx) in systemCardActions(msg)"
+                          :key="`system-panel-action-${msg.msgId}-${idx}`"
+                          type="button"
+                          @click="handleSystemAction(msg, item)"
+                          class="rounded-full text-xs font-semibold"
+                          :class="[mobileViewport ? 'px-2.5 py-1' : 'px-3 py-1.5', idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700']"
+                        >
+                          {{ item.label || item.action || '处理' }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2464,24 +2479,40 @@
               aria-label="Close explanation"
             ></button>
             <div class="viewport-modal-scroll">
-              <div class="dialog-shell relative w-full overflow-hidden rounded-t-2xl border border-slate-200/90 bg-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] md:max-w-sm md:rounded-2xl">
-                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                  <p class="text-sm font-semibold text-slate-800">{{ explanationModal.title }}</p>
+              <div class="dialog-shell relative w-full rounded-t-[30px] border border-slate-200/90 bg-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] md:max-w-md md:rounded-2xl">
+                <div class="viewport-modal-body px-5 py-5" style="--dialog-offset: 6rem;">
+                 <div class="flex items-start justify-between gap-3">
+                  <div class="min-w-0">
+                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">原因说明</p>
+                    <p class="mt-1 text-base font-semibold text-slate-900">{{ explanationModal.title }}</p>
+                  </div>
                   <button
                     type="button"
                     @click="closeExplanationModal"
-                    class="text-xs font-medium text-slate-500"
+                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500"
+                    aria-label="Close explanation"
                   >
-                    完成
+                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                      <path d="M6 6l12 12M18 6 6 18"/>
+                    </svg>
                   </button>
                 </div>
-                <div class="px-4 py-4">
-                  <p class="text-sm leading-6 text-slate-600">{{ explanationModal.text }}</p>
-                  <div v-if="explanationModal.tip" class="mt-3 rounded-xl bg-slate-50 px-3 py-3">
-                    <p class="text-xs text-slate-500">{{ explanationModal.tip }}</p>
-                  </div>
+                <p class="mt-4 text-sm leading-6 text-slate-600">{{ explanationModal.text }}</p>
+                <div v-if="explanationModal.tip" class="mt-4 rounded-[20px] bg-slate-50 px-4 py-3">
+                  <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">建议</p>
+                  <p class="mt-1 text-sm leading-6 text-slate-600">{{ explanationModal.tip }}</p>
+                </div>
+                <div class="mt-5 flex justify-end">
+                  <button
+                    type="button"
+                    @click="closeExplanationModal"
+                    class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    我知道了
+                  </button>
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </Transition>
@@ -2494,64 +2525,85 @@
             aria-label="Close contacts"
           ></button>
           <div class="viewport-modal-scroll">
-          <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 30rem;">
+          <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 38rem;">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <p class="text-sm font-semibold text-slate-800">通讯录</p>
+              <div>
+                <p class="text-xs uppercase tracking-wide text-slate-400">通讯录</p>
+                <p class="text-sm font-semibold text-slate-800">设备绑定联系人</p>
+              </div>
               <button
                 type="button"
                 @click="contactsOpen = false"
-                class="text-xs font-medium text-slate-500"
+                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
               >
-                完成
+                关闭
               </button>
             </div>
             <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
-              <div class="flex items-center gap-2">
-                <input
-                  v-model="contactQuery"
-                  class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                  placeholder="搜索联系人、指纹、地区"
-                />
-                <button
-                  type="button"
-                  @click="requestContacts"
-                  class="shrink-0 text-xs font-medium text-sky-600"
-                >
-                  刷新
-                </button>
-              </div>
-              <div class="mt-2 flex items-center gap-4 text-[11px] text-slate-400">
-                <span>{{ contactCards.length }} 联系人</span>
-                <span>{{ onlineContactCards.length }} 在线</span>
-                <span v-if="contactRequestCards.length">{{ contactRequestCards.length }} 待处理</span>
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto">
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">联系人</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
+                  </div>
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">在线</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ onlineContactCards.length }}</p>
+                  </div>
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
+                  </div>
+                </div>
+                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 lg:w-[20rem]">
+                  <input
+                    v-model="contactQuery"
+                    class="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="搜索联系人、指纹、地区"
+                  />
+                  <button
+                    type="button"
+                    @click="requestContacts"
+                    class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                  >
+                    刷新
+                  </button>
+                </div>
               </div>
               <div
                 v-if="contactRequestCards.length"
-                class="mt-3 rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-3"
+                class="mt-3 rounded-2xl border border-amber-100 bg-amber-50/60 px-3 py-3"
               >
-                <p class="text-xs font-semibold text-amber-600">待处理请求</p>
-                <div class="mt-2 divide-y divide-amber-100">
+                <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">待处理请求</p>
+                <div class="mt-2 grid gap-2">
                   <div
                     v-for="req in contactRequestCards"
                     :key="`req-${req.requestId}`"
-                    class="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
+                    class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div class="min-w-0">
-                      <p class="truncate text-sm font-medium text-slate-800">用户 {{ req.uidShort }}</p>
-                      <p class="truncate text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
+                      <p class="truncate text-sm font-semibold text-slate-800">
+                        用户 {{ req.uidShort }}
+                      </p>
+                      <p class="truncate text-xs text-slate-500">
+                        {{ req.os }} · {{ req.location }}
+                      </p>
+                      <p class="truncate text-[11px] text-slate-400">
+                        指纹：{{ req.fingerprintShort }}
+                      </p>
                     </div>
-                    <div class="flex shrink-0 items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-2">
                       <button
                         type="button"
                         @click="acceptContactRequest(req)"
-                        class="text-[11px] font-medium text-sky-600"
+                        class="shrink-0 whitespace-nowrap rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white"
                       >
                         同意
                       </button>
                       <button
                         type="button"
                         @click="declineContactRequest(req)"
-                        class="text-[11px] font-medium text-slate-400"
+                        class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
                       >
                         拒绝
                       </button>
@@ -2559,89 +2611,125 @@
                   </div>
                 </div>
               </div>
-              <div v-if="contactsLoading" class="mt-3 py-3 text-center text-xs text-slate-400">
-                加载中…
+              <div v-if="contactsLoading" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
+                正在加载通讯录…
               </div>
-              <div v-else-if="!filteredContactCards.length" class="mt-3 py-3 text-center text-xs text-slate-400">
+              <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
                 {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人，可在"实时在线"列表中添加。' }}
               </div>
-              <div v-else class="mt-3">
-                <div v-if="onlineContactCards.length">
-                  <p class="mb-1 text-[11px] font-medium text-emerald-600">在线 · {{ onlineContactCards.length }} 位</p>
-                  <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-                    <div
-                      v-for="contact in onlineContactCards"
-                      :key="`contact-online-${contact.contactFingerprint}`"
-                      class="flex items-center justify-between gap-2 px-3 py-2.5 active:bg-slate-50"
-                    >
-                      <div class="min-w-0 flex items-center gap-2.5">
-                        <div
-                          class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white"
-                          :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                        >
-                          {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                        </div>
-                        <div class="min-w-0">
-                          <p
-                            class="cursor-pointer truncate text-sm font-medium text-slate-800"
-                            @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
-                            :class="isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`) ? 'whitespace-normal break-all' : ''"
-                          >
-                            {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                          </p>
-                          <p class="truncate text-[11px] text-slate-400">{{ `${contact.os} · ${contact.location}` }}</p>
-                        </div>
+              <div v-else class="mt-3 grid gap-4">
+                <div v-if="onlineContactCards.length" class="grid gap-2">
+                  <div class="flex items-center justify-between px-1">
+                    <p class="text-xs font-semibold text-emerald-700">在线联系人</p>
+                    <p class="text-[11px] text-slate-400">{{ onlineContactCards.length }} 位</p>
+                  </div>
+                  <div
+                    v-for="contact in onlineContactCards"
+                    :key="`contact-online-${contact.contactFingerprint}`"
+                    class="flex flex-col gap-3 rounded-[22px] border border-emerald-100 bg-emerald-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="min-w-0 flex items-center gap-3">
+                      <div
+                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
+                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
+                      >
+                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
                       </div>
-                      <div class="flex shrink-0 items-center gap-3">
-                        <button
-                          type="button"
-                          @click="startContactChat(contact)"
-                          class="text-[11px] font-medium text-sky-600"
+                      <div class="min-w-0">
+                        <p
+                          class="cursor-pointer text-sm font-semibold text-slate-800"
+                          :class="
+                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
                         >
-                          私聊
-                        </button>
-                        <button
-                          type="button"
-                          @click="removeContact(contact)"
-                          class="text-[11px] font-medium text-slate-400"
+                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
+                        </p>
+                        <p
+                          class="cursor-pointer text-[11px] font-mono text-slate-500"
+                          :class="
+                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
                         >
-                          移除
-                        </button>
+                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
+                        </p>
+                        <p class="truncate text-xs text-slate-500">{{ `${contact.os} · ${contact.location}` }}</p>
                       </div>
                     </div>
-                  </div>
-                </div>
-
-                <div v-if="offlineContactCards.length" :class="onlineContactCards.length ? 'mt-3' : ''">
-                  <p class="mb-1 text-[11px] font-medium text-slate-500">离线 · {{ offlineContactCards.length }} 位</p>
-                  <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
-                    <div
-                      v-for="contact in offlineContactCards"
-                      :key="`contact-offline-${contact.contactFingerprint}`"
-                      class="flex items-center justify-between gap-2 px-3 py-2.5"
-                    >
-                      <div class="min-w-0 flex items-center gap-2.5">
-                        <div
-                          class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white"
-                          :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                        >
-                          {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                        </div>
-                        <div class="min-w-0">
-                          <p class="truncate text-sm font-medium text-slate-700">
-                            {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                          </p>
-                          <p class="truncate text-[11px] text-slate-400">{{ contact.os }} · {{ contact.location }}</p>
-                        </div>
-                      </div>
+                    <div class="flex items-center gap-2">
+                      <button
+                        type="button"
+                        @click="startContactChat(contact)"
+                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                      >
+                        私聊
+                      </button>
                       <button
                         type="button"
                         @click="removeContact(contact)"
-                        class="shrink-0 text-[11px] font-medium text-slate-400"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
                       >
                         移除
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                <div v-if="offlineContactCards.length" class="grid gap-2">
+                  <div class="flex items-center justify-between px-1">
+                    <p class="text-xs font-semibold text-slate-600">离线联系人</p>
+                    <p class="text-[11px] text-slate-400">{{ offlineContactCards.length }} 位</p>
+                  </div>
+                  <div
+                    v-for="contact in offlineContactCards"
+                    :key="`contact-offline-${contact.contactFingerprint}`"
+                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div class="min-w-0 flex items-center gap-3">
+                      <div
+                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
+                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
+                      >
+                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
+                      </div>
+                      <div class="min-w-0">
+                        <p
+                          class="cursor-pointer text-sm font-semibold text-slate-800"
+                          :class="
+                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                        >
+                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
+                        </p>
+                        <p
+                          class="cursor-pointer text-[11px] font-mono text-slate-500"
+                          :class="
+                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
+                              ? 'whitespace-normal break-all'
+                              : 'truncate'
+                          "
+                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
+                        >
+                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
+                        </p>
+                        <p class="truncate text-xs text-slate-500">离线 · {{ contact.os }} · {{ contact.location }}</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      @click="removeContact(contact)"
+                      class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                    >
+                      移除
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2816,17 +2904,20 @@
             class="pointer-events-none absolute inset-x-3 bottom-full z-20 mb-3"
           >
             <div
-              class="mobile-voice-panel voice-mobile-panel pointer-events-auto rounded-2xl border border-slate-200/90 px-4 py-3 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+              class="mobile-voice-panel voice-mobile-panel pointer-events-auto rounded-2xl border border-slate-200/90 px-4 py-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
               :class="voiceComposerShellClass"
             >
               <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 min-w-0">
                   <span class="voice-recording-dot h-3 w-3 shrink-0 rounded-full bg-rose-500"></span>
-                  <p class="truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
+                  <div class="min-w-0">
+                    <p class="truncate text-base font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
+                    <p class="mt-0.5 text-xs leading-5 text-slate-500">{{ voiceComposerSubtitle }}</p>
+                  </div>
                 </div>
                 <p class="shrink-0 text-sm font-semibold tabular-nums text-slate-700">{{ voiceComposerElapsedLabel }}</p>
               </div>
-              <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-3 flex items-center justify-center gap-2">
+              <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-4 flex items-center justify-center gap-2">
                 <span class="voice-waiting-dot"></span>
                 <span class="voice-waiting-dot"></span>
                 <span class="voice-waiting-dot"></span>
@@ -3179,7 +3270,6 @@ const inviteDialog = ref({
   generatedInviteCode: '',
   generatedShortCode: '',
   generatedExpiresAt: null,
-  showExisting: false,
 });
 const unreadCounts = ref({});
 const banner = ref({ open: false, groupId: '', title: '', text: '', canEnableNotify: false, clickable: true });
@@ -6766,7 +6856,6 @@ const defaultInviteDialogState = (groupId = '') => ({
   generatedInviteCode: '',
   generatedShortCode: '',
   generatedExpiresAt: null,
-  showExisting: false,
 });
 
 const pendingInviteRequest = ref({ reqId: '', groupId: '', mode: 'dialog' });
@@ -9609,10 +9698,10 @@ const openGroup = (groupId) => {
   const existing = groups.value.find((group) => group?.id === gid);
   if (gid === SYSTEM_GROUP) {
     systemNoticeOpen.value = false;
+    mobileDrawerMode.value = 'home';
     if (mobileViewport.value) {
       mobilePrimaryTab.value = 'messages';
     }
-    mobileDrawerMode.value = 'home';
     selectGroup(gid);
     return;
   }
@@ -9622,8 +9711,8 @@ const openGroup = (groupId) => {
     return;
   }
   systemNoticeOpen.value = false;
-  mobileDrawerMode.value = 'group';
   ensureGroupInList(gid, isDirectGroupId(gid) ? nameForDirectGroup(gid) : (existing?.name || ''));
+  mobileDrawerMode.value = 'group';
   selectGroup(gid);
   if (isDirectGroupId(gid) && !hasJoinedGroup(gid)) {
     joinGroup(gid, '', { select: false });
@@ -11477,6 +11566,17 @@ onBeforeUnmount(() => {
   background: rgba(148, 163, 184, 0.5);
 }
 
+
+.voice-recording-dot {
+  animation: voice-recording-pulse 1s ease-in-out infinite;
+}
+@keyframes voice-recording-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+.voice-active {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
 .chat-pattern {
   background-image:
     radial-gradient(circle at 25px 25px, rgba(148, 163, 184, 0.09) 2px, transparent 0),
@@ -11702,19 +11802,6 @@ button:active:not(:disabled) {
 
 .voice-recorder-dot {
   animation: voice-recorder-pulse 1.2s ease-in-out infinite;
-}
-
-.voice-recording-dot {
-  animation: voice-recording-pulse 1s ease-in-out infinite;
-}
-
-@keyframes voice-recording-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.7); }
-}
-
-.voice-active {
-  border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 .voice-waiting-dot {
