@@ -286,19 +286,8 @@
 
         <header class="mobile-header-shell relative z-10 border-b border-white/60 bg-white/92 px-4 py-3 md:px-6">
           <template v-if="mobileViewport">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0 flex-1">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {{ mobileHeaderEyebrow }}
-                </p>
-                <div class="mt-0.5 flex min-w-0 items-center gap-2">
-                  <h1 class="truncate text-[15px] font-semibold text-slate-800">{{ pageHeaderTitle }}</h1>
-                  <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="connectionDotClass"></span>
-                </div>
-                <p v-if="connectionState !== 'connected'" class="mt-1 text-[11px] leading-4 text-slate-500">
-                  {{ mobileConnectionHint }}
-                </p>
-              </div>
+            <div class="flex items-center gap-2">
+              <!-- 左侧：返回按钮 or 汉堡菜单 -->
               <button
                 v-if="activeGroup !== SYSTEM_GROUP"
                 type="button"
@@ -325,6 +314,28 @@
                   class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
                   aria-hidden="true"
                 ></span>
+              </button>
+              <!-- 中间：标题 -->
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-2">
+                  <h1 class="truncate text-[15px] font-semibold text-slate-800">{{ pageHeaderTitle }}</h1>
+                  <span class="h-2.5 w-2.5 shrink-0 rounded-full" :class="connectionDotClass"></span>
+                </div>
+                <p v-if="connectionState !== 'connected'" class="mt-0.5 truncate text-[11px] leading-4 text-slate-500">
+                  {{ mobileConnectionHint }}
+                </p>
+              </div>
+              <!-- 右侧：群设置按钮 -->
+              <button
+                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
+                type="button"
+                @click="openGroupManage"
+                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
+                aria-label="Group settings"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
               </button>
             </div>
           </template>
