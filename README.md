@@ -18,6 +18,7 @@ Product concept, interaction model, and architecture are original to this projec
 - Client-side encrypted message flow with delivery, read, retry, and outbox states
 - Group event notices rendered inside the group timeline instead of a separate system inbox
 - Owner approval for joins initiated through member-generated invite links
+- One invite link per user per group; link creator and group owner can both revoke
 - Reconnect recovery for regular group membership, group metadata, and pending approval results
 - Mobile-first navigation structured as `Messages / Contacts / Settings`
 
