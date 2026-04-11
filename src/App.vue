@@ -1044,52 +1044,64 @@
             </div>
           </div>
 
-          <div v-else-if="isRootSettingsPage" class="mobile-root-stack mx-auto flex w-full max-w-3xl flex-col gap-2 pb-4">
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">设置</p>
-              <p class="mt-1 text-sm font-semibold text-slate-800">身份、通知与隐私</p>
-            </div>
-
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <p class="text-sm font-semibold text-slate-800">昵称</p>
-              <p class="mt-1 text-xs text-slate-500">昵称全局唯一，绑定当前设备。</p>
-              <div class="mt-3 flex gap-2">
-                <input
-                  v-model="nicknameInput"
-                  maxlength="24"
-                  class="w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                  placeholder="请输入昵称（1-24 字）"
-                />
-                <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="rounded-full bg-slate-900 px-4 py-2 text-xs font-semibold text-white disabled:opacity-60">
-                  {{ nicknameSaving ? '保存中' : '保存' }}
-                </button>
+          <div v-else-if="isRootSettingsPage" class="mobile-root-stack mx-auto flex w-full max-w-3xl flex-col gap-3 pb-4">
+            <!-- 昵称 -->
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div class="px-4 py-3">
+                <div class="flex items-center justify-between gap-3">
+                  <p class="text-sm text-slate-800">昵称</p>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="nicknameInput"
+                      maxlength="24"
+                      class="w-32 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 text-right outline-none placeholder:text-slate-400"
+                      placeholder="未设置"
+                    />
+                    <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="text-xs font-medium text-sky-600 disabled:opacity-60">
+                      {{ nicknameSaving ? '…' : '保存' }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <p class="text-sm font-semibold text-slate-800">身份凭证</p>
-              <p class="mt-1 text-xs leading-5 text-slate-500">请妥善保管好助记词和 TXT 文件。丢失后将无法恢复当前身份。</p>
-              <div class="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  @click="identityMnemonicLanguage = 'zh'"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold"
-                  :class="identityMnemonicLanguage === 'zh' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'"
-                >
-                  中文助记词
-                </button>
-                <button
-                  type="button"
-                  @click="identityMnemonicLanguage = 'en'"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold"
-                  :class="identityMnemonicLanguage === 'en' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'"
-                >
-                  English Mnemonic
-                </button>
+            <!-- 身份与安全 -->
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div class="border-b border-slate-100 px-4 py-2.5">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">身份与安全</p>
               </div>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <button type="button" @click="exportCurrentIdentityCredential" class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white">查看助记词</button>
-                <button type="button" @click="triggerIdentityCredentialFilePicker" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700">导入 TXT</button>
+              <div class="divide-y divide-slate-100">
+                <div class="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p class="text-sm text-slate-800">助记词语言</p>
+                  </div>
+                  <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                    <button
+                      type="button"
+                      @click="identityMnemonicLanguage = 'zh'"
+                      class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                      :class="identityMnemonicLanguage === 'zh' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    >
+                      中文
+                    </button>
+                    <button
+                      type="button"
+                      @click="identityMnemonicLanguage = 'en'"
+                      class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                      :class="identityMnemonicLanguage === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    >
+                      EN
+                    </button>
+                  </div>
+                </div>
+                <button type="button" @click="exportCurrentIdentityCredential" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                  <p class="text-sm text-slate-800">查看助记词</p>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+                <button type="button" @click="triggerIdentityCredentialFilePicker" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                  <p class="text-sm text-slate-800">导入 TXT 凭证</p>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
               </div>
               <input
                 ref="identityCredentialFilePicker"
@@ -1098,87 +1110,82 @@
                 class="hidden"
                 @change="onPickIdentityCredentialFile"
               />
-              <textarea
-                v-model="identityCredentialImport"
-                rows="4"
-                class="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-800 outline-none placeholder:text-slate-400"
-                placeholder="粘贴助记词、TXT 全文或 recovery_code"
-              ></textarea>
-              <div class="mt-2 flex justify-end">
-                <button type="button" @click="restoreIdentityCredential" class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">恢复身份</button>
-              </div>
-            </div>
-
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <p class="text-sm font-semibold text-slate-800">界面大小</p>
-              <p class="mt-1 text-xs text-slate-500">调整字体、卡片和主要内容的整体显示尺寸。</p>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <button
-                  v-for="item in sizeSettingOptions"
-                  :key="`root-scale-${item.value}`"
-                  type="button"
-                  @click="setUiScaleLevel(item.value)"
-                  class="rounded-full px-3 py-1.5 text-xs font-semibold"
-                  :class="uiScale === item.value ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
-                >
-                  {{ item.label }}
-                </button>
-              </div>
-            </div>
-
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-800">系统通知</p>
-                  <p class="mt-1 text-xs text-slate-500">需要浏览器授权</p>
+              <div class="border-t border-slate-100 px-4 py-3">
+                <textarea
+                  v-model="identityCredentialImport"
+                  rows="3"
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                  placeholder="粘贴助记词或 recovery_code 以恢复身份"
+                ></textarea>
+                <div class="mt-2 flex justify-end">
+                  <button type="button" @click="restoreIdentityCredential" class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">恢复身份</button>
                 </div>
-                <button type="button" @click="toggleSystemNotify" class="rounded-full px-3 py-1.5 text-xs font-semibold" :class="systemNotifyEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700'">
-                  {{ systemNotifyEnabled ? '已开启' : '已关闭' }}
-                </button>
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-800">提示音</p>
-                  <p class="mt-1 text-xs text-slate-500">新消息时播放</p>
+            <!-- 通用设置 -->
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div class="border-b border-slate-100 px-4 py-2.5">
+                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">通用</p>
+              </div>
+              <div class="divide-y divide-slate-100">
+                <div class="flex items-center justify-between px-4 py-3">
+                  <p class="text-sm text-slate-800">界面大小</p>
+                  <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                    <button
+                      v-for="item in sizeSettingOptions"
+                      :key="`root-scale-${item.value}`"
+                      type="button"
+                      @click="setUiScaleLevel(item.value)"
+                      class="rounded-md px-2 py-1 text-xs font-medium transition"
+                      :class="uiScale === item.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    >
+                      {{ item.label }}
+                    </button>
+                  </div>
                 </div>
-                <button type="button" @click="toggleSound" class="rounded-full px-3 py-1.5 text-xs font-semibold" :class="soundEnabled ? 'bg-sky-500 text-white' : 'bg-slate-200 text-slate-700'">
-                  {{ soundEnabled ? '已开启' : '已关闭' }}
-                </button>
+                <div class="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p class="text-sm text-slate-800">系统通知</p>
+                    <p class="text-[11px] text-slate-400">需浏览器授权</p>
+                  </div>
+                  <button type="button" @click="toggleSystemNotify" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="systemNotifyEnabled ? 'bg-emerald-500' : 'bg-slate-200'">
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="systemNotifyEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between px-4 py-3">
+                  <p class="text-sm text-slate-800">提示音</p>
+                  <button type="button" @click="toggleSound" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="soundEnabled ? 'bg-sky-500' : 'bg-slate-200'">
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="soundEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between px-4 py-3">
+                  <div>
+                    <p class="text-sm text-slate-800">陌生人私聊</p>
+                    <p class="text-[11px] text-slate-400">{{ dmContactsOnly ? '仅通讯录可私聊' : '允许陌生人请求' }}</p>
+                  </div>
+                  <button type="button" @click="toggleDmPreference" :disabled="dmPreferenceSaving" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors disabled:opacity-60" :class="!dmContactsOnly ? 'bg-emerald-500' : 'bg-slate-200'">
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="!dmContactsOnly ? 'translate-x-5' : 'translate-x-1'"></span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div class="flex items-center justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-800">陌生人私聊</p>
-                  <p class="mt-1 text-xs text-slate-500">控制是否允许陌生设备发起请求</p>
-                </div>
-                <button type="button" @click="toggleDmPreference" :disabled="dmPreferenceSaving" class="rounded-full px-3 py-1.5 text-xs font-semibold disabled:opacity-60" :class="dmContactsOnly ? 'bg-slate-900 text-white' : 'bg-emerald-500 text-white'">
-                  {{ dmContactsOnly ? '仅通讯录' : '允许请求' }}
-                </button>
-              </div>
-            </div>
-
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-              <div class="flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-800">版本号</p>
-                  <p class="mt-1 text-xs text-slate-500">连续点击 4 次可开启本次会话的 Debug 模式。</p>
-                </div>
+            <!-- 版本 -->
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+              <div class="flex items-center justify-between px-4 py-3">
+                <p class="text-sm text-slate-800">版本</p>
                 <button
                   type="button"
                   @click="handleVersionTap"
-                  class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                  class="text-xs text-slate-400"
                 >
                   v{{ APP_VERSION }}
                 </button>
               </div>
-              <div v-if="debugModeEnabled" class="mt-3 rounded-2xl border border-sky-100 bg-sky-50 px-3 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-sky-600">Debug</p>
-                <p class="mt-1 text-sm font-semibold text-slate-800">当前设备：{{ debugDeviceKindLabel }}</p>
+              <div v-if="debugModeEnabled" class="border-t border-slate-100 px-4 py-2.5">
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">Debug</p>
+                <p class="mt-0.5 text-xs text-slate-600">当前设备：{{ debugDeviceKindLabel }}</p>
               </div>
             </div>
           </div>
@@ -2248,21 +2255,18 @@
             aria-label="Close settings"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 30rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">设置</p>
-                <p class="text-sm font-semibold text-slate-800">昵称、通知与提示音</p>
-              </div>
+              <p class="text-sm font-semibold text-slate-800">设置</p>
               <button
                 type="button"
                 @click="settingsOpen = false"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                class="text-xs font-medium text-slate-500"
               >
-                关闭
+                完成
               </button>
             </div>
-            <div class="viewport-modal-body px-4 py-6" style="--dialog-offset: 7rem;">
+            <div class="viewport-modal-body" style="--dialog-offset: 6rem;">
               <input
                 ref="identityCredentialFilePicker"
                 type="file"
@@ -2270,151 +2274,113 @@
                 class="hidden"
                 @change="onPickIdentityCredentialFile"
               />
-              <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                <p class="text-sm font-semibold text-slate-800">昵称</p>
-                <p class="mt-1 text-xs text-slate-500">昵称全局唯一，绑定当前设备。旧设备迁移时可授权转让。</p>
-                <div class="mt-2 flex items-center gap-2">
-                  <input
-                    v-model="nicknameInput"
-                    maxlength="24"
-                    class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                    placeholder="请输入昵称（1-24 字）"
-                  />
-                  <button
-                    type="button"
-                    @click="submitNickname"
-                    :disabled="nicknameSaving"
-                    class="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
-                  >
-                    {{ nicknameSaving ? '保存中' : '保存' }}
-                  </button>
-                </div>
-              </div>
 
-              <div class="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                <p class="text-sm font-semibold text-slate-800">身份凭证</p>
-                <p class="mt-1 text-xs leading-5 text-slate-500">
-                  首次绑定后会生成身份凭证。它用于恢复当前身份，建议下载 TXT 并离线保存。
-                </p>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    @click="exportCurrentIdentityCredential"
-                    class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                  >
-                    导出身份凭证
-                  </button>
-                  <button
-                    type="button"
-                    @click="triggerIdentityCredentialFilePicker"
-                    class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                  >
-                    选择 TXT
-                  </button>
-                </div>
-                <textarea
-                  v-model="identityCredentialImport"
-                  rows="5"
-                  class="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-800 outline-none placeholder:text-slate-400"
-                  placeholder="粘贴身份凭证全文，或直接粘贴 recovery_code"
-                ></textarea>
-                <div class="mt-2 flex justify-end">
-                  <button
-                    type="button"
-                    @click="restoreIdentityCredential"
-                    class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white"
-                  >
-                    恢复身份
-                  </button>
-                </div>
-              </div>
-
-              <div class="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-800">系统通知</p>
-                  <p class="text-xs text-slate-500">需要浏览器授权，开启后可推送通知</p>
-                </div>
-                <button
-                  type="button"
-                  @click="toggleSystemNotify"
-                  class="shrink-0 self-start whitespace-nowrap rounded-full px-3 py-1.5 text-center text-xs font-semibold sm:self-center"
-                  :class="systemNotifyEnabled ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-700'"
-                >
-                  {{ systemNotifyEnabled ? '已开启' : '已关闭' }}
-                </button>
-              </div>
-
-              <div class="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                <p class="text-sm font-semibold text-slate-800">界面大小</p>
-                <p class="mt-1 text-xs text-slate-500">调整字体、卡片和主要内容的整体显示尺寸。</p>
-                <div class="mt-3 flex flex-wrap gap-2">
-                  <button
-                    v-for="item in sizeSettingOptions"
-                    :key="`modal-scale-${item.value}`"
-                    type="button"
-                    @click="setUiScaleLevel(item.value)"
-                    class="rounded-full px-3 py-1.5 text-xs font-semibold"
-                    :class="uiScale === item.value ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
-                  >
-                    {{ item.label }}
-                  </button>
-                </div>
-              </div>
-
-              <div class="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-800">提示音</p>
-                  <p class="text-xs text-slate-500">新消息到达时播放提示音</p>
-                </div>
-                <button
-                  type="button"
-                  @click="toggleSound"
-                  class="shrink-0 self-start whitespace-nowrap rounded-full px-3 py-1.5 text-center text-xs font-semibold sm:self-center"
-                  :class="soundEnabled ? 'bg-sky-500 text-white' : 'bg-slate-200 text-slate-700'"
-                >
-                  {{ soundEnabled ? '已开启' : '已关闭' }}
-                </button>
-              </div>
-
-              <div class="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-800">陌生人私聊</p>
-                  <p class="text-xs text-slate-500">开启后，陌生设备只能向你发送私聊请求；关闭后，仅通讯录可向你发起私聊。</p>
-                </div>
-                <button
-                  type="button"
-                  @click="toggleDmPreference"
-                  :disabled="dmPreferenceSaving"
-                  class="shrink-0 self-start whitespace-nowrap rounded-full px-3 py-1.5 text-center text-xs font-semibold disabled:opacity-60 sm:self-center"
-                  :class="dmContactsOnly ? 'bg-slate-900 text-white' : 'bg-emerald-500 text-white'"
-                >
-                  {{ dmContactsOnly ? '仅通讯录' : '允许请求' }}
-                </button>
-              </div>
-
-              <p class="mt-3 text-xs text-slate-500">
-                横幅提示默认开启，点击横幅可进入聊天。
-              </p>
-
-              <div class="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="text-sm font-semibold text-slate-800">版本号</p>
-                    <p class="text-xs text-slate-500">连续点击 4 次可开启本次会话的 Debug 模式。</p>
+              <!-- 昵称 -->
+              <div class="divide-y divide-slate-100">
+                <div class="flex items-center justify-between px-4 py-3">
+                  <p class="text-sm text-slate-800">昵称</p>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="nicknameInput"
+                      maxlength="24"
+                      class="w-36 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 text-right outline-none placeholder:text-slate-400"
+                      placeholder="未设置"
+                    />
+                    <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="text-xs font-medium text-sky-600 disabled:opacity-60">
+                      {{ nicknameSaving ? '…' : '保存' }}
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    @click="handleVersionTap"
-                    class="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                  >
-                    v{{ APP_VERSION }}
-                  </button>
-                </div>
-                <div v-if="debugModeEnabled" class="mt-3 rounded-xl border border-sky-100 bg-sky-50 px-3 py-2.5">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-sky-600">Debug</p>
-                  <p class="mt-1 text-sm font-semibold text-slate-800">当前设备：{{ debugDeviceKindLabel }}</p>
                 </div>
               </div>
+
+              <!-- 身份与安全 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="border-b border-slate-100 px-4 py-2 bg-slate-50">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">身份与安全</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                  <button type="button" @click="exportCurrentIdentityCredential" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                    <p class="text-sm text-slate-800">导出身份凭证</p>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                  <button type="button" @click="triggerIdentityCredentialFilePicker" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                    <p class="text-sm text-slate-800">导入 TXT 凭证</p>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+                <div class="px-4 py-3">
+                  <textarea
+                    v-model="identityCredentialImport"
+                    rows="3"
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="粘贴助记词或 recovery_code 以恢复身份"
+                  ></textarea>
+                  <div class="mt-2 flex justify-end">
+                    <button type="button" @click="restoreIdentityCredential" class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">恢复身份</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 通用 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="border-b border-slate-100 px-4 py-2 bg-slate-50">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">通用</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p class="text-sm text-slate-800">系统通知</p>
+                      <p class="text-[11px] text-slate-400">需浏览器授权</p>
+                    </div>
+                    <button type="button" @click="toggleSystemNotify" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="systemNotifyEnabled ? 'bg-emerald-500' : 'bg-slate-200'">
+                      <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="systemNotifyEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm text-slate-800">界面大小</p>
+                    <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                      <button
+                        v-for="item in sizeSettingOptions"
+                        :key="`modal-scale-${item.value}`"
+                        type="button"
+                        @click="setUiScaleLevel(item.value)"
+                        class="rounded-md px-2 py-1 text-xs font-medium transition"
+                        :class="uiScale === item.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                      >
+                        {{ item.label }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm text-slate-800">提示音</p>
+                    <button type="button" @click="toggleSound" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="soundEnabled ? 'bg-sky-500' : 'bg-slate-200'">
+                      <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="soundEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p class="text-sm text-slate-800">陌生人私聊</p>
+                      <p class="text-[11px] text-slate-400">{{ dmContactsOnly ? '仅通讯录' : '允许请求' }}</p>
+                    </div>
+                    <button type="button" @click="toggleDmPreference" :disabled="dmPreferenceSaving" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors disabled:opacity-60" :class="!dmContactsOnly ? 'bg-emerald-500' : 'bg-slate-200'">
+                      <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="!dmContactsOnly ? 'translate-x-5' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 版本 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="flex items-center justify-between px-4 py-3">
+                  <p class="text-sm text-slate-800">版本</p>
+                  <button type="button" @click="handleVersionTap" class="text-xs text-slate-400">v{{ APP_VERSION }}</button>
+                </div>
+                <div v-if="debugModeEnabled" class="border-t border-slate-100 px-4 py-2.5 bg-slate-50">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">Debug</p>
+                  <p class="mt-0.5 text-xs text-slate-600">当前设备：{{ debugDeviceKindLabel }}</p>
+                </div>
+              </div>
+
             </div>
             </div>
           </div>
