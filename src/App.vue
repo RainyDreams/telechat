@@ -98,37 +98,31 @@
           </div>
         </div>
       </Transition>
-      <div v-if="deviceKicked.open" class="fixed inset-0 z-50">
+      <div v-if="deviceKicked.open" class="fixed inset-0 z-[70]">
         <button
           type="button"
-          class="absolute inset-0 bg-slate-900/40"
+          class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
           @click="dismissDeviceKicked"
           aria-label="Close kicked notice"
         ></button>
         <div class="viewport-modal-scroll">
-          <div class="device-kicked-panel viewport-modal-panel rounded-[28px] border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 32rem;">
+          <div class="device-kicked-panel viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 22rem;">
             <div class="viewport-modal-body px-5 py-5">
-              <p class="text-xs font-semibold uppercase tracking-wide text-rose-400">已下线</p>
-              <h3 class="mt-1 text-lg font-semibold text-slate-800">你的账号在同一设备被重新登录</h3>
-              <p class="mt-2 text-sm leading-6 text-slate-600">
-                为保证"一台设备一个用户"，本窗口已断开连接。
-                {{ deviceKicked.reason ? `原因：${deviceKicked.reason}` : '' }}
+              <p class="text-sm font-semibold text-slate-800">已下线</p>
+              <p class="mt-2 text-xs leading-5 text-slate-500">
+                你的账号在同一设备被重新登录{{ deviceKicked.reason ? `，${deviceKicked.reason}` : '' }}。
               </p>
-              <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
+              <div class="mt-4 flex items-center justify-end gap-2">
                 <button
                   type="button"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  class="rounded-full px-4 py-1.5 text-xs font-medium text-slate-500"
                   @click="dismissDeviceKicked"
-                >
-                  保持离线
-                </button>
+                >离线</button>
                 <button
                   type="button"
-                  class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                  class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white"
                   @click="reconnectAfterKick"
-                >
-                  重新连接
-                </button>
+                >重连</button>
               </div>
             </div>
           </div>
@@ -1411,38 +1405,24 @@
             aria-label="Close read receipts"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-[28px] border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-slate-400">已读详情</p>
-                  <p class="text-sm font-semibold text-slate-800">共 {{ readReceiptList.length }} 人</p>
-                </div>
-                <button
-                  type="button"
-                  @click="closeReadReceipts"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
-                >
-                  关闭
-                </button>
+                <p class="text-sm font-semibold text-slate-800">已读 · {{ readReceiptList.length }}</p>
+                <button type="button" @click="closeReadReceipts" class="text-xs font-medium text-slate-500">完成</button>
               </div>
-              <div class="viewport-modal-body px-4 py-3" style="--dialog-offset: 8rem;">
-                <div v-if="!readReceiptList.length" class="py-6 text-center text-sm text-slate-500">
-                  暂无已读记录
-                </div>
-                <div v-else class="grid gap-3">
+              <div class="viewport-modal-body" style="--dialog-offset: 6rem;">
+                <div v-if="!readReceiptList.length" class="px-4 py-8 text-center text-xs text-slate-400">暂无已读</div>
+                <div v-else class="divide-y divide-slate-100">
                   <div
                     v-for="entry in readReceiptList"
                     :key="`read-${entry.uid}-${entry.ts}`"
-                    class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                    class="flex items-center justify-between px-4 py-2.5"
                   >
                     <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-slate-800">{{ entry.displayName }}</p>
-                      <p class="truncate text-xs text-slate-500">{{ entry.os }} · {{ entry.location }}</p>
+                      <p class="truncate text-sm text-slate-800">{{ entry.displayName }}</p>
+                      <p class="truncate text-[11px] text-slate-400">{{ entry.os }} · {{ entry.location }}</p>
                     </div>
-                    <div class="text-right">
-                      <p class="text-xs text-slate-500">已读时间</p>
-                      <p class="text-xs font-medium text-slate-700">{{ formatDateTime(entry.ts) }}</p>
-                    </div>
+                    <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(entry.ts) }}</p>
                   </div>
                 </div>
               </div>
@@ -1458,30 +1438,27 @@
             aria-label="Close invite picker"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 30rem;">
+            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 26rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-slate-400">选择群组</p>
-                  <p class="text-sm font-semibold text-slate-800">发送群邀请卡</p>
-                </div>
+                <p class="text-sm font-semibold text-slate-800">发送群邀请卡</p>
                 <button
                   type="button"
                   @click="closeInvitePicker"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  class="text-xs font-medium text-slate-500"
                 >
-                  关闭
+                  完成
                 </button>
               </div>
-              <div class="viewport-modal-body px-4 py-3" style="--dialog-offset: 9rem;">
-                <div class="grid gap-2">
+              <div class="viewport-modal-body" style="--dialog-offset: 7rem;">
+                <div class="divide-y divide-slate-100">
                   <label
                     v-for="group in eligibleInviteGroups"
                     :key="`invite-${group.id}`"
-                    class="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2"
+                    class="flex items-center justify-between px-4 py-3 active:bg-slate-50"
                   >
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-slate-800">{{ groupDisplayName(group, group.name) }}</p>
-                      <p class="truncate text-xs text-slate-500">{{ group.id }}</p>
+                      <p class="truncate text-[11px] text-slate-400">{{ group.id }}</p>
                     </div>
                     <input
                       type="radio"
@@ -1497,14 +1474,14 @@
                 <button
                   type="button"
                   @click="closeInvitePicker"
-                  class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition"
+                  class="text-xs font-medium text-slate-500"
                 >
                   取消
                 </button>
                 <button
                   type="button"
                   @click="confirmInvitePicker"
-                  class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white"
+                  class="text-xs font-semibold text-sky-600"
                 >
                   发送邀请卡
                 </button>
@@ -1521,158 +1498,138 @@
             aria-label="Close invite dialog"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
+            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-slate-400">邀请新成员</p>
-                  <p class="text-sm font-semibold text-slate-800">{{ groupMetaMap[inviteDialog.groupId]?.groupName || activeGroupName }}</p>
-                </div>
+                <p class="text-sm font-semibold text-slate-800">{{ groupMetaMap[inviteDialog.groupId]?.groupName || activeGroupName }}</p>
                 <button
                   type="button"
                   @click="closeInviteDialog"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  class="text-xs font-medium text-slate-500"
                 >
-                  关闭
+                  完成
                 </button>
               </div>
-              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
-                <div class="grid gap-3">
-                  <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                      <p class="text-xs font-semibold text-slate-600">有效期</p>
-                      <select v-model="inviteDialog.ttlSec" class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
-                        <option v-for="item in inviteTtlOptions" :key="`ttl-${item.value}`" :value="item.value">{{ item.label }}</option>
-                      </select>
-                    </label>
-                    <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                      <p class="text-xs font-semibold text-slate-600">最多加入人数</p>
-                      <input
-                        v-model.number="inviteDialog.maxUses"
-                        type="number"
-                        min="1"
-                        max="999"
-                        class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                      />
-                    </label>
+              <div class="viewport-modal-body" style="--dialog-offset: 6rem;">
+                <div class="divide-y divide-slate-100">
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm text-slate-700">有效期</p>
+                    <select v-model="inviteDialog.ttlSec" class="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-800">
+                      <option v-for="item in inviteTtlOptions" :key="`ttl-${item.value}`" :value="item.value">{{ item.label }}</option>
+                    </select>
                   </div>
-
-                  <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-slate-600">邀请说明</p>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm text-slate-700">最大人数</p>
+                    <input
+                      v-model.number="inviteDialog.maxUses"
+                      type="number"
+                      min="1"
+                      max="999"
+                      class="w-20 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-800 text-right"
+                    />
+                  </div>
+                  <div class="px-4 py-3">
                     <textarea
                       v-model="inviteDialog.inviteStatement"
-                      rows="3"
+                      rows="2"
                       maxlength="180"
-                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                      placeholder="可选，留给入群申请和群内通知使用"
+                      class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                      placeholder="邀请说明（可选）"
                     ></textarea>
-                  </label>
-
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                      <div class="min-w-0">
-                        <p class="text-sm font-semibold text-slate-800">加入前是否需要审批</p>
-                        <p class="mt-1 text-xs text-slate-500">默认开启。关闭后，通过此群的分享链接可直接加入。</p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        :aria-checked="activeGroupInviteApprovalRequired ? 'true' : 'false'"
-                        :disabled="!isActiveGroupOwner"
-                        @click="setLocalActiveGroupInviteApprovalRequired(!activeGroupInviteApprovalRequired)"
-                        class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition"
-                        :class="activeGroupInviteApprovalRequired ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-slate-200'"
-                      >
-                        <span
-                          class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform"
-                          :class="activeGroupInviteApprovalRequired ? 'translate-x-6' : 'translate-x-1'"
-                        ></span>
-                      </button>
-                    </div>
-                    <div v-if="isActiveGroupOwner" class="mt-3 flex justify-end">
-                      <button
-                        type="button"
-                        @click="saveInviteApprovalPolicy"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        保存邀请策略
-                      </button>
-                    </div>
                   </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <div class="min-w-0">
+                      <p class="text-sm text-slate-700">加入需审批</p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      :aria-checked="activeGroupInviteApprovalRequired ? 'true' : 'false'"
+                      :disabled="!isActiveGroupOwner"
+                      @click="setLocalActiveGroupInviteApprovalRequired(!activeGroupInviteApprovalRequired)"
+                      class="relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors"
+                      :class="activeGroupInviteApprovalRequired ? 'bg-emerald-500' : 'bg-slate-200'"
+                    >
+                      <span
+                        class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform"
+                        :class="activeGroupInviteApprovalRequired ? 'translate-x-5' : 'translate-x-1'"
+                      ></span>
+                    </button>
+                  </div>
+                </div>
 
-                  <div class="flex items-center justify-end gap-2">
-                    <p class="mr-auto text-[11px] text-slate-500">同一群同时最多保留 5 条生效中的分享链接。</p>
+                <div class="px-4 py-3">
+                  <div class="flex items-center justify-between">
+                    <p class="text-[11px] text-slate-400">同时最多保留 5 条生效链接</p>
                     <button
                       type="button"
                       @click="createInviteFromDialog"
-                      class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                      class="text-xs font-semibold text-sky-600"
                     >
                       生成短链接
                     </button>
                   </div>
+                </div>
 
-                  <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-emerald-700">已生成邀请链接</p>
-                    <p class="mt-2 break-all text-sm text-slate-800">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
-                    <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                      <span>有效至 {{ inviteDialog.generatedExpiresAt ? formatDateTime(inviteDialog.generatedExpiresAt) : '--' }}</span>
-                      <span>上限 {{ inviteDialog.maxUses }} 人</span>
-                    </div>
-                    <div class="mt-3 flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        @click="copyInviteDialogLink()"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        复制链接
-                      </button>
-                    </div>
+                <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="border-t border-slate-100 bg-emerald-50/50 px-4 py-3">
+                  <p class="text-xs font-semibold text-emerald-700">已生成</p>
+                  <p class="mt-1 break-all text-sm text-slate-800">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
+                    <span>至 {{ inviteDialog.generatedExpiresAt ? formatDateTime(inviteDialog.generatedExpiresAt) : '--' }}</span>
+                    <span>上限 {{ inviteDialog.maxUses }} 人</span>
                   </div>
+                  <div class="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      @click="copyInviteDialogLink()"
+                      class="text-xs font-semibold text-sky-600"
+                    >
+                      复制链接
+                    </button>
+                  </div>
+                </div>
 
-                  <div class="rounded-xl border border-slate-100 bg-white px-3 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                      <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">已生成链接</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800">邀请管理</p>
-                      </div>
-                    </div>
-                    <div class="mt-3">
-                      <div v-if="groupInviteSettingsLoading" class="text-xs text-slate-500">邀请链接加载中…</div>
-                      <div v-else-if="!groupInviteEntries.length" class="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">
-                        暂无已生成的分享链接。
-                      </div>
-                      <div v-else class="grid gap-2">
-                        <div
-                          v-for="entry in groupInviteEntries"
-                          :key="`invite-dialog-entry-${entry.inviteId}`"
-                          class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3"
-                        >
-                          <div class="flex items-center justify-between gap-2">
-                            <p class="text-sm font-semibold text-slate-800">{{ inviteStatusLabel(entry) }}</p>
-                            <p class="text-[11px] text-slate-500">已用 {{ inviteUsageLabel(entry) }}</p>
-                          </div>
-                          <p class="mt-2 break-all text-xs leading-5 text-slate-600">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
-                          <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                            <span>创建者 {{ entry.creatorNickname || `用户 ${entry.creatorUid.slice(0, 6)}` }}</span>
-                            <span>创建于 {{ formatDateTime(entry.createdAt) }}</span>
-                            <span>截止 {{ formatDateTime(entry.expiresAt) }}</span>
-                          </div>
-                          <div class="mt-3 flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              @click="copyInviteDialogLink(entry)"
-                              class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                            >
-                              复制
-                            </button>
-                            <button
-                              v-if="isActiveGroupOwner && inviteStatusLabel(entry) === '生效中'"
-                              type="button"
-                              @click="revokeGroupInvite(entry.inviteId)"
-                              class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                            >
-                              吊销
-                            </button>
-                          </div>
+                <div class="border-t border-slate-100">
+                  <button
+                    type="button"
+                    @click="inviteDialog.showExisting = !inviteDialog.showExisting"
+                    class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50"
+                  >
+                    <p class="text-sm font-semibold text-slate-700">已生成链接</p>
+                    <span class="text-xs text-slate-400">{{ groupInviteEntries.length }} 条</span>
+                  </button>
+                  <div v-if="inviteDialog.showExisting">
+                    <div v-if="groupInviteSettingsLoading" class="px-4 py-3 text-xs text-slate-500">加载中…</div>
+                    <div v-else-if="!groupInviteEntries.length" class="px-4 py-3 text-xs text-slate-400">暂无已生成的分享链接。</div>
+                    <div v-else class="divide-y divide-slate-100">
+                      <div
+                        v-for="entry in groupInviteEntries"
+                        :key="`invite-dialog-entry-${entry.inviteId}`"
+                        class="px-4 py-3"
+                      >
+                        <div class="flex items-center justify-between">
+                          <p class="text-sm font-medium text-slate-800">{{ inviteStatusLabel(entry) }}</p>
+                          <p class="text-[11px] text-slate-400">已用 {{ inviteUsageLabel(entry) }}</p>
+                        </div>
+                        <p class="mt-1 break-all text-[11px] leading-5 text-slate-500">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
+                        <div class="mt-1 text-[11px] text-slate-400">
+                          {{ entry.creatorNickname || `用户 ${entry.creatorUid.slice(0, 6)}` }} · {{ formatDateTime(entry.createdAt) }}
+                        </div>
+                        <div class="mt-2 flex items-center gap-3">
+                          <button
+                            type="button"
+                            @click="copyInviteDialogLink(entry)"
+                            class="text-[11px] font-medium text-sky-600"
+                          >
+                            复制
+                          </button>
+                          <button
+                            v-if="isActiveGroupOwner && inviteStatusLabel(entry) === '生效中'"
+                            type="button"
+                            @click="revokeGroupInvite(entry.inviteId)"
+                            class="text-[11px] font-medium text-rose-600"
+                          >
+                            吊销
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -1733,30 +1690,22 @@
             aria-label="Close nickname guide"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-[28px] border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 32rem;">
-              <div class="border-b border-slate-100 px-4 py-4">
-                <p class="text-xs uppercase tracking-wide text-slate-400">首次设置</p>
-                <p class="mt-1 text-base font-semibold text-slate-800">先确认一下你的昵称</p>
-                <p class="mt-2 text-sm leading-6 text-slate-500">
-                  系统已经为这台设备分配了一个默认昵称。你可以直接使用，也可以先改成更顺手的名字。
-                </p>
+            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 26rem;">
+              <div class="border-b border-slate-100 px-4 py-3">
+                <p class="text-sm font-semibold text-slate-800">确认昵称</p>
               </div>
-              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
-                <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                  <p class="text-sm font-semibold text-slate-800">当前设备昵称</p>
-                  <input
-                    v-model="nicknameInput"
-                    maxlength="24"
-                    class="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                    placeholder="请输入昵称（1-24 字）"
-                  />
-                  <p class="mt-2 text-xs text-slate-500">昵称全局唯一，后续也可以在设置里继续修改。</p>
-                </div>
+              <div class="px-4 py-4">
+                <input
+                  v-model="nicknameInput"
+                  maxlength="24"
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                  placeholder="请输入昵称（1-24 字）"
+                />
                 <div class="mt-4 flex items-center justify-end gap-2">
                   <button
                     type="button"
                     @click="closeNicknameGuide"
-                    class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700"
+                    class="text-xs font-medium text-slate-500"
                   >
                     先这样进入
                   </button>
@@ -1764,7 +1713,7 @@
                     type="button"
                     @click="submitNicknameGuide"
                     :disabled="nicknameSaving"
-                    class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white disabled:opacity-60"
+                    class="text-xs font-semibold text-sky-600 disabled:opacity-60"
                   >
                     {{ nicknameGuideSubmitLabel }}
                   </button>
@@ -1782,17 +1731,20 @@
             aria-label="Close identity credential"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-[28px] border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
-              <div class="border-b border-slate-100 px-4 py-4">
-                <p class="text-xs uppercase tracking-wide text-slate-400">身份凭证</p>
-                <p class="mt-1 text-base font-semibold text-slate-800">
-                  {{ identityCredentialModal.firstBind ? '首次绑定成功，请先保存凭证' : '当前身份凭证' }}
+            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
+              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <p class="text-sm font-semibold text-slate-800">
+                  {{ identityCredentialModal.firstBind ? '绑定成功' : '身份凭证' }}
                 </p>
-                <p class="mt-2 text-sm leading-6 text-slate-500">
-                  这是恢复当前身份的唯一凭证。换浏览器或恢复身份时，需要导入这份 TXT 或 recovery_code。
-                </p>
+                <button
+                  type="button"
+                  @click="closeIdentityCredentialModal"
+                  class="text-xs font-medium text-slate-500"
+                >
+                  完成
+                </button>
               </div>
-              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
+              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
                 <div class="mb-3 flex items-center gap-2">
                   <button
                     type="button"
@@ -1811,34 +1763,30 @@
                     English Mnemonic
                   </button>
                 </div>
-                <div class="rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                    {{ identityCredentialModal.language === 'en' ? 'Natural Language Mnemonic' : '自然语言助记词' }}
-                  </p>
-                  <p class="mt-2 break-words text-sm leading-7 text-slate-800">
+                <div class="rounded-xl bg-slate-50 px-3 py-3">
+                  <p class="break-words text-sm leading-7 text-slate-800">
                     {{ activeIdentityMnemonic }}
                   </p>
-                  <p class="mt-2 text-[11px] text-slate-500">
-                    当前指纹：{{ formatIdentityDisplay(identityCredentialModal.fingerprint || '生成中...', 'credential-fingerprint', 12, 10) }}
+                  <p class="mt-2 text-[11px] text-slate-400">
+                    指纹：{{ formatIdentityDisplay(identityCredentialModal.fingerprint || '生成中...', 'credential-fingerprint', 12, 10) }}
                   </p>
-                  <p class="mt-2 text-[11px] font-semibold text-rose-600">请务必妥善保管好助记词和 TXT 文件，泄露后他人可恢复你的身份。</p>
+                  <p class="mt-1 text-[11px] font-medium text-rose-500">请妥善保管助记词和 TXT，泄露后他人可恢复你的身份。</p>
                 </div>
-                <div class="mt-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-3">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">TXT 内容预览</p>
-                  <pre class="mt-2 max-h-56 overflow-auto whitespace-pre-wrap break-words rounded-xl bg-white px-3 py-3 text-[11px] leading-5 text-slate-700">{{ activeIdentityCredentialFileText }}</pre>
+                <div class="mt-3 rounded-xl bg-slate-50 px-3 py-3">
+                  <pre class="max-h-56 overflow-auto whitespace-pre-wrap break-words text-[11px] leading-5 text-slate-600">{{ activeIdentityCredentialFileText }}</pre>
                 </div>
-                <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
+                <div class="mt-4 flex items-center justify-end gap-3">
                   <button
                     type="button"
                     @click="downloadIdentityCredential"
-                    class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white"
+                    class="text-xs font-semibold text-sky-600"
                   >
                     下载 TXT
                   </button>
                   <button
                     type="button"
                     @click="closeIdentityCredentialModal"
-                    class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700"
+                    class="text-xs font-medium text-slate-500"
                   >
                     我已保存
                   </button>
@@ -2070,57 +2018,56 @@
             aria-label="Close leave group dialog"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
-              <div class="border-b border-slate-100 px-4 py-3">
+            <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
+              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
                 <p class="text-sm font-semibold text-slate-800">退出群聊</p>
-                <p class="mt-1 text-xs text-slate-500">确认退出"{{ leaveGroupDialog.name || leaveGroupDialog.groupId }}"？</p>
+                <button
+                  type="button"
+                  @click="closeLeaveGroupDialog"
+                  class="text-xs font-medium text-slate-500"
+                >
+                  取消
+                </button>
               </div>
               <div class="px-4 py-4">
+                <p class="text-sm text-slate-600">确认退出"{{ leaveGroupDialog.name || leaveGroupDialog.groupId }}"？</p>
                 <template v-if="leaveGroupDialogIsOwner">
-                  <p class="text-sm leading-6 text-slate-600">你是群主，退出前需要选择群聊后续处理方式。</p>
-                  <div class="mt-4 grid gap-2">
+                  <p class="mt-2 text-sm text-slate-600">你是群主，退出前需要选择后续处理方式。</p>
+                  <div class="mt-3 divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
                     <button
                       type="button"
                       @click="leaveGroupDialog.ownerAction = 'inherit'"
-                      class="rounded-2xl border px-3 py-3 text-left transition"
-                      :class="leaveGroupDialog.ownerAction === 'inherit' ? 'border-sky-300 bg-sky-50 text-sky-700' : 'border-slate-200 bg-white text-slate-700'"
+                      class="w-full px-3 py-3 text-left active:bg-slate-50"
+                      :class="leaveGroupDialog.ownerAction === 'inherit' ? 'bg-sky-50/50' : ''"
                     >
-                      <p class="text-sm font-semibold">顺位继承</p>
-                      <p class="mt-1 text-xs leading-5 text-slate-500">
+                      <p class="text-sm font-semibold" :class="leaveGroupDialog.ownerAction === 'inherit' ? 'text-sky-700' : 'text-slate-800'">顺位继承</p>
+                      <p class="mt-0.5 text-xs text-slate-500">
                         {{
                           leaveGroupDialogSuccessorLabel
-                            ? `将按入群顺序把群主转给 ${leaveGroupDialogSuccessorLabel}，然后你退出群聊。`
-                            : '按入群顺序自动把群主转给下一位成员，然后你退出群聊。'
+                            ? `将群主转给 ${leaveGroupDialogSuccessorLabel}，然后退出。`
+                            : '按入群顺序自动把群主转给下一位成员，然后退出。'
                         }}
                       </p>
                     </button>
                     <button
                       type="button"
                       @click="leaveGroupDialog.ownerAction = 'dissolve'"
-                      class="rounded-2xl border px-3 py-3 text-left transition"
-                      :class="leaveGroupDialog.ownerAction === 'dissolve' ? 'border-rose-300 bg-rose-50 text-rose-700' : 'border-slate-200 bg-white text-slate-700'"
+                      class="w-full px-3 py-3 text-left active:bg-slate-50"
+                      :class="leaveGroupDialog.ownerAction === 'dissolve' ? 'bg-rose-50/50' : ''"
                     >
-                      <p class="text-sm font-semibold">解散群聊</p>
-                      <p class="mt-1 text-xs leading-5 text-slate-500">移除全部成员并清空该群的成员关系和邀请链接。</p>
+                      <p class="text-sm font-semibold" :class="leaveGroupDialog.ownerAction === 'dissolve' ? 'text-rose-700' : 'text-slate-800'">解散群聊</p>
+                      <p class="mt-0.5 text-xs text-slate-500">移除全部成员，清空成员关系和邀请链接。</p>
                     </button>
                   </div>
-                  <p v-if="leaveGroupDialog.ownerAction === 'inherit' && !leaveGroupDialogCanInherit" class="mt-3 text-xs text-amber-600">
+                  <p v-if="leaveGroupDialog.ownerAction === 'inherit' && !leaveGroupDialogCanInherit" class="mt-2 text-xs text-amber-500">
                     当前未发现其他成员，顺位继承可能无法执行。
                   </p>
                 </template>
-                <p v-else class="text-sm leading-6 text-slate-600">退出后当前会话会从列表移除，后续需要邀请链接才能重新加入。</p>
-                <div class="mt-4 flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    @click="closeLeaveGroupDialog"
-                    class="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700"
-                  >
-                    取消
-                  </button>
+                <div class="mt-4 flex items-center justify-end">
                   <button
                     type="button"
                     @click="confirmLeaveGroup"
-                    class="rounded-full border border-rose-200 bg-rose-50 px-4 py-1.5 text-xs font-semibold text-rose-700"
+                    class="text-xs font-semibold text-rose-600"
                   >
                     {{ leaveGroupDialogIsOwner ? '确认处理并退出' : '确认退出' }}
                   </button>
@@ -2283,126 +2230,79 @@
               class="system-notice-shell absolute flex flex-col overflow-hidden border border-slate-200/90 bg-white/100 shadow-[0_24px_56px_rgba(15,23,42,0.16)]"
               :class="
                 mobileViewport
-                  ? 'inset-y-2 left-0 w-[min(88vw,22rem)] rounded-r-[30px] rounded-l-none'
+                  ? 'inset-y-2 left-0 w-[min(88vw,22rem)] rounded-r-2xl rounded-l-none'
                   : systemNoticeFullscreen
-                    ? 'inset-4 rounded-[30px]'
-                    : 'left-1/2 top-1/2 h-[min(82vh,44rem)] w-[min(92vw,42rem)] -translate-x-1/2 -translate-y-1/2 rounded-[30px]'
+                    ? 'inset-4 rounded-2xl'
+                    : 'left-1/2 top-1/2 h-[min(82vh,44rem)] w-[min(92vw,42rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl'
               "
             >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <div class="flex items-center justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">系统通知</p>
-                    <p class="truncate text-sm font-semibold text-slate-800">推荐操作会在这里集中展示</p>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      v-if="!mobileViewport"
-                      type="button"
-                      @click="systemNoticeFullscreen = !systemNoticeFullscreen"
-                      class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-                    >
-                      {{ systemNoticeFullscreen ? '退出全屏' : '全屏' }}
-                    </button>
-                    <button
-                      type="button"
-                      @click="closeSystemNoticePanel"
-                      class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-                    >
-                      关闭
-                    </button>
-                  </div>
+              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <div class="min-w-0 flex items-center gap-2">
+                  <p class="text-sm font-semibold text-slate-800">系统通知</p>
+                  <span v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)" class="rounded-full bg-sky-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">{{ getUnreadCount(SYSTEM_NOTICE_GROUP) }}</span>
                 </div>
-                <div
-                  class="mt-3 flex items-center justify-between gap-3 bg-slate-50/90"
-                  :class="mobileViewport ? 'rounded-[18px] px-3 py-1.5' : 'rounded-[22px] px-3 py-2'"
-                >
-                  <p class="text-xs text-slate-500">
-                    {{ systemNoticeMessages.length ? `最近 ${systemNoticeMessages.length} 条通知` : '暂无系统通知' }}
-                  </p>
+                <div class="flex items-center gap-2">
                   <button
-                    v-if="getUnreadCount(SYSTEM_NOTICE_GROUP)"
+                    v-if="!mobileViewport"
                     type="button"
-                    @click="clearUnread(SYSTEM_NOTICE_GROUP)"
-                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
+                    @click="systemNoticeFullscreen = !systemNoticeFullscreen"
+                    class="text-xs font-medium text-slate-500"
                   >
-                    标为已读
+                    {{ systemNoticeFullscreen ? '退出全屏' : '全屏' }}
+                  </button>
+                  <button
+                    type="button"
+                    @click="closeSystemNoticePanel"
+                    class="text-xs font-medium text-slate-500"
+                  >
+                    完成
                   </button>
                 </div>
               </div>
-              <div class="system-notice-body flex-1 overflow-y-auto px-3 py-3">
+              <div class="system-notice-body flex-1 overflow-y-auto" style="--dialog-offset: 6rem;">
                 <div
                   v-if="!systemNoticeMessages.length"
-                  class="border border-slate-200 bg-slate-50 text-center"
-                  :class="mobileViewport ? 'rounded-[18px] px-3 py-5' : 'rounded-[24px] px-4 py-8'"
+                  class="px-4 py-8 text-center"
                 >
-                  <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
-                  <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
+                  <p class="text-sm text-slate-500">暂无系统通知</p>
                 </div>
-                <div v-else class="grid" :class="mobileViewport ? 'gap-2' : 'gap-3'">
+                <div v-else class="divide-y divide-slate-100">
                   <div
                     v-for="msg in systemNoticeMessages"
                     :key="`system-panel-${msg.msgId}`"
-                    class="border text-left shadow-sm"
-                    :class="[systemCardSurfaceClass(msg), mobileViewport ? 'rounded-[18px] px-3 py-3' : 'rounded-[26px] px-4 py-4']"
+                    class="px-4 py-3"
                   >
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="flex items-center gap-2">
-                        <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
-                        <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
-                          {{ systemCardEyebrow(msg) }}
-                        </p>
+                    <div class="flex items-start justify-between gap-2">
+                      <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-slate-500">{{ msg.systemText || '' }}</p>
                       </div>
                       <p class="shrink-0 text-[11px] text-slate-400">{{ formatDateTime(msg.ts) }}</p>
                     </div>
-                    <div class="flex flex-col" :class="mobileViewport ? 'mt-2 gap-2' : 'mt-3 gap-3'">
-                      <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                          <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
-                          <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
-                        </div>
+                    <div v-if="systemCardPreviewUsers(msg).length" class="mt-2 flex items-center gap-2">
+                      <div class="flex -space-x-2">
                         <div
-                          v-if="systemMessageTargetLabel(msg)"
-                          class="shrink-0 bg-white/85 text-right"
-                          :class="mobileViewport ? 'rounded-xl px-2.5 py-1.5' : 'rounded-2xl px-3 py-2'"
+                          v-for="(user, idx) in systemCardPreviewUsers(msg)"
+                          :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
+                          class="avatar h-7 w-7 rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                          :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
                         >
-                          <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">目标</p>
-                          <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
+                          {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
                         </div>
                       </div>
-                      <div v-if="systemCardPreviewUsers(msg).length" class="flex items-center" :class="mobileViewport ? 'gap-2' : 'gap-3'">
-                        <div class="flex -space-x-2">
-                          <div
-                            v-for="(user, idx) in systemCardPreviewUsers(msg)"
-                            :key="`system-preview-${msg.msgId}-${user.uid || idx}`"
-                            class="avatar rounded-full border-2 border-white text-[10px] font-semibold text-white"
-                            :class="mobileViewport ? 'h-7 w-7' : 'h-9 w-9'"
-                            :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
-                          >
-                            {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
-                          </div>
-                        </div>
-                        <p class="min-w-0 text-xs leading-5 text-slate-500" :class="mobileViewport ? 'clamp-1' : 'clamp-2'">{{ systemCardPreviewSummary(msg) }}</p>
-                      </div>
+                      <p class="min-w-0 truncate text-xs text-slate-500">{{ systemCardPreviewSummary(msg) }}</p>
                     </div>
-                    <div
-                      v-if="systemCardActions(msg).length"
-                      class="bg-white/70"
-                      :class="mobileViewport ? 'mt-3 rounded-[16px] p-1.5' : 'mt-4 rounded-[22px] p-2'"
-                    >
-                      <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">可用操作</p>
-                      <div class="mt-2 flex flex-wrap" :class="mobileViewport ? 'gap-1.5' : 'gap-2'">
-                        <button
-                          v-for="(item, idx) in systemCardActions(msg)"
-                          :key="`system-panel-action-${msg.msgId}-${idx}`"
-                          type="button"
-                          @click="handleSystemAction(msg, item)"
-                          class="rounded-full text-xs font-semibold"
-                          :class="[mobileViewport ? 'px-2.5 py-1' : 'px-3 py-1.5', idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700']"
-                        >
-                          {{ item.label || item.action || '处理' }}
-                        </button>
-                      </div>
+                    <div v-if="systemCardActions(msg).length" class="mt-2 flex flex-wrap gap-1.5">
+                      <button
+                        v-for="(item, idx) in systemCardActions(msg)"
+                        :key="`system-panel-action-${msg.msgId}-${idx}`"
+                        type="button"
+                        @click="handleSystemAction(msg, item)"
+                        class="text-xs font-semibold"
+                        :class="idx === 0 ? 'text-sky-600' : 'text-slate-500'"
+                      >
+                        {{ item.label || item.action || '处理' }}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -2420,40 +2320,24 @@
               aria-label="Close explanation"
             ></button>
             <div class="viewport-modal-scroll">
-              <div class="dialog-shell relative w-full rounded-t-[30px] border border-slate-200/90 bg-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] md:max-w-md md:rounded-[28px]">
-                <div class="viewport-modal-body px-5 py-5" style="--dialog-offset: 6rem;">
-                 <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">原因说明</p>
-                    <p class="mt-1 text-base font-semibold text-slate-900">{{ explanationModal.title }}</p>
+              <div class="dialog-shell relative w-full overflow-hidden rounded-t-2xl border border-slate-200/90 bg-white shadow-[0_24px_56px_rgba(15,23,42,0.16)] md:max-w-sm md:rounded-2xl">
+                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                  <p class="text-sm font-semibold text-slate-800">{{ explanationModal.title }}</p>
+                  <button
+                    type="button"
+                    @click="closeExplanationModal"
+                    class="text-xs font-medium text-slate-500"
+                  >
+                    完成
+                  </button>
+                </div>
+                <div class="px-4 py-4">
+                  <p class="text-sm leading-6 text-slate-600">{{ explanationModal.text }}</p>
+                  <div v-if="explanationModal.tip" class="mt-3 rounded-xl bg-slate-50 px-3 py-3">
+                    <p class="text-xs text-slate-500">{{ explanationModal.tip }}</p>
                   </div>
-                  <button
-                    type="button"
-                    @click="closeExplanationModal"
-                    class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500"
-                    aria-label="Close explanation"
-                  >
-                    <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
-                      <path d="M6 6l12 12M18 6 6 18"/>
-                    </svg>
-                  </button>
-                </div>
-                <p class="mt-4 text-sm leading-6 text-slate-600">{{ explanationModal.text }}</p>
-                <div v-if="explanationModal.tip" class="mt-4 rounded-[20px] bg-slate-50 px-4 py-3">
-                  <p class="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">建议</p>
-                  <p class="mt-1 text-sm leading-6 text-slate-600">{{ explanationModal.tip }}</p>
-                </div>
-                <div class="mt-5 flex justify-end">
-                  <button
-                    type="button"
-                    @click="closeExplanationModal"
-                    class="rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white"
-                  >
-                    我知道了
-                  </button>
                 </div>
               </div>
-            </div>
             </div>
           </div>
         </Transition>
@@ -2466,85 +2350,64 @@
             aria-label="Close contacts"
           ></button>
           <div class="viewport-modal-scroll">
-          <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 38rem;">
+          <div class="viewport-modal-panel overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 30rem;">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">通讯录</p>
-                <p class="text-sm font-semibold text-slate-800">设备绑定联系人</p>
-              </div>
+              <p class="text-sm font-semibold text-slate-800">通讯录</p>
               <button
                 type="button"
                 @click="contactsOpen = false"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                class="text-xs font-medium text-slate-500"
               >
-                关闭
+                完成
               </button>
             </div>
             <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
-              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto">
-                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">联系人</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
-                  </div>
-                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">在线</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ onlineContactCards.length }}</p>
-                  </div>
-                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
-                  </div>
-                </div>
-                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 lg:w-[20rem]">
-                  <input
-                    v-model="contactQuery"
-                    class="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                    placeholder="搜索联系人、指纹、地区"
-                  />
-                  <button
-                    type="button"
-                    @click="requestContacts"
-                    class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
-                  >
-                    刷新
-                  </button>
-                </div>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model="contactQuery"
+                  class="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                  placeholder="搜索联系人、指纹、地区"
+                />
+                <button
+                  type="button"
+                  @click="requestContacts"
+                  class="shrink-0 text-xs font-medium text-sky-600"
+                >
+                  刷新
+                </button>
+              </div>
+              <div class="mt-2 flex items-center gap-4 text-[11px] text-slate-400">
+                <span>{{ contactCards.length }} 联系人</span>
+                <span>{{ onlineContactCards.length }} 在线</span>
+                <span v-if="contactRequestCards.length">{{ contactRequestCards.length }} 待处理</span>
               </div>
               <div
                 v-if="contactRequestCards.length"
-                class="mt-3 rounded-2xl border border-amber-100 bg-amber-50/60 px-3 py-3"
+                class="mt-3 rounded-xl border border-amber-100 bg-amber-50/60 px-3 py-3"
               >
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">待处理请求</p>
-                <div class="mt-2 grid gap-2">
+                <p class="text-xs font-semibold text-amber-600">待处理请求</p>
+                <div class="mt-2 divide-y divide-amber-100">
                   <div
                     v-for="req in contactRequestCards"
                     :key="`req-${req.requestId}`"
-                    class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+                    class="flex items-center justify-between gap-2 py-2 first:pt-0 last:pb-0"
                   >
                     <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-slate-800">
-                        用户 {{ req.uidShort }}
-                      </p>
-                      <p class="truncate text-xs text-slate-500">
-                        {{ req.os }} · {{ req.location }}
-                      </p>
-                      <p class="truncate text-[11px] text-slate-400">
-                        指纹：{{ req.fingerprintShort }}
-                      </p>
+                      <p class="truncate text-sm font-medium text-slate-800">用户 {{ req.uidShort }}</p>
+                      <p class="truncate text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex shrink-0 items-center gap-2">
                       <button
                         type="button"
                         @click="acceptContactRequest(req)"
-                        class="shrink-0 whitespace-nowrap rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white"
+                        class="text-[11px] font-medium text-sky-600"
                       >
                         同意
                       </button>
                       <button
                         type="button"
                         @click="declineContactRequest(req)"
-                        class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
+                        class="text-[11px] font-medium text-slate-400"
                       >
                         拒绝
                       </button>
@@ -2552,125 +2415,89 @@
                   </div>
                 </div>
               </div>
-              <div v-if="contactsLoading" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                正在加载通讯录…
+              <div v-if="contactsLoading" class="mt-3 py-3 text-center text-xs text-slate-400">
+                加载中…
               </div>
-              <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
+              <div v-else-if="!filteredContactCards.length" class="mt-3 py-3 text-center text-xs text-slate-400">
                 {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人，可在"实时在线"列表中添加。' }}
               </div>
-              <div v-else class="mt-3 grid gap-4">
-                <div v-if="onlineContactCards.length" class="grid gap-2">
-                  <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-semibold text-emerald-700">在线联系人</p>
-                    <p class="text-[11px] text-slate-400">{{ onlineContactCards.length }} 位</p>
-                  </div>
-                  <div
-                    v-for="contact in onlineContactCards"
-                    :key="`contact-online-${contact.contactFingerprint}`"
-                    class="flex flex-col gap-3 rounded-[22px] border border-emerald-100 bg-emerald-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0 flex items-center gap-3">
-                      <div
-                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
-                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                      >
-                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                      </div>
-                      <div class="min-w-0">
-                        <p
-                          class="cursor-pointer text-sm font-semibold text-slate-800"
-                          :class="
-                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+              <div v-else class="mt-3">
+                <div v-if="onlineContactCards.length">
+                  <p class="mb-1 text-[11px] font-medium text-emerald-600">在线 · {{ onlineContactCards.length }} 位</p>
+                  <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                    <div
+                      v-for="contact in onlineContactCards"
+                      :key="`contact-online-${contact.contactFingerprint}`"
+                      class="flex items-center justify-between gap-2 px-3 py-2.5 active:bg-slate-50"
+                    >
+                      <div class="min-w-0 flex items-center gap-2.5">
+                        <div
+                          class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white"
+                          :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
                         >
-                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                        </p>
-                        <p
-                          class="cursor-pointer text-[11px] font-mono text-slate-500"
-                          :class="
-                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
-                        >
-                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
-                        </p>
-                        <p class="truncate text-xs text-slate-500">{{ `${contact.os} · ${contact.location}` }}</p>
+                          {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
+                        </div>
+                        <div class="min-w-0">
+                          <p
+                            class="cursor-pointer truncate text-sm font-medium text-slate-800"
+                            @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
+                            :class="isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`) ? 'whitespace-normal break-all' : ''"
+                          >
+                            {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
+                          </p>
+                          <p class="truncate text-[11px] text-slate-400">{{ `${contact.os} · ${contact.location}` }}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        @click="startContactChat(contact)"
-                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                      >
-                        私聊
-                      </button>
-                      <button
-                        type="button"
-                        @click="removeContact(contact)"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        移除
-                      </button>
+                      <div class="flex shrink-0 items-center gap-3">
+                        <button
+                          type="button"
+                          @click="startContactChat(contact)"
+                          class="text-[11px] font-medium text-sky-600"
+                        >
+                          私聊
+                        </button>
+                        <button
+                          type="button"
+                          @click="removeContact(contact)"
+                          class="text-[11px] font-medium text-slate-400"
+                        >
+                          移除
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
 
-                <div v-if="offlineContactCards.length" class="grid gap-2">
-                  <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-semibold text-slate-600">离线联系人</p>
-                    <p class="text-[11px] text-slate-400">{{ offlineContactCards.length }} 位</p>
-                  </div>
-                  <div
-                    v-for="contact in offlineContactCards"
-                    :key="`contact-offline-${contact.contactFingerprint}`"
-                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0 flex items-center gap-3">
-                      <div
-                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
-                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                      >
-                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                      </div>
-                      <div class="min-w-0">
-                        <p
-                          class="cursor-pointer text-sm font-semibold text-slate-800"
-                          :class="
-                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
-                        >
-                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                        </p>
-                        <p
-                          class="cursor-pointer text-[11px] font-mono text-slate-500"
-                          :class="
-                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
-                        >
-                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
-                        </p>
-                        <p class="truncate text-xs text-slate-500">离线 · {{ contact.os }} · {{ contact.location }}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      @click="removeContact(contact)"
-                      class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
+                <div v-if="offlineContactCards.length" :class="onlineContactCards.length ? 'mt-3' : ''">
+                  <p class="mb-1 text-[11px] font-medium text-slate-500">离线 · {{ offlineContactCards.length }} 位</p>
+                  <div class="divide-y divide-slate-100 overflow-hidden rounded-xl border border-slate-200">
+                    <div
+                      v-for="contact in offlineContactCards"
+                      :key="`contact-offline-${contact.contactFingerprint}`"
+                      class="flex items-center justify-between gap-2 px-3 py-2.5"
                     >
-                      移除
-                    </button>
+                      <div class="min-w-0 flex items-center gap-2.5">
+                        <div
+                          class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white"
+                          :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
+                        >
+                          {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
+                        </div>
+                        <div class="min-w-0">
+                          <p class="truncate text-sm font-medium text-slate-700">
+                            {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
+                          </p>
+                          <p class="truncate text-[11px] text-slate-400">{{ contact.os }} · {{ contact.location }}</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        @click="removeContact(contact)"
+                        class="shrink-0 text-[11px] font-medium text-slate-400"
+                      >
+                        移除
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -3206,6 +3033,7 @@ const inviteDialog = ref({
   generatedInviteCode: '',
   generatedShortCode: '',
   generatedExpiresAt: null,
+  showExisting: false,
 });
 const unreadCounts = ref({});
 const banner = ref({ open: false, groupId: '', title: '', text: '', canEnableNotify: false, clickable: true });
@@ -6792,6 +6620,7 @@ const defaultInviteDialogState = (groupId = '') => ({
   generatedInviteCode: '',
   generatedShortCode: '',
   generatedExpiresAt: null,
+  showExisting: false,
 });
 
 const pendingInviteRequest = ref({ reqId: '', groupId: '', mode: 'dialog' });
