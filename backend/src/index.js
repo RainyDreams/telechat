@@ -15,10 +15,17 @@ const INVITE_TTL_MAX_SECONDS = 7 * 24 * 60 * 60;
 const CONTACT_ALIAS_MAX = 40;
 const NICKNAME_MAX = 24;
 const GROUP_NAME_MAX = 40;
+const GROUP_ANNOUNCEMENT_MAX = 240;
 const MIGRATION_TTL_MS = 10 * 60 * 1000;
 const CONTACT_REQUEST_TTL_MS = 10 * 60 * 1000;
 const GROUP_INVITE_APPROVAL_TTL_MS = 10 * 60 * 1000;
 const DIRECT_REQUEST_TTL_MS = 10 * 60 * 1000;
+const DEFAULT_INVITE_MAX_USES = 10;
+const MAX_INVITE_MAX_USES = 999;
+const MAX_ACTIVE_INVITES_PER_GROUP = 5;
+const SHORT_INVITE_CODE_LENGTH = 8;
+const SHORT_INVITE_CODE_PATTERN = /^[A-Za-z0-9]{6,16}$/;
+const SHORT_INVITE_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
 
 const MAX_BASE64_FIELD_LENGTH = 1_500_000;
 const MAX_ENCRYPTED_KEY_LENGTH = 4096;
@@ -34,6 +41,7 @@ const jsonHeaders = {
 };
 
 const enc = new TextEncoder();
+const MIN_INVITE_SIGNING_SECRET_LENGTH = 32;
 
 const isBase64 = (value, maxLen = MAX_BASE64_FIELD_LENGTH) => {
   return (
@@ -152,6 +160,34 @@ const randomHex = (lenBytes = 8) => {
   return Array.from(bytes).map((v) => v.toString(16).padStart(2, '0')).join('');
 };
 
+const getConfiguredSecret = (value, minLength = 1) => {
+  if (typeof value !== 'string') return '';
+  const secret = value.trim();
+  if (!secret || secret.length < minLength) return '';
+  return secret;
+};
+
+const randomShortCode = (length = SHORT_INVITE_CODE_LENGTH) => {
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  let out = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    out += SHORT_INVITE_CODE_ALPHABET[bytes[i] % SHORT_INVITE_CODE_ALPHABET.length];
+  }
+  return out;
+};
+
+const sanitizeInviteMaxUses = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return DEFAULT_INVITE_MAX_USES;
+  return Math.max(1, Math.min(MAX_INVITE_MAX_USES, Math.floor(num)));
+};
+
+const sanitizeShortInviteCode = (value) => {
+  if (typeof value !== 'string') return '';
+  const code = value.trim();
+  return SHORT_INVITE_CODE_PATTERN.test(code) ? code : '';
+};
+
 const FRIENDLY_NICKNAME_PREFIXES = [
   '晴空',
   '南风',
@@ -194,12 +230,37 @@ const createFriendlyNicknameCandidate = () => {
   return `${prefix}${suffix}${serial}`;
 };
 
+const parseGroupCreatedAtFromId = (groupId = '') => {
+  const text = typeof groupId === 'string' ? groupId.trim() : '';
+  const match = text.match(/^grp-(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})(?:-|$)/);
+  if (!match) return null;
+  const [, year, month, day, hour, minute, second] = match;
+  const date = new Date(
+    Number(year),
+    Number(month) - 1,
+    Number(day),
+    Number(hour),
+    Number(minute),
+    Number(second)
+  );
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const formatDefaultGroupName = (label = '用户', date = new Date()) => {
+  const safeLabel = typeof label === 'string' && label.trim() ? label.trim() : '用户';
+  const safeDate = date instanceof Date && !Number.isNaN(date.getTime()) ? date : new Date();
+  const month = safeDate.getMonth() + 1;
+  const day = safeDate.getDate();
+  const hour = String(safeDate.getHours()).padStart(2, '0');
+  const minute = String(safeDate.getMinutes()).padStart(2, '0');
+  return `【${safeLabel}】在${month}月${day}日${hour}${minute}发起的群聊`;
+};
+
 const defaultGroupNameForSender = (sender, groupId = '') => {
   const nickname = typeof sender?.nickname === 'string' ? sender.nickname.trim() : '';
-  if (nickname) return `${nickname}的群聊`;
   const uid = typeof sender?.uid === 'string' ? sender.uid : '';
-  if (uid) return `用户 ${uid.slice(0, 6)} 的群聊`;
-  return groupId && groupId.startsWith('grp-') ? `群聊 ${groupId.slice(-6)}` : (groupId || '未命名群聊');
+  const label = nickname || (uid ? `用户 ${uid.slice(0, 6)}` : '用户');
+  return formatDefaultGroupName(label, parseGroupCreatedAtFromId(groupId) || new Date());
 };
 
 const isGeneratedContactAlias = (alias, uid = '') => {
@@ -329,12 +390,27 @@ export class ChatRoom {
     this.contactsSchemaReady = false;
     this.groupMetaById = new Map();
     this.groupMetaLoaded = false;
+    this.inviteRecordsById = new Map();
+    this.inviteRecordsLoaded = false;
     this.groupInviteApprovals = new Map();
     this.groupJoinApprovals = new Map();
     this.directRequests = new Map();
   }
 
   async fetch(request) {
+    const url = new URL(request.url);
+    if (url.pathname === '/api/invite-resolve') {
+      const shortCode = sanitizeShortInviteCode(url.searchParams.get('code') || url.searchParams.get('s'));
+      if (!shortCode) {
+        return new Response(JSON.stringify({ ok: false, error: 'INVALID_SHORT_CODE' }), { status: 400, headers: jsonHeaders });
+      }
+      const resolved = await this.resolveShortInvite(shortCode);
+      if (!resolved) {
+        return new Response(JSON.stringify({ ok: false, error: 'INVITE_NOT_FOUND' }), { status: 404, headers: jsonHeaders });
+      }
+      return new Response(JSON.stringify({ ok: true, ...resolved }), { status: 200, headers: jsonHeaders });
+    }
+
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('Expected websocket', { status: 426 });
     }
@@ -746,6 +822,8 @@ export class ChatRoom {
             groupId: gid,
             name: sanitizeGroupName(meta.name) || gid,
             ownerUid: sanitizeDeviceFingerprint(meta.ownerUid) || '',
+            announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+            inviteApprovalRequired: meta.inviteApprovalRequired !== false,
             createdAt: Number(meta.createdAt) || Date.now(),
             updatedAt: Number(meta.updatedAt) || Date.now(),
           });
@@ -764,6 +842,8 @@ export class ChatRoom {
       out[groupId] = {
         name: meta.name || groupId,
         ownerUid: meta.ownerUid || '',
+        announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta.inviteApprovalRequired !== false,
         createdAt: meta.createdAt || Date.now(),
         updatedAt: meta.updatedAt || Date.now(),
       };
@@ -785,6 +865,8 @@ export class ChatRoom {
         groupId,
         name: sanitizeGroupName(preferredName) || fallback,
         ownerUid: sender?.uid || '',
+        announcement: '',
+        inviteApprovalRequired: true,
         createdAt: now,
         updatedAt: now,
       };
@@ -797,6 +879,164 @@ export class ChatRoom {
   async getGroupMeta(groupId) {
     await this.ensureGroupMetaLoaded();
     return this.groupMetaById.get(groupId) || null;
+  }
+
+  async ensureInviteRecordsLoaded() {
+    if (this.inviteRecordsLoaded) return;
+    try {
+      const raw = await this.state.storage.get('group_invites_v1');
+      if (raw && typeof raw === 'object') {
+        for (const [inviteId, record] of Object.entries(raw)) {
+          const groupId = sanitizeGroupId(record?.groupId);
+          const shortCode = sanitizeShortInviteCode(record?.shortCode);
+          if (!inviteId || !groupId || !shortCode) continue;
+          this.inviteRecordsById.set(inviteId, {
+            inviteId,
+            groupId,
+            inviteCode: typeof record?.inviteCode === 'string' ? record.inviteCode : '',
+            shortCode,
+            creatorUid: sanitizeText(record?.creatorUid, 80) || '',
+            creatorNickname: sanitizeOptionalText(record?.creatorNickname, NICKNAME_MAX),
+            creatorStatement: sanitizeOptionalText(record?.creatorStatement, 180),
+            createdAt: Number(record?.createdAt) || Date.now(),
+            updatedAt: Number(record?.updatedAt) || Date.now(),
+            expiresAt: Number(record?.expiresAt) || 0,
+            maxUses: sanitizeInviteMaxUses(record?.maxUses),
+            usedCount: Math.max(0, Math.floor(Number(record?.usedCount) || 0)),
+            pendingCount: Math.max(0, Math.floor(Number(record?.pendingCount) || 0)),
+            revokedAt: Math.max(0, Math.floor(Number(record?.revokedAt) || 0)),
+          });
+        }
+      }
+    } catch {
+      // no-op
+    } finally {
+      this.inviteRecordsLoaded = true;
+    }
+  }
+
+  async persistInviteRecords() {
+    const out = {};
+    for (const [inviteId, record] of this.inviteRecordsById.entries()) {
+      out[inviteId] = {
+        inviteId,
+        groupId: record.groupId || '',
+        inviteCode: record.inviteCode || '',
+        shortCode: record.shortCode || '',
+        creatorUid: record.creatorUid || '',
+        creatorNickname: record.creatorNickname || '',
+        creatorStatement: record.creatorStatement || '',
+        createdAt: record.createdAt || Date.now(),
+        updatedAt: record.updatedAt || Date.now(),
+        expiresAt: record.expiresAt || 0,
+        maxUses: sanitizeInviteMaxUses(record.maxUses),
+        usedCount: Math.max(0, Math.floor(Number(record.usedCount) || 0)),
+        pendingCount: Math.max(0, Math.floor(Number(record.pendingCount) || 0)),
+        revokedAt: Math.max(0, Math.floor(Number(record.revokedAt) || 0)),
+      };
+    }
+    try {
+      await this.state.storage.put('group_invites_v1', out);
+    } catch {
+      // no-op
+    }
+  }
+
+  isInviteRecordActive(record, now = Date.now()) {
+    return Boolean(record && !record.revokedAt && record.expiresAt > now);
+  }
+
+  async getInviteRecordById(inviteId) {
+    await this.ensureInviteRecordsLoaded();
+    return this.inviteRecordsById.get(inviteId) || null;
+  }
+
+  async getInviteRecordByShortCode(shortCode) {
+    const code = sanitizeShortInviteCode(shortCode);
+    if (!code) return null;
+    await this.ensureInviteRecordsLoaded();
+    for (const record of this.inviteRecordsById.values()) {
+      if (record.shortCode === code) return record;
+    }
+    return null;
+  }
+
+  async listGroupInviteRecords(groupId) {
+    await this.ensureInviteRecordsLoaded();
+    const out = [];
+    for (const record of this.inviteRecordsById.values()) {
+      if (!record || record.groupId !== groupId) continue;
+      out.push(record);
+    }
+    out.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    return out;
+  }
+
+  async generateUniqueInviteShortCode() {
+    await this.ensureInviteRecordsLoaded();
+    for (let attempt = 0; attempt < 32; attempt += 1) {
+      const code = randomShortCode();
+      if (!Array.from(this.inviteRecordsById.values()).some((record) => record.shortCode === code)) {
+        return code;
+      }
+    }
+    return `${randomShortCode(6)}${Date.now().toString(36).slice(-2)}`;
+  }
+
+  async reserveInviteUse(inviteId) {
+    const record = await this.getInviteRecordById(inviteId);
+    if (!record || !this.isInviteRecordActive(record)) return null;
+    if (record.maxUses > 0 && (record.usedCount + record.pendingCount) >= record.maxUses) return null;
+    record.pendingCount += 1;
+    record.updatedAt = Date.now();
+    await this.persistInviteRecords();
+    return record;
+  }
+
+  async releaseInviteReservation(inviteId) {
+    const record = await this.getInviteRecordById(inviteId);
+    if (!record) return;
+    if (record.pendingCount > 0) {
+      record.pendingCount -= 1;
+      record.updatedAt = Date.now();
+      await this.persistInviteRecords();
+    }
+  }
+
+  async consumeReservedInviteUse(inviteId) {
+    const record = await this.getInviteRecordById(inviteId);
+    if (!record || !this.isInviteRecordActive(record)) return null;
+    if (record.pendingCount > 0) {
+      record.pendingCount -= 1;
+    }
+    if (record.maxUses > 0 && record.usedCount >= record.maxUses) {
+      await this.persistInviteRecords();
+      return null;
+    }
+    record.usedCount += 1;
+    record.updatedAt = Date.now();
+    await this.persistInviteRecords();
+    return record;
+  }
+
+  async consumeInviteUse(inviteId) {
+    const record = await this.getInviteRecordById(inviteId);
+    if (!record || !this.isInviteRecordActive(record)) return null;
+    if (record.maxUses > 0 && (record.usedCount + record.pendingCount) >= record.maxUses) return null;
+    record.usedCount += 1;
+    record.updatedAt = Date.now();
+    await this.persistInviteRecords();
+    return record;
+  }
+
+  async revokeInviteRecord(inviteId) {
+    const record = await this.getInviteRecordById(inviteId);
+    if (!record) return null;
+    record.revokedAt = Date.now();
+    record.pendingCount = 0;
+    record.updatedAt = Date.now();
+    await this.persistInviteRecords();
+    return record;
   }
 
   async saveGroupMembership(deviceFp, groupId) {
@@ -845,6 +1085,37 @@ export class ChatRoom {
     }
   }
 
+  async getPersistedGroupMemberIds(groupId) {
+    if (!groupId || !this.env.DB || typeof this.env.DB.prepare !== 'function') return [];
+    await this.ensureContactsSchema();
+    try {
+      const res = await this.env.DB.prepare(
+        'SELECT device_fp FROM group_memberships WHERE group_id = ? ORDER BY joined_at ASC'
+      )
+        .bind(groupId)
+        .all();
+      return (res.results || [])
+        .map((row) => sanitizeDeviceFingerprint(row.device_fp))
+        .filter(Boolean);
+    } catch {
+      return [];
+    }
+  }
+
+  async removeAllGroupMemberships(groupId) {
+    if (!groupId || !this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    await this.ensureContactsSchema();
+    try {
+      await this.env.DB.prepare(
+        'DELETE FROM group_memberships WHERE group_id = ?'
+      )
+        .bind(groupId)
+        .run();
+    } catch {
+      // no-op
+    }
+  }
+
   async getOwnedGroupIds(ownerUid) {
     if (!ownerUid) return [];
     await this.ensureGroupMetaLoaded();
@@ -854,6 +1125,43 @@ export class ChatRoom {
         return sanitizeGroupId(meta.groupId);
       })
       .filter((gid) => gid && gid !== SYSTEM_GROUP && gid !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(gid));
+  }
+
+  async removeInviteRecordsForGroup(groupId) {
+    if (!groupId) return;
+    await this.ensureInviteRecordsLoaded();
+    let changed = false;
+    for (const [inviteId, record] of this.inviteRecordsById.entries()) {
+      if (!record || record.groupId !== groupId) continue;
+      this.inviteRecordsById.delete(inviteId);
+      changed = true;
+    }
+    if (changed) {
+      await this.persistInviteRecords();
+    }
+  }
+
+  async cleanupJoinApprovalsForGroup(groupId) {
+    if (!groupId) return;
+    for (const [requestId, req] of this.groupJoinApprovals.entries()) {
+      if (!req || req.groupId !== groupId) continue;
+      if (req.inviteId) {
+        await this.releaseInviteReservation(req.inviteId);
+      }
+      this.groupJoinApprovals.delete(requestId);
+    }
+  }
+
+  async chooseNextGroupOwner(groupId, currentOwnerUid) {
+    const persisted = await this.getPersistedGroupMemberIds(groupId);
+    for (const uid of persisted) {
+      if (uid && uid !== currentOwnerUid) return uid;
+    }
+    const online = this.getGroupMembers(groupId)
+      .map(({ session }) => sanitizeDeviceFingerprint(session?.uid))
+      .filter((uid) => uid && uid !== currentOwnerUid);
+    online.sort();
+    return online[0] || '';
   }
 
   buildPendingJoinResultKey(deviceFp, requestId) {
@@ -919,10 +1227,13 @@ export class ChatRoom {
     }
   }
 
-  cleanupJoinApprovals() {
+  async cleanupJoinApprovals() {
     const now = Date.now();
     for (const [requestId, req] of this.groupJoinApprovals.entries()) {
       if (!req || now - req.createdAt > GROUP_INVITE_APPROVAL_TTL_MS) {
+        if (req?.inviteId) {
+          await this.releaseInviteReservation(req.inviteId);
+        }
         this.groupJoinApprovals.delete(requestId);
       }
     }
@@ -974,8 +1285,37 @@ export class ChatRoom {
       groupId,
       groupName,
       ownerUid,
+      announcement: sanitizeOptionalText(meta?.announcement, GROUP_ANNOUNCEMENT_MAX),
+      inviteApprovalRequired: meta?.inviteApprovalRequired === true,
       reqId,
     });
+  }
+
+  serializeInviteRecord(record) {
+    if (!record) return null;
+    return {
+      inviteId: record.inviteId || '',
+      groupId: record.groupId || '',
+      inviteCode: record.inviteCode || '',
+      shortCode: record.shortCode || '',
+      creatorUid: record.creatorUid || '',
+      creatorNickname: record.creatorNickname || '',
+      creatorStatement: record.creatorStatement || '',
+      createdAt: record.createdAt || 0,
+      updatedAt: record.updatedAt || 0,
+      expiresAt: record.expiresAt || 0,
+      maxUses: record.maxUses || DEFAULT_INVITE_MAX_USES,
+      usedCount: record.usedCount || 0,
+      pendingCount: record.pendingCount || 0,
+      revokedAt: record.revokedAt || 0,
+    };
+  }
+
+  filterInviteRecordsForViewer(records, viewerUid = '', ownerUid = '') {
+    const list = Array.isArray(records) ? records : [];
+    if (!viewerUid) return [];
+    if (ownerUid && viewerUid === ownerUid) return list;
+    return list.filter((record) => record && record.creatorUid === viewerUid);
   }
 
   sendFirstDeviceGuide(ws, sender) {
@@ -1115,7 +1455,10 @@ export class ChatRoom {
 
   async getInviteKey() {
     if (!this.inviteKeyPromise) {
-      const secret = this.env.INVITE_SIGNING_SECRET || 'change-me-invite-secret';
+      const secret = getConfiguredSecret(this.env.INVITE_SIGNING_SECRET, MIN_INVITE_SIGNING_SECRET_LENGTH);
+      if (!secret) {
+        throw new Error('INVITE_SIGNING_SECRET_MISSING');
+      }
       this.inviteKeyPromise = crypto.subtle.importKey(
         'raw',
         enc.encode(secret),
@@ -1148,19 +1491,35 @@ export class ChatRoom {
 
     try {
       const valid = await crypto.subtle.verify('HMAC', key, sigBytes, enc.encode(payloadB64));
-      return valid ? payload : null;
+      if (!valid) return null;
+      const inviteId = sanitizeText(payload.i, 80);
+      if (!inviteId) return null;
+      const record = await this.getInviteRecordById(inviteId);
+      if (!record || record.groupId !== groupId || record.inviteCode !== parsed.normalizedCode) return null;
+      if (!this.isInviteRecordActive(record)) return null;
+      if (record.maxUses > 0 && record.usedCount >= record.maxUses) return null;
+      return { ...payload, inviteId, record };
     } catch {
       return null;
     }
   }
 
+  isInviteSigningConfigured() {
+    return Boolean(getConfiguredSecret(this.env.INVITE_SIGNING_SECRET, MIN_INVITE_SIGNING_SECRET_LENGTH));
+  }
+
   async makeInviteCode(groupId, ttlSec, options = {}) {
+    await this.ensureInviteRecordsLoaded();
     const ttl = Number.isFinite(ttlSec) ? ttlSec : INVITE_TTL_DEFAULT_SECONDS;
     const boundedTtl = Math.max(60, Math.min(INVITE_TTL_MAX_SECONDS, Math.floor(ttl)));
     const creatorUid = sanitizeText(options.creatorUid, 80) || '';
     const creatorNickname = sanitizeOptionalText(options.creatorNickname, NICKNAME_MAX);
     const creatorStatement = sanitizeOptionalText(options.creatorStatement, 180);
+    const maxUses = sanitizeInviteMaxUses(options.maxUses);
+    const inviteId = `ginv-${randomHex(8)}`;
+    const shortCode = await this.generateUniqueInviteShortCode();
     const payload = {
+      i: inviteId,
       g: groupId,
       e: Date.now() + boundedTtl * 1000,
       n: randomHex(6),
@@ -1171,9 +1530,53 @@ export class ChatRoom {
 
     const payloadB64 = base64UrlEncodeText(JSON.stringify(payload));
     const sigB64 = await this.signPayload(payloadB64);
-    return {
-      inviteCode: `TCINV-${payloadB64}.${sigB64}`,
+    const inviteCode = `TCINV-${payloadB64}.${sigB64}`;
+    const record = {
+      inviteId,
+      groupId,
+      inviteCode,
+      shortCode,
+      creatorUid,
+      creatorNickname,
+      creatorStatement,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
       expiresAt: payload.e,
+      maxUses,
+      usedCount: 0,
+      pendingCount: 0,
+      revokedAt: 0,
+    };
+    const activeInviteCount = Array.from(this.inviteRecordsById.values()).filter(
+      (item) => item.groupId === groupId && this.isInviteRecordActive(item)
+    ).length;
+    if (activeInviteCount >= MAX_ACTIVE_INVITES_PER_GROUP) {
+      throw new Error('INVITE_LIMIT_REACHED');
+    }
+    this.inviteRecordsById.set(inviteId, record);
+    await this.persistInviteRecords();
+    return {
+      inviteId,
+      inviteCode,
+      shortCode,
+      expiresAt: payload.e,
+      maxUses,
+    };
+  }
+
+  async resolveShortInvite(shortCode) {
+    const record = await this.getInviteRecordByShortCode(shortCode);
+    if (!record || !this.isInviteRecordActive(record)) return null;
+    if (record.maxUses > 0 && record.usedCount >= record.maxUses) return null;
+    return {
+      inviteId: record.inviteId,
+      inviteCode: record.inviteCode,
+      groupId: record.groupId,
+      shortCode: record.shortCode,
+      expiresAt: record.expiresAt,
+      maxUses: record.maxUses,
+      usedCount: record.usedCount,
+      pendingCount: record.pendingCount,
     };
   }
 
@@ -1229,11 +1632,23 @@ export class ChatRoom {
       case 'create_invite':
         await this.handleCreateInvite(ws, sender, data, reqId);
         break;
+      case 'group_invite_settings':
+        await this.handleGroupInviteSettings(ws, sender, data, reqId);
+        break;
+      case 'group_invite_policy_update':
+        await this.handleGroupInvitePolicyUpdate(ws, sender, data, reqId);
+        break;
+      case 'group_invite_revoke':
+        await this.handleGroupInviteRevoke(ws, sender, data, reqId);
+        break;
       case 'group_invite_approve':
         await this.handleGroupInviteApprove(ws, sender, data, reqId);
         break;
       case 'group_rename':
         await this.handleGroupRename(ws, sender, data, reqId);
+        break;
+      case 'group_announcement_update':
+        await this.handleGroupAnnouncementUpdate(ws, sender, data, reqId);
         break;
       case 'group_members':
         await this.handleGroupMembers(ws, sender, data, reqId);
@@ -1530,7 +1945,7 @@ export class ChatRoom {
 
   async notifyPendingInviteApprovals(ws, sender) {
     if (!sender?.uid) return;
-    this.cleanupJoinApprovals();
+    await this.cleanupJoinApprovals();
     for (const req of this.groupJoinApprovals.values()) {
       if (!req || !req.groupId) continue;
       const meta = await this.getGroupMeta(req.groupId);
@@ -1616,67 +2031,97 @@ export class ChatRoom {
 
       const hasExistingMembers = await this.groupHasMembers(groupId);
       if (groupId !== SYSTEM_GROUP && hasExistingMembers && !isDirectGroupId(groupId)) {
-        const inviteCode = sanitizeText(data.inviteCode, 700);
-        const invite = inviteCode ? await this.verifyInviteCode(inviteCode, groupId) : null;
-        if (!invite) {
-          this.sendError(ws, 'INVITE_REQUIRED', 'Valid invite code required for this group', reqId);
-          return;
-        }
         meta = await this.getGroupMeta(groupId);
         const ownerUid = meta?.ownerUid || '';
-        const inviterUid = sanitizeText(invite.c, 80) || '';
-        const inviterNickname = sanitizeOptionalText(invite.cn, NICKNAME_MAX);
-        const inviterStatement = sanitizeOptionalText(invite.cs, 180);
-        const requesterStatement = sanitizeOptionalText(data.joinStatement, 180);
-        if (ownerUid && inviterUid && inviterUid !== ownerUid && sender.uid !== ownerUid) {
-          this.cleanupJoinApprovals();
-          let requestId = `gjr-${randomHex(6)}`;
-          while (this.groupJoinApprovals.has(requestId)) {
-            requestId = `gjr-${randomHex(6)}`;
+        const ownerRejoin = Boolean(ownerUid && ownerUid === sender.uid);
+        if (!ownerRejoin) {
+          const inviteCode = sanitizeText(data.inviteCode, 700);
+          let invite = null;
+          try {
+            invite = inviteCode ? await this.verifyInviteCode(inviteCode, groupId) : null;
+          } catch (error) {
+            if (error instanceof Error && error.message === 'INVITE_SIGNING_SECRET_MISSING') {
+              this.sendError(ws, 'SERVER_CONFIG_ERROR', 'Invite signing secret missing', reqId);
+              return;
+            }
+            throw error;
           }
-          this.groupJoinApprovals.set(requestId, {
-            requestId,
-            groupId,
-            groupName: meta?.name || groupId,
-            requesterUid: sender.uid,
-            requesterFingerprint: sender.deviceFingerprint || '',
-            requesterNickname: sender.nickname || '',
-            requesterStatement,
-            inviterUid,
-            inviterNickname,
-            inviterStatement,
-            createdAt: Date.now(),
-            reqId: reqId || '',
-          });
-          this.sendTo(ws, {
-            type: 'invite_join_approval_pending',
-            requestId,
-            groupId,
-            groupName: meta?.name || groupId,
-            ownerUid,
-            reqId,
-          });
-          this.sendGroupNoticeToOwner(groupId, ownerUid, {
-            title: '入群待审批',
-            text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 想通过成员邀请加入“${meta?.name || groupId}”。`,
-            actions: [
-              { action: 'approve_group_join', label: '同意', requestId },
-              { action: 'reject_group_join', label: '拒绝', requestId },
-            ],
-            meta: {
-              kind: 'group_join_request',
+          if (!invite) {
+            this.sendError(ws, 'INVITE_REQUIRED', 'Valid invite code required for this group', reqId);
+            return;
+          }
+          const inviterUid = sanitizeText(invite.c, 80) || '';
+          const inviterNickname = sanitizeOptionalText(invite.cn, NICKNAME_MAX);
+          const inviterStatement = sanitizeOptionalText(invite.cs, 180);
+          const requesterStatement = sanitizeOptionalText(data.joinStatement, 180);
+          const inviteId = invite.inviteId || invite.record?.inviteId || '';
+          const approvalRequired = meta?.inviteApprovalRequired === true;
+          const creatorNeedsApproval = Boolean(ownerUid && inviterUid && inviterUid !== ownerUid && sender.uid !== ownerUid);
+          const needsApproval = approvalRequired || creatorNeedsApproval;
+          if (needsApproval) {
+            await this.cleanupJoinApprovals();
+            const reserved = inviteId ? await this.reserveInviteUse(inviteId) : null;
+            if (inviteId && !reserved) {
+              this.sendError(ws, 'INVITE_EXHAUSTED', 'Invite link usage limit reached', reqId);
+              return;
+            }
+            let requestId = `gjr-${randomHex(6)}`;
+            while (this.groupJoinApprovals.has(requestId)) {
+              requestId = `gjr-${randomHex(6)}`;
+            }
+            this.groupJoinApprovals.set(requestId, {
               requestId,
               groupId,
               groupName: meta?.name || groupId,
               requesterUid: sender.uid,
+              requesterFingerprint: sender.deviceFingerprint || '',
               requesterNickname: sender.nickname || '',
               requesterStatement,
+              inviteId,
               inviterUid,
               inviterNickname,
               inviterStatement,
-            },
-          });
-          return;
+              createdAt: Date.now(),
+              reqId: reqId || '',
+            });
+            this.sendTo(ws, {
+              type: 'invite_join_approval_pending',
+              requestId,
+              groupId,
+              groupName: meta?.name || groupId,
+              ownerUid,
+              reqId,
+            });
+            this.sendGroupNoticeToOwner(groupId, ownerUid, {
+              title: '入群待审批',
+              text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 想通过成员邀请加入“${meta?.name || groupId}”。`,
+              actions: [
+                { action: 'approve_group_join', label: '同意', requestId },
+                { action: 'reject_group_join', label: '拒绝', requestId },
+              ],
+              meta: {
+                kind: 'group_join_request',
+                requestId,
+                groupId,
+                groupName: meta?.name || groupId,
+                requesterUid: sender.uid,
+                requesterNickname: sender.nickname || '',
+                requesterStatement,
+                inviterUid,
+                inviterNickname,
+                inviterStatement,
+              },
+            });
+            return;
+          }
+
+          if (inviteId) {
+            const consumed = await this.consumeInviteUse(inviteId);
+            if (!consumed) {
+              this.sendError(ws, 'INVITE_EXHAUSTED', 'Invite link usage limit reached', reqId);
+              return;
+            }
+          }
         }
       }
 
@@ -1754,23 +2199,60 @@ export class ChatRoom {
     const meta = await this.getGroupMeta(groupId);
     const ttlSec = Number(data.ttlSec);
     const creatorStatement = sanitizeOptionalText(data.inviteStatement, 180);
-    const invite = await this.makeInviteCode(
-      groupId,
-      Number.isFinite(ttlSec) ? ttlSec : INVITE_TTL_DEFAULT_SECONDS,
-      {
-        creatorUid: sender.uid,
-        creatorNickname: sender.nickname || '',
-        creatorStatement,
+    const maxUses = sanitizeInviteMaxUses(data.maxUses);
+    let invite;
+    try {
+      invite = await this.makeInviteCode(
+        groupId,
+        Number.isFinite(ttlSec) ? ttlSec : INVITE_TTL_DEFAULT_SECONDS,
+        {
+          creatorUid: sender.uid,
+          creatorNickname: sender.nickname || '',
+          creatorStatement,
+          maxUses,
+        }
+      );
+    } catch (error) {
+      if (error instanceof Error && error.message === 'INVITE_SIGNING_SECRET_MISSING') {
+        this.sendError(ws, 'SERVER_CONFIG_ERROR', 'Invite signing secret missing', reqId);
+        return;
       }
-    );
+      if (error instanceof Error && error.message === 'INVITE_LIMIT_REACHED') {
+        this.sendError(ws, 'INVITE_LIMIT_REACHED', 'Too many active invite links', reqId);
+        return;
+      }
+      throw error;
+    }
 
     this.sendTo(ws, {
       type: 'invite_created',
       groupId,
+      inviteId: invite.inviteId,
       inviteCode: invite.inviteCode,
+      shortCode: invite.shortCode,
       expiresAt: invite.expiresAt,
+      maxUses: invite.maxUses,
       reqId,
     });
+    const invites = await this.listGroupInviteRecords(groupId);
+    const members = this.getGroupMembers(groupId);
+    for (const { ws: memberWs } of members) {
+      const member = this.sessions.get(memberWs);
+      const visibleInvites = this.filterInviteRecordsForViewer(
+        invites,
+        member?.uid || '',
+        meta?.ownerUid || ''
+      );
+      this.sendTo(memberWs, {
+        type: 'group_invite_settings',
+        groupId,
+        ownerUid: meta?.ownerUid || '',
+        announcement: sanitizeOptionalText(meta?.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta?.inviteApprovalRequired === true,
+        invites: visibleInvites.map((item) => this.serializeInviteRecord(item)).filter(Boolean),
+        reqId,
+      });
+    }
 
     if (meta && meta.ownerUid && meta.ownerUid !== sender.uid) {
       this.sendGroupNoticeToOwner(groupId, meta.ownerUid, {
@@ -1801,13 +2283,146 @@ export class ChatRoom {
     }
   }
 
+  async handleGroupInviteSettings(ws, sender, data, reqId) {
+    const groupId = sanitizeGroupId(data.groupId);
+    if (!groupId) {
+      this.handleInvalidAction(ws, 'INVALID_GROUP', 'Invalid groupId', reqId);
+      return;
+    }
+    if (!sender.groups.has(groupId)) {
+      this.sendError(ws, 'NOT_IN_GROUP', 'Join group before reading invite settings', reqId);
+      return;
+    }
+    const meta = await this.getGroupMeta(groupId);
+    const invites = this.filterInviteRecordsForViewer(
+      await this.listGroupInviteRecords(groupId),
+      sender.uid,
+      meta?.ownerUid || ''
+    );
+    this.sendTo(ws, {
+      type: 'group_invite_settings',
+      groupId,
+      ownerUid: meta?.ownerUid || '',
+      announcement: sanitizeOptionalText(meta?.announcement, GROUP_ANNOUNCEMENT_MAX),
+      inviteApprovalRequired: meta?.inviteApprovalRequired === true,
+      invites: invites.map((item) => this.serializeInviteRecord(item)).filter(Boolean),
+      reqId,
+    });
+  }
+
+  async handleGroupInvitePolicyUpdate(ws, sender, data, reqId) {
+    const groupId = sanitizeGroupId(data.groupId);
+    if (!groupId) {
+      this.handleInvalidAction(ws, 'INVALID_GROUP', 'Invalid groupId', reqId);
+      return;
+    }
+    const meta = await this.getGroupMeta(groupId);
+    if (!meta || meta.ownerUid !== sender.uid) {
+      this.sendError(ws, 'GROUP_OWNER_REQUIRED', 'Only group owner can update invite settings', reqId);
+      return;
+    }
+    meta.inviteApprovalRequired = data.inviteApprovalRequired === true;
+    meta.updatedAt = Date.now();
+    await this.persistGroupMeta();
+    this.sendGroupSystemNotice(groupId, {
+      title: '邀请策略已更新',
+      text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 将分享链接审批改为${meta.inviteApprovalRequired ? '需要群主确认' : '直接可加入'}。`,
+      meta: {
+        kind: 'group_invite_policy_updated',
+        groupId,
+        groupName: meta.name || groupId,
+        ownerUid: sender.uid,
+        ownerNickname: sender.nickname || '',
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+      },
+    });
+    const invites = await this.listGroupInviteRecords(groupId);
+    const members = this.getGroupMembers(groupId);
+    for (const { ws: memberWs } of members) {
+      const member = this.sessions.get(memberWs);
+      const visibleInvites = this.filterInviteRecordsForViewer(
+        invites,
+        member?.uid || '',
+        meta?.ownerUid || ''
+      );
+      this.sendTo(memberWs, {
+        type: 'group_meta_updated',
+        groupId,
+        groupName: meta.name || groupId,
+        ownerUid: meta.ownerUid || '',
+        announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+        reqId,
+      });
+      this.sendTo(memberWs, {
+        type: 'group_invite_settings',
+        groupId,
+        ownerUid: meta.ownerUid || '',
+        announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+        invites: visibleInvites.map((item) => this.serializeInviteRecord(item)).filter(Boolean),
+        reqId,
+      });
+    }
+  }
+
+  async handleGroupInviteRevoke(ws, sender, data, reqId) {
+    const groupId = sanitizeGroupId(data.groupId);
+    const inviteId = sanitizeText(data.inviteId, 80);
+    if (!groupId || !inviteId) {
+      this.handleInvalidAction(ws, 'INVALID_GROUP_INVITE_REVOKE', 'groupId and inviteId required', reqId);
+      return;
+    }
+    const meta = await this.getGroupMeta(groupId);
+    if (!meta || meta.ownerUid !== sender.uid) {
+      this.sendError(ws, 'GROUP_OWNER_REQUIRED', 'Only group owner can revoke invite links', reqId);
+      return;
+    }
+    const record = await this.getInviteRecordById(inviteId);
+    if (!record || record.groupId !== groupId) {
+      this.sendError(ws, 'INVITE_INVALID', 'Invite link not found', reqId);
+      return;
+    }
+    await this.revokeInviteRecord(inviteId);
+    const invites = await this.listGroupInviteRecords(groupId);
+    const members = this.getGroupMembers(groupId);
+    for (const { ws: memberWs } of members) {
+      const member = this.sessions.get(memberWs);
+      const visibleInvites = this.filterInviteRecordsForViewer(
+        invites,
+        member?.uid || '',
+        meta?.ownerUid || ''
+      );
+      this.sendTo(memberWs, {
+        type: 'group_invite_settings',
+        groupId,
+        ownerUid: meta.ownerUid || '',
+        announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+        invites: visibleInvites.map((item) => this.serializeInviteRecord(item)).filter(Boolean),
+        reqId,
+      });
+    }
+    this.sendGroupSystemNotice(groupId, {
+      title: '邀请链接已吊销',
+      text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 吊销了一条群邀请链接。`,
+      meta: {
+        kind: 'group_invite_revoked',
+        groupId,
+        groupName: meta.name || groupId,
+        ownerUid: sender.uid,
+        ownerNickname: sender.nickname || '',
+      },
+    });
+  }
+
   async handleGroupInviteApprove(ws, sender, data, reqId) {
     const requestId = sanitizeText(data.requestId, 80);
     if (!requestId) {
       this.handleInvalidAction(ws, 'INVALID_INVITE_APPROVAL', 'requestId required', reqId);
       return;
     }
-    this.cleanupJoinApprovals();
+    await this.cleanupJoinApprovals();
     const pending = this.groupJoinApprovals.get(requestId);
     if (!pending) {
       this.sendError(ws, 'INVITE_APPROVAL_INVALID', 'Invite approval request not found', reqId);
@@ -1825,6 +2440,9 @@ export class ChatRoom {
     this.groupJoinApprovals.delete(requestId);
 
     if (!approve) {
+      if (pending.inviteId) {
+        await this.releaseInviteReservation(pending.inviteId);
+      }
       if (requesterWs) {
         this.sendTo(requesterWs, {
           type: 'invite_approval_result',
@@ -1865,11 +2483,34 @@ export class ChatRoom {
     if (requesterWs) {
       const requester = this.sessions.get(requesterWs);
       if (requester && !requester.groups.has(pending.groupId)) {
+        if (pending.inviteId) {
+          const consumed = await this.consumeReservedInviteUse(pending.inviteId);
+          if (!consumed) {
+            this.sendError(ws, 'INVITE_EXHAUSTED', 'Invite link usage limit reached', reqId);
+            this.sendTo(requesterWs, {
+              type: 'invite_approval_result',
+              requestId,
+              groupId: pending.groupId,
+              approved: false,
+              reqId: pending.reqId || reqId,
+            });
+            return;
+          }
+        }
         requester.groups.add(pending.groupId);
         await this.saveGroupMembership(requester.deviceFingerprint, pending.groupId);
         this.sendGroupJoined(requesterWs, pending.groupId, meta, pending.reqId || reqId);
+      } else if (pending.inviteId) {
+        await this.releaseInviteReservation(pending.inviteId);
       }
     } else if (pending.requesterFingerprint) {
+      if (pending.inviteId) {
+        const consumed = await this.consumeReservedInviteUse(pending.inviteId);
+        if (!consumed) {
+          this.sendError(ws, 'INVITE_EXHAUSTED', 'Invite link usage limit reached', reqId);
+          return;
+        }
+      }
       await this.saveGroupMembership(pending.requesterFingerprint, pending.groupId);
       await this.savePendingJoinResult(pending.requesterFingerprint, {
         requestId,
@@ -1932,7 +2573,15 @@ export class ChatRoom {
 
     const oldName = meta.name || groupId;
     if (oldName === groupName) {
-      this.sendTo(ws, { type: 'group_meta_updated', groupId, groupName, ownerUid: meta.ownerUid, reqId });
+      this.sendTo(ws, {
+        type: 'group_meta_updated',
+        groupId,
+        groupName,
+        ownerUid: meta.ownerUid,
+        announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+        reqId,
+      });
       return;
     }
 
@@ -1947,6 +2596,8 @@ export class ChatRoom {
         groupId,
         groupName,
         ownerUid: meta.ownerUid || '',
+        announcement: sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
         reqId,
       });
     }
@@ -1960,6 +2611,75 @@ export class ChatRoom {
         groupName,
         ownerUid: sender.uid,
         ownerNickname: sender.nickname || '',
+      },
+    });
+  }
+
+  async handleGroupAnnouncementUpdate(ws, sender, data, reqId) {
+    const groupId = sanitizeGroupId(data.groupId);
+    if (!groupId) {
+      this.handleInvalidAction(ws, 'INVALID_GROUP_ANNOUNCEMENT', 'groupId required', reqId);
+      return;
+    }
+    if (groupId === SYSTEM_GROUP || groupId === SYSTEM_NOTICE_GROUP || isDirectGroupId(groupId)) {
+      this.sendError(ws, 'GROUP_ANNOUNCEMENT_FORBIDDEN', 'Cannot update announcement for this group', reqId);
+      return;
+    }
+    if (!sender.groups.has(groupId)) {
+      this.sendError(ws, 'NOT_IN_GROUP', 'Join group before updating announcement', reqId);
+      return;
+    }
+
+    const meta = await this.getOrInitGroupMeta(groupId, sender);
+    if (meta.ownerUid !== sender.uid) {
+      this.sendError(ws, 'GROUP_OWNER_REQUIRED', 'Only group owner can update announcement', reqId);
+      return;
+    }
+
+    const announcement = sanitizeOptionalText(data.announcement, GROUP_ANNOUNCEMENT_MAX);
+    const oldAnnouncement = sanitizeOptionalText(meta.announcement, GROUP_ANNOUNCEMENT_MAX);
+    if (announcement === oldAnnouncement) {
+      this.sendTo(ws, {
+        type: 'group_meta_updated',
+        groupId,
+        groupName: meta.name || groupId,
+        ownerUid: meta.ownerUid || '',
+        announcement,
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+        reqId,
+      });
+      return;
+    }
+
+    meta.announcement = announcement;
+    meta.updatedAt = Date.now();
+    await this.persistGroupMeta();
+
+    const members = this.getGroupMembers(groupId);
+    for (const { ws: memberWs } of members) {
+      this.sendTo(memberWs, {
+        type: 'group_meta_updated',
+        groupId,
+        groupName: meta.name || groupId,
+        ownerUid: meta.ownerUid || '',
+        announcement,
+        inviteApprovalRequired: meta.inviteApprovalRequired === true,
+        reqId,
+      });
+    }
+
+    this.sendGroupSystemNotice(groupId, {
+      title: announcement ? '群公告已更新' : '群公告已清空',
+      text: announcement
+        ? `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 更新了群公告。`
+        : `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 清空了群公告。`,
+      meta: {
+        kind: 'group_announcement_updated',
+        groupId,
+        groupName: meta.name || groupId,
+        ownerUid: sender.uid,
+        ownerNickname: sender.nickname || '',
+        announcement,
       },
     });
   }
@@ -1981,6 +2701,8 @@ export class ChatRoom {
     const meta = await this.getGroupMeta(groupId);
     const ownerUid = meta?.ownerUid || '';
     const groupName = meta?.name || groupId;
+    const successorUid = ownerUid ? await this.chooseNextGroupOwner(groupId, ownerUid) : '';
+    const successorNickname = successorUid ? await this.getDeviceNickname(successorUid) : '';
     const members = this.getGroupMembers(groupId).map(({ session }) => ({
       uid: session.uid,
       nickname: session.nickname || '',
@@ -1993,6 +2715,10 @@ export class ChatRoom {
       groupId,
       groupName,
       ownerUid,
+      successorUid,
+      successorNickname,
+      announcement: sanitizeOptionalText(meta?.announcement, GROUP_ANNOUNCEMENT_MAX),
+      inviteApprovalRequired: meta?.inviteApprovalRequired === true,
       members,
       reqId,
     });
@@ -2061,8 +2787,106 @@ export class ChatRoom {
     this.broadcastSystemStatus();
   }
 
+  async syncGroupMetaAndInvites(groupId, meta, reqId = null) {
+    const invites = await this.listGroupInviteRecords(groupId);
+    const members = this.getGroupMembers(groupId);
+    for (const { ws: memberWs } of members) {
+      const member = this.sessions.get(memberWs);
+      const visibleInvites = this.filterInviteRecordsForViewer(
+        invites,
+        member?.uid || '',
+        meta?.ownerUid || ''
+      );
+      this.sendTo(memberWs, {
+        type: 'group_meta_updated',
+        groupId,
+        groupName: meta?.name || groupId,
+        ownerUid: meta?.ownerUid || '',
+        announcement: sanitizeOptionalText(meta?.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta?.inviteApprovalRequired === true,
+        reqId,
+      });
+      this.sendTo(memberWs, {
+        type: 'group_invite_settings',
+        groupId,
+        ownerUid: meta?.ownerUid || '',
+        announcement: sanitizeOptionalText(meta?.announcement, GROUP_ANNOUNCEMENT_MAX),
+        inviteApprovalRequired: meta?.inviteApprovalRequired === true,
+        invites: visibleInvites.map((item) => this.serializeInviteRecord(item)).filter(Boolean),
+        reqId,
+      });
+    }
+  }
+
+  async handleOwnerLeaveByInheritance(ws, sender, meta, groupId, reqId) {
+    const nextOwnerUid = await this.chooseNextGroupOwner(groupId, sender.uid);
+    if (!nextOwnerUid) {
+      this.sendError(ws, 'GROUP_OWNER_INHERIT_NO_SUCCESSOR', 'No successor available for ownership transfer', reqId);
+      return;
+    }
+
+    sender.groups.delete(groupId);
+    await this.removeGroupMembership(sender.deviceFingerprint, groupId);
+
+    meta.ownerUid = nextOwnerUid;
+    meta.updatedAt = Date.now();
+    await this.persistGroupMeta();
+
+    const nextOwnerWs = this.findWsByUid(nextOwnerUid);
+    const nextOwner = nextOwnerWs ? this.sessions.get(nextOwnerWs) : null;
+    const nextOwnerNickname = nextOwner?.nickname || await this.getDeviceNickname(nextOwnerUid);
+
+    this.sendTo(ws, { type: 'group_left', groupId, reqId });
+    await this.syncGroupMetaAndInvites(groupId, meta, reqId);
+    this.sendGroupSystemNotice(groupId, {
+      title: '群主已变更',
+      text: `${sender.nickname || `用户 ${sender.uid.slice(0, 6)}`} 退出了群聊，群主已顺位继承给 ${nextOwnerNickname || `用户 ${nextOwnerUid.slice(0, 6)}`}。`,
+      actions: [{ action: 'open_related_group', label: '查看群聊', groupId }],
+      meta: {
+        kind: 'group_owner_transferred',
+        groupId,
+        groupName: meta?.name || groupId,
+        ownerUid: nextOwnerUid,
+        ownerNickname: nextOwnerNickname || '',
+        previousOwnerUid: sender.uid,
+        previousOwnerNickname: sender.nickname || '',
+      },
+    });
+    this.broadcastSystemStatus();
+  }
+
+  async handleOwnerLeaveByDissolve(sender, meta, groupId, reqId) {
+    const members = this.getGroupMembers(groupId);
+    for (const { session } of members) {
+      session.groups.delete(groupId);
+    }
+    await this.removeAllGroupMemberships(groupId);
+    await this.cleanupJoinApprovalsForGroup(groupId);
+    await this.removeInviteRecordsForGroup(groupId);
+    await this.ensureGroupMetaLoaded();
+    this.groupMetaById.delete(groupId);
+    await this.persistGroupMeta();
+
+    for (const { ws: memberWs } of members) {
+      this.sendTo(memberWs, {
+        type: 'group_dissolved',
+        groupId,
+        groupName: meta?.name || groupId,
+        byUid: sender.uid,
+        byNickname: sender.nickname || '',
+        reqId,
+      });
+    }
+    this.broadcastSystemStatus();
+  }
+
   async handleLeaveGroup(ws, sender, data, reqId) {
     const groupId = sanitizeGroupId(data.groupId);
+    const ownerAction = data.ownerAction === 'dissolve'
+      ? 'dissolve'
+      : data.ownerAction === 'inherit'
+        ? 'inherit'
+        : '';
     if (!groupId) {
       this.handleInvalidAction(ws, 'INVALID_GROUP_LEAVE', 'groupId required', reqId);
       return;
@@ -2077,7 +2901,15 @@ export class ChatRoom {
     }
     const meta = await this.getGroupMeta(groupId);
     if (meta?.ownerUid === sender.uid) {
-      this.sendError(ws, 'GROUP_OWNER_CANNOT_LEAVE', 'Group owner cannot leave directly', reqId);
+      if (!ownerAction) {
+        this.sendError(ws, 'GROUP_OWNER_LEAVE_MODE_REQUIRED', 'Owner leave mode required', reqId);
+        return;
+      }
+      if (ownerAction === 'dissolve') {
+        await this.handleOwnerLeaveByDissolve(sender, meta, groupId, reqId);
+        return;
+      }
+      await this.handleOwnerLeaveByInheritance(ws, sender, meta, groupId, reqId);
       return;
     }
 
@@ -2361,7 +3193,16 @@ export class ChatRoom {
       return;
     }
 
-    const invite = await this.verifyInviteCode(inviteCode, groupId);
+    let invite;
+    try {
+      invite = await this.verifyInviteCode(inviteCode, groupId);
+    } catch (error) {
+      if (error instanceof Error && error.message === 'INVITE_SIGNING_SECRET_MISSING') {
+        this.sendError(ws, 'SERVER_CONFIG_ERROR', 'Invite signing secret missing', reqId);
+        return;
+      }
+      throw error;
+    }
     if (!invite) {
       this.sendError(ws, 'INVITE_INVALID', 'Invite code invalid', reqId);
       return;
@@ -3203,10 +4044,26 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === '/api/check') {
+      const inviteSigningSecretConfigured = Boolean(
+        getConfiguredSecret(env.INVITE_SIGNING_SECRET, MIN_INVITE_SIGNING_SECRET_LENGTH)
+      );
       return new Response(
-        JSON.stringify({ status: 'ok', service: 'LINKCONNECT-backend', date: new Date().toISOString() }),
+        JSON.stringify({
+          status: inviteSigningSecretConfigured ? 'ok' : 'degraded',
+          service: 'LINKCONNECT-backend',
+          date: new Date().toISOString(),
+          config: {
+            inviteSigningSecretConfigured,
+          },
+        }),
         { status: 200, headers: jsonHeaders }
       );
+    }
+
+    if (url.pathname === '/api/invite-resolve') {
+      const id = env.CHAT_ROOM.idFromName('global-room');
+      const obj = env.CHAT_ROOM.get(id);
+      return obj.fetch(request);
     }
 
     if (request.headers.get('Upgrade') === 'websocket') {

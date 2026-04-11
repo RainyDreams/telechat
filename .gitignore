@@ -2,6 +2,10 @@ node_modules/
 dist/
 .wrangler/
 backend/.wrangler/
+.dev.vars
+.dev.vars.*
+backend/.dev.vars
+backend/.dev.vars.*
 
 .env
 .env.*
