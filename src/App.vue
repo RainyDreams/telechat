@@ -136,14 +136,14 @@
       </div>
       <aside
         v-if="!mobileViewport"
-        class="w-72 shrink-0 border-r border-slate-200/80 bg-white/85 p-4 backdrop-blur flex flex-col"
+        class="w-72 shrink-0 border-r border-slate-200/80 bg-white/85 p-3 backdrop-blur flex flex-col"
       >
-        <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div class="flex items-center justify-between gap-3">
-            <div class="flex min-w-0 items-center gap-3">
+        <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-2">
               <div class="relative">
-                <div class="h-10 w-10 rounded-full bg-gradient-to-br from-sky-500 to-emerald-500"></div>
-                <span class="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-emerald-500"></span>
+                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-sky-500 to-emerald-500"></div>
+                <span class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500"></span>
               </div>
               <div class="min-w-0">
                 <p class="text-xs uppercase tracking-wide text-slate-400">My ID</p>
@@ -172,7 +172,7 @@
           </div>
         </div>
 
-        <div class="mt-4 rounded-2xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
+        <div class="mt-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
           <input
             v-model="groupQuery"
             class="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
@@ -181,8 +181,8 @@
           />
         </div>
 
-        <div class="mt-4 flex-1 overflow-y-auto pr-1">
-          <p class="mb-2 px-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Groups</p>
+        <div class="mt-2 flex-1 overflow-y-auto pr-1">
+          <p class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Groups</p>
           <button
             v-for="group in visibleGroups"
             :key="group.id"
@@ -194,7 +194,7 @@
             @pointermove="cancelGroupLongPress"
             @pointercancel="cancelGroupLongPress"
             @pointerleave="cancelGroupLongPress"
-            class="group-quick-trigger mb-2 flex w-full items-center justify-between rounded-xl border px-3 py-3 text-left transition"
+            class="group-quick-trigger mb-1 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-left transition"
             :class="
               isGroupSelected(group.id)
                 ? 'border-sky-200 bg-sky-50 text-sky-700 shadow-sm'
@@ -401,73 +401,28 @@
         <Transition name="status-strip">
           <div
             v-if="showReconnectBanner"
-            class="relative z-10 border-b border-amber-100/80 bg-white/94 px-4 py-3 md:px-6"
+            class="relative z-10 border-b border-amber-100/60 bg-white/94 px-3 py-1.5 md:px-6"
           >
             <div
-              class="flex flex-col gap-3 rounded-[24px] border px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
+              class="flex items-center gap-2 rounded-xl border px-3 py-1.5 shadow-sm"
               :class="connectionBannerClass"
             >
-              <div class="min-w-0 flex items-start gap-3">
-                <span
-                  class="mt-0.5 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl"
-                  :class="connectionBannerIconClass"
-                >
-                  <svg
-                    v-if="connectionState === 'offline'"
-                    viewBox="0 0 24 24"
-                    class="h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  >
-                    <path d="M4.93 4.93 19.07 19.07"/>
-                    <path d="M9.17 9.17A5 5 0 0 1 17 13"/>
-                    <path d="M7 13a5 5 0 0 1 .56-2.29"/>
-                    <path d="M4.5 9.5a10 10 0 0 1 14.1 0"/>
-                    <path d="M12 18h.01"/>
-                  </svg>
-                  <svg
-                    v-else
-                    viewBox="0 0 24 24"
-                    class="connection-spinner h-4 w-4"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="1.8"
-                  >
-                    <path d="M20 12a8 8 0 1 1-2.34-5.66"/>
-                    <path d="M20 4v5h-5"/>
-                  </svg>
-                </span>
-                <div class="min-w-0">
-                  <p class="text-sm font-semibold text-slate-900">{{ connectionBannerTitle }}</p>
-                  <p class="mt-1 text-xs leading-5 text-slate-600">{{ connectionBannerText }}</p>
+              <div class="flex items-center gap-2 min-w-0">
+                <div class="min-w-0 flex-1">
+                  <p class="text-xs font-medium text-slate-700 truncate">{{ connectionBannerTitle }}</p>
                 </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-2">
                 <span
                   v-if="reconnectAttempt > 0"
-                  class="rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-slate-600"
+                  class="shrink-0 text-[10px] text-slate-400"
                 >
-                  第 {{ reconnectAttempt }} 次尝试
-                </span>
-                <span
-                  v-if="pendingOutboxCount"
-                  class="rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-slate-600"
-                >
-                  发件箱 {{ pendingOutboxCount }} 条
-                </span>
-                <span
-                  v-if="reconnectCountdownLabel"
-                  class="rounded-full border border-white/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-slate-600"
-                >
-                  {{ reconnectCountdownLabel }}
+                  重连中…
                 </span>
                 <button
                   type="button"
                   @click="manualReconnect"
-                  class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
+                  class="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
                 >
-                  立即重连
+                  重连
                 </button>
               </div>
             </div>
@@ -477,10 +432,10 @@
         <Transition name="dm-negotiation">
           <div
             v-if="showDmNegotiationBanner"
-            class="relative z-10 px-4 pb-3 md:px-6"
+            class="relative z-10 px-3 pb-1.5 md:px-6"
           >
             <div
-              class="flex flex-col gap-3 rounded-[24px] border px-4 py-3 shadow-sm md:flex-row md:items-center md:justify-between"
+              class="flex items-center gap-2 rounded-xl border px-3 py-1.5 shadow-sm md:flex-row md:items-center md:justify-between"
               :class="dmNegotiationBannerClass"
             >
               <div class="min-w-0 flex items-start gap-3">
@@ -810,43 +765,43 @@
           @click="closeComposerMenu"
           @scroll="maybeMarkActiveGroupSeen"
         >
-          <div v-if="isRootMessagesPage" class="mobile-root-stack mx-auto flex w-full max-w-4xl flex-col pb-6">
-            <div class="mobile-message-toolbar border-b border-slate-200 bg-white/88 px-1 py-3 backdrop-blur">
-              <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto]">
+          <div v-if="isRootMessagesPage" class="mobile-root-stack mx-auto flex w-full max-w-4xl flex-col pb-4">
+            <div class="mobile-message-toolbar border-b border-slate-200 bg-white/88 px-1 py-2 backdrop-blur">
+              <div class="grid gap-2 md:grid-cols-[minmax(0,1fr)_auto_auto]">
                 <input
                   v-model="groupQuery"
-                  class="min-h-11 w-full rounded-none border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-                  placeholder="搜索聊天、群组或系统消息"
+                  class="min-h-9 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                  placeholder="搜索聊天、群组"
                   inputmode="search"
                 />
                 <button
                   type="button"
                   @click="openContacts"
-                  class="inline-flex h-11 items-center justify-center rounded-none border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
+                  class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
                 >
                   通讯录
                 </button>
                 <button
                   type="button"
                   @click="createGroup"
-                  class="inline-flex h-11 items-center justify-center rounded-none border border-slate-900 bg-slate-900 px-4 text-sm font-semibold text-white transition hover:bg-slate-800"
+                  class="inline-flex h-9 items-center justify-center rounded-lg border border-slate-900 bg-slate-900 px-3 text-xs font-semibold text-white transition hover:bg-slate-800"
                 >
                   新建群聊
                 </button>
               </div>
 
-              <div class="mt-3 flex flex-col gap-3 md:flex-row md:items-center">
+              <div class="mt-2 flex flex-col gap-2 md:flex-row md:items-center">
                 <input
                   v-model="inviteJoinInput"
-                  class="min-h-11 w-full flex-1 rounded-none border border-slate-200 bg-white px-4 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
-                  placeholder="粘贴邀请链接、助记词或邀请码"
+                  class="min-h-9 w-full flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-800 outline-none placeholder:text-slate-400 focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
+                  placeholder="粘贴邀请链接或邀请码"
                   autocomplete="off"
                   spellcheck="false"
                 />
                 <button
                   type="button"
                   @click="joinByInviteCode"
-                  class="inline-flex h-11 w-full items-center justify-center rounded-none border border-sky-500 bg-sky-500 px-5 text-sm font-semibold text-white transition hover:bg-sky-600 md:w-auto"
+                  class="inline-flex h-9 w-full items-center justify-center rounded-lg border border-sky-500 bg-sky-500 px-4 text-xs font-semibold text-white transition hover:bg-sky-600 md:w-auto"
                 >
                   加入群聊
                 </button>
@@ -922,37 +877,37 @@
             </div>
           </div>
 
-          <div v-else-if="isRootContactsPage" class="mobile-root-stack mx-auto flex w-full max-w-4xl flex-col gap-4 pb-6">
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+          <div v-else-if="isRootContactsPage" class="mobile-root-stack mx-auto flex w-full max-w-4xl flex-col gap-2 pb-4">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">通讯录</p>
-              <div class="mt-3 grid gap-2 sm:grid-cols-3">
+              <div class="mt-2 grid grid-cols-3 gap-1.5">
                 <button
                   type="button"
                   @click="createGroup"
-                  class="rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
+                  class="rounded-xl bg-slate-900 px-2 py-2 text-xs font-semibold text-white text-center"
                 >
                   新建群聊
                 </button>
                 <button
                   type="button"
                   @click="switchMobilePrimaryTab('messages')"
-                  class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                  class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 text-center"
                 >
                   加入群组
                 </button>
                 <button
                   type="button"
                   @click="requestContacts"
-                  class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700"
+                  class="rounded-xl border border-slate-200 bg-white px-2 py-2 text-xs font-semibold text-slate-700 text-center"
                 >
                   添加联系人
                 </button>
               </div>
             </div>
 
-            <div v-if="contactRequestCards.length" class="mobile-root-card rounded-[28px] border border-amber-100 bg-amber-50/60 p-4 shadow-sm">
+            <div v-if="contactRequestCards.length" class="mobile-root-card rounded-2xl border border-amber-100 bg-amber-50/60 p-3 shadow-sm">
               <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">待处理联系人</p>
-              <div class="mt-3 grid gap-2">
+              <div class="mt-2 grid gap-1.5">
                 <div
                   v-for="req in contactRequestCards"
                   :key="`root-contact-req-${req.requestId}`"
@@ -970,7 +925,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群聊列表</p>
@@ -978,15 +933,15 @@
                 </div>
                 <p class="text-xs text-slate-500">{{ savedGroupContactCards.length }} 个</p>
               </div>
-              <div v-if="savedGroupContactCards.length" class="mt-3 grid gap-2">
+              <div v-if="savedGroupContactCards.length" class="mt-2 grid gap-1.5">
                 <button
                   v-for="group in savedGroupContactCards"
                   :key="`saved-group-${group.id}`"
                   type="button"
                   @click="openGroup(group.id)"
-                  class="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-2xl bg-slate-50 px-3 py-3 text-left"
+                  class="flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-slate-50 px-2.5 py-2 text-left"
                 >
-                  <div class="avatar h-11 w-11 shrink-0 rounded-full text-xs font-semibold text-white" :style="{ background: avatarColor(group.id) }">
+                  <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(group.id) }">
                     {{ avatarInitial(groupDisplayName(group, group.name) || 'G') }}
                   </div>
                   <div class="min-w-0 flex-1 overflow-hidden">
@@ -1001,7 +956,7 @@
               <p v-else class="mt-3 text-xs text-slate-500">在群聊页面点“加入通讯录”后，会出现在这里。</p>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">在线设备</p>
@@ -1009,13 +964,13 @@
                 </div>
                 <p class="text-xs text-slate-500">{{ onlineUserCards.length }} 台</p>
               </div>
-              <div v-if="onlineUserCards.length" class="mt-3 grid gap-2">
+              <div v-if="onlineUserCards.length" class="mt-2 grid gap-1.5">
                 <div
                   v-for="user in onlineUserCards"
                   :key="`contacts-online-${user.uid}`"
-                  class="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-2xl bg-slate-50 px-3 py-3"
+                  class="flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-slate-50 px-2.5 py-2"
                 >
-                  <div class="avatar h-11 w-11 shrink-0 rounded-full text-xs font-semibold text-white" :style="{ background: avatarColor(user.uid || user.nickname) }">
+                  <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(user.uid || user.nickname) }">
                     {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
                   </div>
                   <div class="min-w-0 flex-1 overflow-hidden">
@@ -1053,7 +1008,7 @@
               <p v-else class="mt-3 text-xs text-slate-500">当前没有可见在线设备。</p>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">联系人</p>
@@ -1066,13 +1021,13 @@
                 class="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
                 placeholder="搜索联系人、指纹、地区"
               />
-              <div v-if="filteredContactCards.length" class="mt-3 grid gap-2">
+              <div v-if="filteredContactCards.length" class="mt-2 grid gap-1.5">
                 <div
                   v-for="contact in filteredContactCards"
                   :key="`root-contact-${contact.contactFingerprint}`"
-                  class="flex w-full min-w-0 items-center gap-3 overflow-hidden rounded-2xl bg-slate-50 px-3 py-3"
+                  class="flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-xl bg-slate-50 px-2.5 py-2"
                 >
-                  <div class="avatar h-11 w-11 shrink-0 rounded-full text-xs font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">
+                  <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">
                     {{ avatarInitial(contact.displayName || 'U') }}
                   </div>
                   <div class="min-w-0 flex-1 overflow-hidden">
@@ -1089,13 +1044,13 @@
             </div>
           </div>
 
-          <div v-else-if="isRootSettingsPage" class="mobile-root-stack mx-auto flex w-full max-w-3xl flex-col gap-4 pb-6">
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+          <div v-else-if="isRootSettingsPage" class="mobile-root-stack mx-auto flex w-full max-w-3xl flex-col gap-2 pb-4">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">设置</p>
               <p class="mt-1 text-sm font-semibold text-slate-800">身份、通知与隐私</p>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <p class="text-sm font-semibold text-slate-800">昵称</p>
               <p class="mt-1 text-xs text-slate-500">昵称全局唯一，绑定当前设备。</p>
               <div class="mt-3 flex gap-2">
@@ -1111,7 +1066,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <p class="text-sm font-semibold text-slate-800">身份凭证</p>
               <p class="mt-1 text-xs leading-5 text-slate-500">请妥善保管好助记词和 TXT 文件。丢失后将无法恢复当前身份。</p>
               <div class="mt-3 flex items-center gap-2">
@@ -1154,7 +1109,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <p class="text-sm font-semibold text-slate-800">界面大小</p>
               <p class="mt-1 text-xs text-slate-500">调整字体、卡片和主要内容的整体显示尺寸。</p>
               <div class="mt-3 flex flex-wrap gap-2">
@@ -1171,7 +1126,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold text-slate-800">系统通知</p>
@@ -1183,7 +1138,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold text-slate-800">提示音</p>
@@ -1195,7 +1150,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div>
                   <p class="text-sm font-semibold text-slate-800">陌生人私聊</p>
@@ -1207,7 +1162,7 @@
               </div>
             </div>
 
-            <div class="mobile-root-card rounded-[28px] border border-slate-200 bg-white p-4 shadow-sm">
+            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
               <div class="flex items-center justify-between gap-3">
                 <div class="min-w-0">
                   <p class="text-sm font-semibold text-slate-800">版本号</p>
@@ -1252,8 +1207,8 @@
               "
             >
               <div v-if="msg.payloadType === 'dm_limit_tip'" class="w-full max-w-xl px-2">
-                <div class="mx-auto rounded-2xl border border-amber-200/90 bg-amber-50/90 px-3 py-2 text-center shadow-sm">
-                  <p class="text-[11px] font-semibold text-amber-700">{{ msg.tipText }}</p>
+                <div class="mx-auto rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-1.5 text-center shadow-sm">
+                  <p class="text-[11px] font-medium text-amber-700">{{ msg.tipText }}</p>
                   <button
                     v-if="msg.tipTargetUid"
                     type="button"
@@ -1266,9 +1221,9 @@
                 </div>
               </div>
               <div v-else-if="msg.payloadType === 'send_block_tip'" class="w-full max-w-xl px-2">
-                <div class="mx-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 text-center shadow-sm">
-                  <p class="text-[11px] font-semibold text-slate-700">{{ msg.tipTitle || '发送未完成' }}</p>
-                  <p class="mt-1 text-[11px] text-slate-500">{{ msg.tipText }}</p>
+                <div class="mx-auto rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-center shadow-sm">
+                  <p class="text-[11px] font-medium text-slate-700">{{ msg.tipTitle || '发送未完成' }}</p>
+                  <p class="text-[11px] text-slate-500">{{ msg.tipText }}</p>
                   <div v-if="Array.isArray(msg.tipActions) && msg.tipActions.length" class="mt-2 flex flex-wrap justify-center gap-2">
                     <button
                       v-for="(item, idx) in msg.tipActions"
@@ -1283,49 +1238,49 @@
                 </div>
               </div>
               <div v-else-if="msg.payloadType === 'system'" class="w-full max-w-[min(100%,36rem)] px-1.5 sm:px-4">
-                <div class="rounded-[26px] border px-4 py-4 shadow-sm" :class="systemCardSurfaceClass(msg)">
-                  <div class="flex items-start justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                      <span class="h-2.5 w-2.5 rounded-full" :class="systemCardDotClass(msg)"></span>
-                      <p class="text-[11px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
+                <div class="rounded-xl border px-3 py-2.5 shadow-sm" :class="systemCardSurfaceClass(msg)">
+                  <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-1.5">
+                      <span class="h-2 w-2 rounded-full" :class="systemCardDotClass(msg)"></span>
+                      <p class="text-[10px] font-semibold uppercase tracking-[0.18em]" :class="systemCardEyebrowClass(msg)">
                         {{ systemCardEyebrow(msg) }}
                       </p>
                     </div>
-                    <p class="shrink-0 text-[11px] text-slate-400">{{ formatTime(msg.ts) }}</p>
+                    <p class="shrink-0 text-[10px] text-slate-400">{{ formatTime(msg.ts) }}</p>
                   </div>
-                  <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="mt-1.5 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div class="min-w-0">
-                      <p class="text-sm font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
-                      <p class="mt-1 text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
-                      <div v-if="systemCardPreviewUsers(msg).length" class="mt-3 flex items-center gap-3">
+                      <p class="text-xs font-semibold text-slate-900">{{ msg.systemTitle || '系统提醒' }}</p>
+                      <p class="text-xs leading-5 text-slate-600">{{ msg.systemText || '' }}</p>
+                      <div v-if="systemCardPreviewUsers(msg).length" class="mt-1.5 flex items-center gap-2">
                         <div class="flex -space-x-2">
                           <div
                             v-for="(user, idx) in systemCardPreviewUsers(msg)"
                             :key="`inline-system-preview-${msg.msgId}-${user.uid || idx}`"
-                            class="avatar h-8 w-8 rounded-full border-2 border-white text-[10px] font-semibold text-white"
+                            class="avatar h-7 w-7 rounded-full border-2 border-white text-[10px] font-semibold text-white"
                             :style="{ background: avatarColor(user.uid || user.nickname || user.uidShort || idx) }"
                           >
                             {{ avatarInitial(user.nickname || user.uidShort || 'U') }}
                           </div>
                         </div>
-                        <p class="min-w-0 text-xs text-slate-500 clamp-1">{{ systemCardPreviewSummary(msg) }}</p>
+                        <p class="min-w-0 text-[11px] text-slate-500 clamp-1">{{ systemCardPreviewSummary(msg) }}</p>
                       </div>
                     </div>
                     <div
                       v-if="systemMessageTargetLabel(msg)"
-                      class="shrink-0 rounded-2xl bg-white/80 px-3 py-2 text-right"
+                      class="shrink-0 rounded-xl bg-white/80 px-2.5 py-1.5 text-right"
                     >
                       <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">前往</p>
-                      <p class="mt-1 text-xs font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
+                      <p class="mt-0.5 text-[11px] font-semibold text-slate-700">{{ systemMessageTargetLabel(msg) }}</p>
                     </div>
                   </div>
-                  <div v-if="systemCardActions(msg).length" class="mt-4 flex flex-wrap gap-2">
+                  <div v-if="systemCardActions(msg).length" class="mt-2 flex flex-wrap gap-1.5">
                     <button
                       v-for="(item, idx) in systemCardActions(msg)"
                       :key="`sys-action-${msg.msgId}-${idx}`"
                       type="button"
                       @click.stop="handleSystemAction(msg, item)"
-                      class="rounded-full px-3 py-1.5 text-xs font-semibold"
+                      class="rounded-full px-2.5 py-1 text-[11px] font-medium"
                       :class="idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
                     >
                       {{ item.label || item.action || '处理' }}
@@ -1498,13 +1453,10 @@
                         v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
                         type="button"
                         @click="retryMessage(msg)"
-                        class="inline-flex h-4 w-4 items-center justify-center text-rose-400 transition hover:text-rose-300"
+                        class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white transition hover:bg-rose-300"
                         :title="msg.clientError || '点击重发'"
                         aria-label="Retry failed message"
-                      >
-                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
-                          <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 14h-2v-2h2Zm0-4h-2V7h2Z"/>
-                        </svg>
+                      >!
                       </button>
                       <span
                         v-if="msg.burnAfterRead"
@@ -3002,31 +2954,34 @@
 
         <div
           v-if="mobileViewport && activeGroup === SYSTEM_GROUP"
-          class="mobile-bottom-tabs relative z-10 border-t border-white/70 bg-white/95 px-3 py-2"
+          class="mobile-bottom-tabs relative z-10 border-t border-slate-100 bg-white/95 px-2 py-1.5"
         >
-          <div class="grid grid-cols-3 gap-2">
+          <div class="grid grid-cols-3 gap-0">
             <button
               type="button"
               @click="switchMobilePrimaryTab('messages')"
-              class="mobile-bottom-tab rounded-2xl px-3 py-2 text-xs font-semibold transition"
-              :class="mobilePrimaryTab === 'messages' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'"
+              class="mobile-bottom-tab flex flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-medium transition"
+              :class="mobilePrimaryTab === 'messages' ? 'text-slate-900' : 'text-slate-400'"
             >
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               消息
             </button>
             <button
               type="button"
               @click="switchMobilePrimaryTab('contacts')"
-              class="mobile-bottom-tab rounded-2xl px-3 py-2 text-xs font-semibold transition"
-              :class="mobilePrimaryTab === 'contacts' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'"
+              class="mobile-bottom-tab flex flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-medium transition"
+              :class="mobilePrimaryTab === 'contacts' ? 'text-slate-900' : 'text-slate-400'"
             >
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               通讯录
             </button>
             <button
               type="button"
               @click="switchMobilePrimaryTab('settings')"
-              class="mobile-bottom-tab rounded-2xl px-3 py-2 text-xs font-semibold transition"
-              :class="mobilePrimaryTab === 'settings' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'"
+              class="mobile-bottom-tab flex flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-medium transition"
+              :class="mobilePrimaryTab === 'settings' ? 'text-slate-900' : 'text-slate-400'"
             >
+              <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               设置
             </button>
           </div>
@@ -3034,7 +2989,7 @@
 
         <footer
           v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP"
-          class="mobile-footer-shell mobile-safe-footer relative z-10 border-t border-white/70 bg-white/95 p-3 sm:p-4 md:px-6 md:py-4"
+          class="mobile-footer-shell mobile-safe-footer relative z-10 border-t border-slate-100 bg-white/95 px-2.5 py-2 sm:px-3 md:px-6 md:py-3"
         >
           <div
             v-if="voiceComposerActive && mobileViewport"
@@ -4304,17 +4259,15 @@ const connectionBannerTitle = computed(() => {
 
 const connectionBannerText = computed(() => {
   if (connectionState.value === 'offline') {
-    return '检测到当前设备离线，已暂停自动重连。网络恢复后会继续连接，离线消息会留在发件箱。';
+    return '网络恢复后会自动连接。';
   }
   if (connectionState.value === 'verifying') {
-    return '连接已经建立，正在重新注册密钥并完成安全校验，完成后会自动恢复收发消息。';
+    return '正在完成安全校验。';
   }
   if (connectionState.value === 'connecting') {
-    return '正在重新打开实时连接，消息列表和会话不会丢失。';
+    return '正在重新连接。';
   }
-  return reconnectCountdownLabel.value
-    ? `系统会自动继续尝试恢复连接，${reconnectCountdownLabel.value}。恢复后发件箱会自动重发。`
-    : '系统正在自动尝试恢复连接，恢复后发件箱会自动重发。';
+  return '正在自动重连…';
 });
 
 const connectionBannerClass = computed(() => {
@@ -9359,8 +9312,7 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
     }
     pushSendBlockedTip(groupId, {
       title: '群聊正在恢复',
-      text: '当前群聊成员资格尚在恢复中，恢复完成后会自动重发。若这是修复前加入的旧群，可能仍需使用邀请链接重新加入一次。',
-      actions: [{ action: 'retry_outbox', label: '立即重试' }],
+      text: '恢复完成后会自动重发。',
       dedupeKey: `group-restore-pending-${groupId}`,
     });
     toast('群聊成员资格尚在恢复中。', 'info');
@@ -9511,12 +9463,6 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
   const gid = sanitizeGroupId(groupId) || SYSTEM_GROUP;
   const msgId = enqueueOutbox(gid, payloadType, payload);
   pushOutgoingPayloadMessage(msgId, payloadType, gid, payload, 'queued');
-  pushSendBlockedTip(gid, {
-    title: '已加入离线发件箱',
-    text: '当前网络未就绪，消息会在恢复连接后自动重发。',
-    actions: [{ action: 'retry_outbox', label: '立即重试' }],
-    dedupeKey: `queued-${gid}`,
-  });
   return msgId;
 };
 
@@ -11569,11 +11515,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
     pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
       title: '连接已断开',
       text: offlineNow
-        ? '当前网络不可用，已暂停自动重连。网络恢复后会继续连接，离线消息会进入发件箱。'
-        : '正在尝试自动重连。离线期间发送的消息会进入发件箱并在恢复后自动重发。',
+        ? '当前网络不可用，恢复后自动重连。'
+        : '正在自动重连…',
       actions: [
         { action: 'reconnect_now', label: '立即重连' },
-        { action: 'retry_outbox', label: '尝试重发' },
       ],
       dedupeKey: 'ws-closed',
     });
@@ -11594,13 +11539,6 @@ onMounted(async () => {
   loadTrustedKeys();
   loadOutboxQueue();
   pruneOutboxQueue();
-  if (pendingOutboxCount.value) {
-    pushSystemMessage({
-      title: '检测到离线发件箱',
-      text: `有 ${pendingOutboxCount.value} 条消息待重发，连接恢复后会自动发送。`,
-      actions: [{ action: 'retry_outbox', label: '立即重发' }],
-    });
-  }
   void initDeviceFingerprint();
   notificationAudio = new Audio(SOUND_URL);
   notificationAudio.preload = 'auto';
@@ -12291,13 +12229,13 @@ button:active:not(:disabled) {
   }
 
   .mobile-root-stack {
-    gap: 0.75rem;
-    padding-bottom: 0.9rem;
+    gap: 0.5rem;
+    padding-bottom: 0.6rem;
   }
 
   .mobile-root-card {
-    border-radius: 22px;
-    padding: 0.9rem;
+    border-radius: 16px;
+    padding: 0.65rem;
   }
 
   .mobile-root-card p.text-sm.font-semibold,
@@ -12347,17 +12285,17 @@ button:active:not(:disabled) {
   }
 
   .mobile-bottom-tabs {
-    padding: 0.5rem 0.75rem;
+    padding: 0.35rem 0.5rem;
   }
 
   .mobile-bottom-tab {
-    border-radius: 1rem;
-    padding: 0.55rem 0.75rem;
-    font-size: 0.75rem;
+    border-radius: 0.5rem;
+    padding: 0.3rem 0.25rem;
+    font-size: 0.625rem;
   }
 
   .mobile-footer-shell {
-    padding: 0.7rem 0.75rem calc(env(safe-area-inset-bottom) + 0.7rem);
+    padding: 0.5rem 0.6rem calc(env(safe-area-inset-bottom) + 0.5rem);
   }
 
   .mobile-voice-panel {
