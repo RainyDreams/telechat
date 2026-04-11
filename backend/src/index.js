@@ -1553,6 +1553,14 @@ export class ChatRoom {
     if (activeInviteCount >= MAX_ACTIVE_INVITES_PER_GROUP) {
       throw new Error('INVITE_LIMIT_REACHED');
     }
+    if (creatorUid) {
+      const existingActive = Array.from(this.inviteRecordsById.values()).find(
+        (item) => item.groupId === groupId && item.creatorUid === creatorUid && this.isInviteRecordActive(item)
+      );
+      if (existingActive) {
+        throw new Error('INVITE_ALREADY_EXISTS');
+      }
+    }
     this.inviteRecordsById.set(inviteId, record);
     await this.persistInviteRecords();
     return {
@@ -2221,6 +2229,10 @@ export class ChatRoom {
         this.sendError(ws, 'INVITE_LIMIT_REACHED', 'Too many active invite links', reqId);
         return;
       }
+      if (error instanceof Error && error.message === 'INVITE_ALREADY_EXISTS') {
+        this.sendError(ws, 'INVITE_ALREADY_EXISTS', 'You already have an active invite link for this group', reqId);
+        return;
+      }
       throw error;
     }
 
@@ -2374,13 +2386,19 @@ export class ChatRoom {
       return;
     }
     const meta = await this.getGroupMeta(groupId);
-    if (!meta || meta.ownerUid !== sender.uid) {
-      this.sendError(ws, 'GROUP_OWNER_REQUIRED', 'Only group owner can revoke invite links', reqId);
+    if (!meta) {
+      this.sendError(ws, 'GROUP_NOT_FOUND', 'Group not found', reqId);
       return;
     }
     const record = await this.getInviteRecordById(inviteId);
     if (!record || record.groupId !== groupId) {
       this.sendError(ws, 'INVITE_INVALID', 'Invite link not found', reqId);
+      return;
+    }
+    const isOwner = meta.ownerUid === sender.uid;
+    const isCreator = record.creatorUid === sender.uid;
+    if (!isOwner && !isCreator) {
+      this.sendError(ws, 'FORBIDDEN', 'Only group owner or link creator can revoke invite links', reqId);
       return;
     }
     await this.revokeInviteRecord(inviteId);

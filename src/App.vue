@@ -960,7 +960,7 @@
 
             <!-- 快捷入口 -->
             <div class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-              <button type="button" @click="openContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+              <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                 </div>
@@ -1576,9 +1576,9 @@
               </div>
               <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 6rem;">
                 <div class="grid gap-3">
-                  <!-- 一键生成链接 -->
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 text-center">
-                    <p class="text-sm text-slate-600">为你生成专属邀请链接，分享给朋友即可加入</p>
+                  <!-- 无链接时：生成按钮 -->
+                  <div v-if="!myActiveGroupInvite && !inviteDialog.generatedInviteCode" class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 text-center">
+                    <p class="text-sm text-slate-600">点击生成你的专属邀请链接，分享给朋友即可加入</p>
                     <button
                       type="button"
                       @click="createInviteFromDialog"
@@ -1588,7 +1588,7 @@
                     </button>
                   </div>
 
-                  <!-- 已生成的链接 -->
+                  <!-- 刚生成的链接（对话框临时状态） -->
                   <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
                     <p class="text-xs font-semibold text-emerald-700">你的邀请链接</p>
                     <p class="mt-2 break-all text-sm text-slate-800 select-all">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
@@ -1603,34 +1603,59 @@
                     </div>
                   </div>
 
-                  <!-- 我的邀请链接列表 -->
-                  <div v-if="myGroupInviteEntries.length" class="rounded-xl border border-slate-100 bg-white px-3 py-3">
+                  <!-- 我的有效邀请链接 -->
+                  <div v-if="myActiveGroupInvite" class="rounded-xl border border-slate-100 bg-white px-3 py-3">
                     <p class="text-xs font-semibold text-slate-500">我的邀请链接</p>
-                    <div class="mt-2 grid gap-2">
-                      <div
-                        v-for="entry in myGroupInviteEntries"
-                        :key="`my-invite-${entry.inviteId}`"
-                        class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
-                      >
-                        <div class="flex items-center justify-between gap-2">
-                          <p class="text-xs font-medium" :class="inviteStatusLabel(entry) === '生效中' ? 'text-emerald-600' : 'text-slate-400'">{{ inviteStatusLabel(entry) }}</p>
-                          <p class="text-[11px] text-slate-400">已用 {{ inviteUsageLabel(entry) }}</p>
-                        </div>
-                        <p class="mt-1.5 break-all text-xs leading-5 text-slate-600 select-all">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
-                        <div class="mt-2 flex items-center justify-end gap-2">
-                          <button
-                            type="button"
-                            @click="copyInviteDialogLink(entry)"
-                            class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
-                          >
-                            复制
-                          </button>
-                        </div>
+                    <div class="mt-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+                      <div class="flex items-center justify-between gap-2">
+                        <p class="text-xs font-medium text-emerald-600">{{ inviteStatusLabel(myActiveGroupInvite) }}</p>
+                        <p class="text-[11px] text-slate-400">已用 {{ inviteUsageLabel(myActiveGroupInvite) }}</p>
+                      </div>
+                      <p class="mt-1.5 break-all text-xs leading-5 text-slate-600 select-all">{{ formatInviteLinkDisplay(inviteLinkForEntry(myActiveGroupInvite)) }}</p>
+                      <div class="mt-2 flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          @click="copyInviteDialogLink(myActiveGroupInvite)"
+                          class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                        >
+                          复制
+                        </button>
+                        <button
+                          type="button"
+                          @click="revokeOwnGroupInvite"
+                          class="rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-medium text-rose-600 hover:bg-rose-50"
+                        >
+                          撤销链接
+                        </button>
                       </div>
                     </div>
                   </div>
 
-                  <!-- 高级设置（仅群主可见） -->
+                  <!-- 群主：其他成员的邀请状态 -->
+                  <div v-if="otherMembersGroupInvites.length" class="rounded-xl border border-slate-100 bg-white px-3 py-3">
+                    <p class="text-xs font-semibold text-slate-500">成员邀请链接</p>
+                    <div class="mt-2 grid gap-2">
+                      <div
+                        v-for="entry in otherMembersGroupInvites"
+                        :key="`other-invite-${entry.inviteId}`"
+                        class="flex items-center justify-between gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
+                      >
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate text-xs font-medium text-slate-700">{{ entry.creatorNickname || '未知用户' }}</p>
+                          <p class="mt-0.5 text-[11px]" :class="inviteStatusLabel(entry) === '生效中' ? 'text-emerald-600' : 'text-slate-400'">{{ inviteStatusLabel(entry) }} · 已用 {{ inviteUsageLabel(entry) }}</p>
+                        </div>
+                        <button
+                          type="button"
+                          @click="revokeGroupInvite(entry.inviteId)"
+                          class="shrink-0 rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-medium text-rose-600 hover:bg-rose-50"
+                        >
+                          撤销
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 高级设置（仅群主可见，折叠） -->
                   <details v-if="isActiveGroupOwner" class="group">
                     <summary class="cursor-pointer select-none rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-500 hover:bg-slate-100">
                       高级设置
@@ -3590,6 +3615,22 @@ const myGroupInviteEntries = computed(() => {
   const uid = myUid.value;
   if (!uid) return [];
   return groupInviteEntries.value.filter((entry) => entry.creatorUid === uid);
+});
+
+const myActiveGroupInvite = computed(() => {
+  const uid = myUid.value;
+  if (!uid) return null;
+  return groupInviteEntries.value.find((entry) => {
+    if (entry.creatorUid !== uid) return false;
+    if (Number(entry.revokedAt) > 0) return false;
+    if (Number(entry.expiresAt) > 0 && Number(entry.expiresAt) <= Date.now()) return false;
+    return true;
+  }) || null;
+});
+
+const otherMembersGroupInvites = computed(() => {
+  if (!isActiveGroupOwner.value) return [];
+  return groupInviteEntries.value.filter((entry) => entry.creatorUid !== myUid.value);
 });
 
 const activeGroupAnnouncement = computed(() => {
@@ -6962,12 +7003,21 @@ const saveInviteApprovalPolicy = () => {
 
 const revokeGroupInvite = (inviteId) => {
   const groupId = sanitizeGroupId(activeGroup.value);
-  if (!groupId || !inviteId || !isActiveGroupOwner.value) return;
+  if (!groupId || !inviteId) return;
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
   ws.send(JSON.stringify({ type: 'group_invite_revoke', groupId, inviteId }));
+};
+
+const revokeOwnGroupInvite = () => {
+  const entry = myActiveGroupInvite.value;
+  if (!entry) {
+    toast('暂无有效的邀请链接。', 'info');
+    return;
+  }
+  revokeGroupInvite(entry.inviteId);
 };
 
 const copyInviteLink = async () => {
@@ -10950,6 +11000,13 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
 
       if (code === 'INVITE_LIMIT_REACHED') {
         toast('当前群的有效邀请链接过多，请先吊销旧链接。', 'error');
+        return;
+      }
+
+      if (code === 'INVITE_ALREADY_EXISTS') {
+        inviteText.value = '邀请新人';
+        toast('你已有一个有效的邀请链接，请先撤销后再生成新的。', 'info');
+        requestGroupInviteSettings(activeGroup.value);
         return;
       }
 
