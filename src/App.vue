@@ -294,8 +294,20 @@
                 </p>
               </div>
               <button
+                v-if="activeGroup !== SYSTEM_GROUP"
                 type="button"
-                @click="showMobilePanel = true"
+                @click="openGroup(SYSTEM_GROUP)"
+                class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
+                aria-label="Back to homepage"
+              >
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <path d="M15 18l-6-6 6-6"/>
+                </svg>
+              </button>
+              <button
+                v-else
+                type="button"
+                @click="showMobilePanel = true; mobileDrawerMode = 'home'"
                 class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
                 aria-label="Open mobile panel"
               >
@@ -479,7 +491,7 @@
               aria-label="Close group panel"
             ></button>
             <div class="pointer-events-none absolute inset-y-2 left-2 flex max-w-[calc(100%-1rem)] items-start gap-2">
-            <div class="mobile-side-drawer pointer-events-auto flex w-[min(76vw,21rem)] max-w-[calc(100vw-4.5rem)] flex-col overflow-hidden rounded-[30px] border border-slate-200/90 bg-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
+            <div v-if="mobileDrawerMode === 'home'" class="mobile-side-drawer pointer-events-auto flex w-[min(76vw,21rem)] max-w-[calc(100vw-4.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
            <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
              <div class="min-w-0">
                <p class="text-xs uppercase tracking-wide text-slate-400">菜单</p>
@@ -748,6 +760,115 @@
               </div>
             </div>
            </div>
+            <div v-else class="mobile-side-drawer pointer-events-auto flex w-[min(76vw,21rem)] max-w-[calc(100vw-4.5rem)] flex-col overflow-hidden rounded-2xl border border-slate-200/90 bg-white shadow-[0_24px_48px_rgba(15,23,42,0.18)]">
+              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <div class="min-w-0">
+                  <p class="text-xs uppercase tracking-wide text-slate-400">侧边栏</p>
+                  <p class="truncate text-xs font-semibold text-slate-700">{{ activeGroupName || '群聊' }}</p>
+                </div>
+                <button
+                  type="button"
+                  @click="showMobilePanel = false"
+                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
+                >
+                  关闭
+                </button>
+              </div>
+              <div class="border-b border-slate-100 px-3 py-2.5">
+                <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">快捷操作</p>
+                <div class="mt-2 grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    @click="toggleGroupPinned(activeGroup); showMobilePanel = false"
+                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 5h14l-1.5 9H6.5L5 5Z"/><path d="M8 14v5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-5"/></svg>
+                      </span>
+                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">置顶</span>
+                    </div>
+                    <span class="mt-1 text-[10px] leading-4 text-slate-400">{{ isGroupPinned(activeGroup) ? '已置顶' : '未置顶' }}</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="toast('功能开发中'); showMobilePanel = false"
+                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18.36 6.64A9 9 0 0 1 20.77 15M5.63 6.64A9 9 0 0 0 3.23 15"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="1" y1="12" x2="3" y2="12"/></svg>
+                      </span>
+                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">免打扰</span>
+                    </div>
+                    <span class="mt-1 text-[10px] leading-4 text-slate-400">静音通知</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="toast('功能开发中'); showMobilePanel = false"
+                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
+                      </span>
+                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">导出聊天记录</span>
+                    </div>
+                    <span class="mt-1 text-[10px] leading-4 text-slate-400">保存为文件</span>
+                  </button>
+                  <button
+                    type="button"
+                    @click="toast('功能开发中'); showMobilePanel = false"
+                    class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
+                  >
+                    <div class="flex items-center gap-2">
+                      <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </span>
+                      <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">清空聊天记录</span>
+                    </div>
+                    <span class="mt-1 text-[10px] leading-4 text-slate-400">不可恢复</span>
+                  </button>
+                </div>
+              </div>
+              <div class="border-b border-slate-100 px-3 py-2.5">
+                <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">成员列表</p>
+                <div v-if="groupMembersLoading" class="mt-2 px-1 text-xs text-slate-500">加载中…</div>
+                <div v-else-if="!groupMembers.length" class="mt-2 px-1 text-xs text-slate-500">暂无成员</div>
+                <div v-else class="mt-2 flex flex-wrap gap-2">
+                  <div
+                    v-for="member in groupMembers"
+                    :key="`drawer-member-${member.uid}`"
+                    class="flex flex-col items-center gap-1"
+                  >
+                    <div
+                      class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold leading-9 text-white text-center"
+                      :style="{ background: avatarColor(member.uid) }"
+                    >
+                      {{ avatarInitial(member.nickname || member.uidShort || '?') }}
+                    </div>
+                    <span class="max-w-[2.5rem] truncate text-[10px] text-slate-500">{{ member.nickname || member.uidShort || '?' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-auto border-t border-slate-100 px-3 py-2.5">
+                <div class="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    @click="openGroupManage(); showMobilePanel = false"
+                    class="mobile-panel-action flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    群设置
+                  </button>
+                  <button
+                    type="button"
+                    @click="openGroup(SYSTEM_GROUP); showMobilePanel = false"
+                    class="mobile-panel-action flex min-h-[44px] items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700"
+                  >
+                    返回首页
+                  </button>
+                </div>
+              </div>
             </div>
            </div>
           </div>
@@ -1298,13 +1419,14 @@
                     </div>
                     <div
                       v-else-if="msg.payloadType === 'audio' && msg.audioData"
-                      class="voice-message-card rounded-[22px] px-3 py-3"
+                      class="voice-message-card rounded-[22px] px-3 py-2.5"
                       :class="msg.sender === myUid ? 'bg-white/14 text-white' : 'bg-slate-50 text-slate-800'"
                     >
-                      <div class="flex items-center gap-3">
+                      <div class="flex items-center gap-2">
                         <button
+                          v-if="msg.sender !== myUid"
                           type="button"
-                          class="voice-play-button inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                          class="voice-play-button inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                           :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
                           @click="toggleAudioPlayback(msg)"
                           :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
@@ -1317,7 +1439,7 @@
                           </svg>
                         </button>
                         <div class="min-w-0 flex-1">
-                          <div class="voice-waveform flex h-10 items-end gap-1">
+                          <div class="voice-waveform flex h-8 items-end gap-[3px]">
                             <span
                               v-for="(bar, idx) in audioWaveformForMessage(msg)"
                               :key="`voice-wave-${msg.msgId}-${idx}`"
@@ -1326,11 +1448,33 @@
                               :style="audioWaveformBarStyle(bar)"
                             ></span>
                           </div>
-                          <div class="mt-2 flex items-center justify-between text-[11px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
-                            <span>{{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}</span>
-                            <span>{{ audioMessageTimeLabel(msg) }}</span>
-                          </div>
                         </div>
+                        <span class="shrink-0 text-[11px] font-medium" :class="msg.sender === myUid ? 'text-white/70' : 'text-slate-400'">
+                          {{ audioMessageTimeLabel(msg) || '0" ' }}
+                        </span>
+                        <button
+                          v-if="msg.sender === myUid"
+                          type="button"
+                          class="voice-play-button inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                          :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
+                          @click="toggleAudioPlayback(msg)"
+                          :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
+                        >
+                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                            <path d="M7 5h3v14H7zM14 5h3v14h-3z"/>
+                          </svg>
+                          <svg v-else viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                            <path d="M8 6.5v11l9-5.5-9-5.5Z"/>
+                          </svg>
+                        </button>
+                        <span
+                          v-if="msg.sender !== myUid && msg.isUnreadVoice"
+                          class="h-2 w-2 shrink-0 rounded-full bg-sky-500"
+                          aria-label="Unread voice message"
+                        ></span>
+                      </div>
+                      <div class="mt-1 text-center text-[10px]" :class="msg.sender === myUid ? 'text-white/55' : 'text-slate-400'">
+                        {{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}
                       </div>
                     </div>
                     <p v-else class="emoji-font whitespace-pre-wrap break-words text-[14px] leading-[1.45]">{{ msg.text }}</p>
@@ -2672,22 +2816,22 @@
             class="pointer-events-none absolute inset-x-3 bottom-full z-20 mb-3"
           >
             <div
-              class="mobile-voice-panel voice-mobile-panel pointer-events-auto rounded-[28px] border border-slate-200/90 px-4 py-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+              class="mobile-voice-panel voice-mobile-panel pointer-events-auto rounded-2xl border border-slate-200/90 px-4 py-3 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
               :class="voiceComposerShellClass"
             >
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="truncate text-base font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
-                  <p class="mt-1 text-xs leading-5 text-slate-500">{{ voiceComposerSubtitle }}</p>
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                  <span class="voice-recording-dot h-3 w-3 shrink-0 rounded-full bg-rose-500"></span>
+                  <p class="truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
                 </div>
-                <p class="shrink-0 text-sm font-semibold text-slate-700">{{ voiceComposerElapsedLabel }}</p>
+                <p class="shrink-0 text-sm font-semibold tabular-nums text-slate-700">{{ voiceComposerElapsedLabel }}</p>
               </div>
-              <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-4 flex items-center justify-center gap-2">
+              <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-3 flex items-center justify-center gap-2">
                 <span class="voice-waiting-dot"></span>
                 <span class="voice-waiting-dot"></span>
                 <span class="voice-waiting-dot"></span>
               </div>
-              <div v-else class="mt-4 flex h-12 items-end justify-center gap-1.5">
+              <div v-else class="mt-3 flex h-10 items-end justify-center gap-1">
                 <span
                   v-for="(bar, idx) in voiceComposerWaveform"
                   :key="`mobile-composer-wave-${idx}`"
@@ -2695,10 +2839,11 @@
                   :style="audioWaveformBarStyle(bar)"
                 ></span>
               </div>
-              <div class="mt-4 grid grid-cols-2 gap-2">
+              <p class="mt-2 text-center text-[11px] text-slate-400">← 左滑取消</p>
+              <div class="mt-2 grid grid-cols-2 gap-2">
                 <button
                   type="button"
-                  class="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   :disabled="voiceComposeState === 'encoding' || voiceComposeState === 'sending'"
                   @click="cancelVoiceRecording"
                 >
@@ -2706,13 +2851,13 @@
                 </button>
                 <button
                   type="button"
-                  class="voice-recorder-action inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  class="voice-recorder-action inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="voiceComposeState !== 'recording'"
                   @click="finishVoiceRecording"
                 >
                   <span v-if="voiceComposeState === 'recording'" class="inline-flex items-center gap-2">
-                    <span class="voice-recorder-dot h-2.5 w-2.5 rounded-full bg-white"></span>
-                    结束并发送
+                    <span class="voice-recorder-dot h-2 w-2 rounded-full bg-white"></span>
+                    发送
                   </span>
                   <span v-else-if="voiceComposeState === 'encoding'">整理中</span>
                   <span v-else>发送中</span>
@@ -3000,6 +3145,7 @@ const groups = ref([
 const pendingJoin = ref({ groupId: '', inviteCode: '', select: true, groupName: '', joinStatement: '' });
 const connectionState = ref('connecting'); // connecting | verifying | connected | reconnecting | offline
 const showMobilePanel = ref(false);
+const mobileDrawerMode = ref('home'); // 'home' | 'group'
 const groupRestoreHintOpen = ref(false);
 const isSendingImage = ref(false);
 const msgBox = ref(null);
@@ -4198,8 +4344,8 @@ const voiceComposerSubtitle = computed(() => {
   return '';
 });
 const voiceComposerShellClass = computed(() => {
-  if (voiceComposeState.value === 'requesting') return 'voice-shell-requesting';
-  if (voiceComposeState.value === 'recording') return 'voice-shell-recording';
+  if (voiceComposeState.value === 'requesting') return 'voice-shell-requesting voice-active';
+  if (voiceComposeState.value === 'recording') return 'voice-shell-recording voice-active';
   if (voiceComposeState.value === 'encoding') return 'voice-shell-encoding';
   if (voiceComposeState.value === 'sending') return 'voice-shell-sending';
   return '';
@@ -9466,6 +9612,7 @@ const openGroup = (groupId) => {
     if (mobileViewport.value) {
       mobilePrimaryTab.value = 'messages';
     }
+    mobileDrawerMode.value = 'home';
     selectGroup(gid);
     return;
   }
@@ -9475,6 +9622,7 @@ const openGroup = (groupId) => {
     return;
   }
   systemNoticeOpen.value = false;
+  mobileDrawerMode.value = 'group';
   ensureGroupInList(gid, isDirectGroupId(gid) ? nameForDirectGroup(gid) : (existing?.name || ''));
   selectGroup(gid);
   if (isDirectGroupId(gid) && !hasJoinedGroup(gid)) {
@@ -11554,6 +11702,19 @@ button:active:not(:disabled) {
 
 .voice-recorder-dot {
   animation: voice-recorder-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-recording-dot {
+  animation: voice-recording-pulse 1s ease-in-out infinite;
+}
+
+@keyframes voice-recording-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.voice-active {
+  border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
 .voice-waiting-dot {
