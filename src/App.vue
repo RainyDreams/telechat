@@ -8,22 +8,38 @@
       v-if="isInsecureBrowser"
       class="flex h-full items-center justify-center bg-gradient-to-br from-slate-100 via-white to-slate-200 px-4"
     >
-      <div class="w-full max-w-xl rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur">
-        <p class="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-rose-500">Security Notice</p>
-        <h2 class="text-2xl font-semibold text-slate-900">当前浏览器环境受限</h2>
-        <p class="mt-3 text-sm leading-6 text-slate-600">
-          检测到你正在使用受限制浏览器。为了端到端加密与隐私安全，
-          请复制下方链接并使用系统浏览器（Safari / Chrome）打开。
+      <div class="w-full max-w-md rounded-3xl border border-slate-200 bg-white/90 p-8 shadow-2xl shadow-slate-900/10 backdrop-blur">
+        <div class="mb-4 flex items-center justify-center">
+          <div class="flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50">
+            <svg viewBox="0 0 24 24" class="h-8 w-8 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 9v4m0 4h.01M10.29 3.86l-8.6 14.93A2 2 0 0 0 3.43 21h17.14a2 2 0 0 0 1.74-3.01l-8.6-14.93a2 2 0 0 0-3.48 0z"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="text-center text-xl font-semibold text-slate-900">请在外部浏览器中打开</h2>
+        <p class="mt-3 text-center text-sm leading-6 text-slate-500">
+          当前应用内浏览器暂不支持端到端加密功能，请用手机自带浏览器或 Chrome 打开本页。
         </p>
 
-        <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-          <p class="break-all font-mono text-xs text-slate-700">{{ currentUrl }}</p>
+        <div class="mt-6 space-y-3">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p class="text-xs font-semibold text-slate-500">操作方法</p>
+            <p class="mt-2 text-sm text-slate-700">
+              点击右上角 <span class="inline-block rounded bg-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-600">⋯</span>
+              选择「在浏览器中打开」
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+            <p class="text-xs font-semibold text-slate-500">当前链接</p>
+            <p class="mt-2 break-all font-mono text-xs text-slate-600">{{ currentUrl }}</p>
+          </div>
         </div>
 
         <button
           type="button"
           @click="copyUrl"
-          class="mt-5 inline-flex items-center justify-center rounded-xl bg-sky-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-sky-600 active:scale-[0.98]"
+          class="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-medium text-white transition hover:bg-slate-800 active:scale-[0.98]"
         >
           {{ copyText }}
         </button>
@@ -568,22 +584,6 @@
                </button>
                <button
                  type="button"
-                 @click="copyInviteLink(); showMobilePanel = false"
-                 class="mobile-panel-action flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
-                 aria-label="Invite"
-               >
-                 <div class="flex items-center gap-2">
-                   <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                     <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
-                       <path d="M12 5v14M5 12h14"/>
-                     </svg>
-                   </span>
-                   <span class="mobile-panel-action-title text-sm font-semibold text-slate-800">邀请新人</span>
-                 </div>
-                 <span class="mt-1 text-[10px] leading-4 text-slate-400">分享邀请链接</span>
-               </button>
-               <button
-                 type="button"
                  @click="openContacts(); showMobilePanel = false"
                  class="mobile-panel-action relative flex min-h-[58px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
                  aria-label="Contacts"
@@ -960,7 +960,7 @@
 
             <!-- 快捷入口 -->
             <div class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-              <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+              <button type="button" @click="openContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                 </div>
@@ -996,30 +996,6 @@
                     <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            <!-- 群聊列表 -->
-            <div v-if="savedGroupContactCards.length" class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-              <div class="border-b border-slate-100 px-4 py-2">
-                <p class="text-[11px] font-medium text-slate-400">群聊 · {{ savedGroupContactCards.length }}</p>
-              </div>
-              <div class="divide-y divide-slate-100">
-                <button
-                  v-for="group in savedGroupContactCards"
-                  :key="`saved-group-${group.id}`"
-                  type="button"
-                  @click="openGroup(group.id)"
-                  class="flex w-full items-center gap-3 px-4 py-2.5 active:bg-slate-50"
-                >
-                  <div class="avatar h-9 w-9 shrink-0 rounded-lg text-[11px] font-semibold text-white" :style="{ background: avatarColor(group.id) }">
-                    {{ avatarInitial(groupDisplayName(group, group.name) || 'G') }}
-                  </div>
-                  <p class="min-w-0 flex-1 truncate text-sm text-slate-800">{{ groupDisplayName(group, group.name) }}</p>
-                  <span v-if="group.unread" class="inline-flex min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    {{ formatUnreadCount(group.unread) }}
-                  </span>
-                </button>
               </div>
             </div>
 
@@ -1252,19 +1228,19 @@
                 </div>
               </div>
               <div v-else-if="msg.payloadType === 'system'" class="w-full max-w-[min(100%,36rem)] px-1.5 sm:px-4">
-                <div class="rounded-xl border px-3 py-2 shadow-sm" :class="systemCardSurfaceClass(msg)">
+                <div class="rounded-xl border px-3 py-2.5 shadow-sm" :class="systemCardSurfaceClass(msg)">
                   <div class="flex items-start justify-between gap-2">
                     <p class="min-w-0 flex-1 text-xs leading-5 text-slate-700">{{ msg.systemText || msg.systemTitle || '' }}</p>
                     <p class="shrink-0 text-[10px] text-slate-400 mt-0.5">{{ formatTime(msg.ts) }}</p>
                   </div>
-                  <div v-if="systemCardActions(msg).length" class="mt-1.5 flex flex-wrap gap-1.5">
+                  <div v-if="systemCardActions(msg).length" class="mt-2 flex items-center gap-2">
                     <button
                       v-for="(item, idx) in systemCardActions(msg)"
                       :key="`sys-action-${msg.msgId}-${idx}`"
                       type="button"
                       @click.stop="handleSystemAction(msg, item)"
-                      class="rounded-full px-2.5 py-1 text-[11px] font-medium"
-                      :class="idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
+                      class="rounded-lg px-3 py-1.5 text-xs font-medium transition"
+                      :class="item.label === '同意' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : item.label === '拒绝' ? 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50' : idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700'"
                     >
                       {{ item.label || item.action || '处理' }}
                     </button>
@@ -1432,15 +1408,11 @@
                           <path d="M12 3a9 9 0 1 0 9 9"/>
                         </svg>
                       </span>
-                      <button
+                      <span
                         v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
-                        type="button"
-                        @click="retryMessage(msg)"
-                        class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white transition hover:bg-rose-300"
-                        :title="msg.clientError || '点击重发'"
-                        aria-label="Retry failed message"
-                      >!
-                      </button>
+                        class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white"
+                        :title="msg.clientError || '发送失败'"
+                      >!</span>
                       <span
                         v-if="msg.burnAfterRead"
                         class="rounded-full border px-1.5 py-0.5"
@@ -1591,103 +1563,36 @@
             aria-label="Close invite dialog"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
               <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                <div>
-                  <p class="text-xs uppercase tracking-wide text-slate-400">邀请新成员</p>
-                  <p class="text-sm font-semibold text-slate-800">{{ groupMetaMap[inviteDialog.groupId]?.groupName || activeGroupName }}</p>
-                </div>
+                <p class="text-sm font-semibold text-slate-800">邀请新人加入「{{ groupMetaMap[inviteDialog.groupId]?.groupName || activeGroupName }}」</p>
                 <button
                   type="button"
                   @click="closeInviteDialog"
-                  class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                  class="text-xs font-medium text-slate-500 hover:text-slate-700"
                 >
-                  关闭
+                  完成
                 </button>
               </div>
-              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 8rem;">
+              <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 6rem;">
                 <div class="grid gap-3">
-                  <div class="grid gap-3 sm:grid-cols-2">
-                    <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                      <p class="text-xs font-semibold text-slate-600">有效期</p>
-                      <select v-model="inviteDialog.ttlSec" class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
-                        <option v-for="item in inviteTtlOptions" :key="`ttl-${item.value}`" :value="item.value">{{ item.label }}</option>
-                      </select>
-                    </label>
-                    <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                      <p class="text-xs font-semibold text-slate-600">最多加入人数</p>
-                      <input
-                        v-model.number="inviteDialog.maxUses"
-                        type="number"
-                        min="1"
-                        max="999"
-                        class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                      />
-                    </label>
-                  </div>
-
-                  <label class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-slate-600">邀请说明</p>
-                    <textarea
-                      v-model="inviteDialog.inviteStatement"
-                      rows="3"
-                      maxlength="180"
-                      class="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800"
-                      placeholder="可选，留给入群申请和群内通知使用"
-                    ></textarea>
-                  </label>
-
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                      <div class="min-w-0">
-                        <p class="text-sm font-semibold text-slate-800">加入前是否需要审批</p>
-                        <p class="mt-1 text-xs text-slate-500">默认开启。关闭后，通过此群的分享链接可直接加入。</p>
-                      </div>
-                      <button
-                        type="button"
-                        role="switch"
-                        :aria-checked="activeGroupInviteApprovalRequired ? 'true' : 'false'"
-                        :disabled="!isActiveGroupOwner"
-                        @click="setLocalActiveGroupInviteApprovalRequired(!activeGroupInviteApprovalRequired)"
-                        class="relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition"
-                        :class="activeGroupInviteApprovalRequired ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-slate-200'"
-                      >
-                        <span
-                          class="inline-block h-5 w-5 rounded-full bg-white shadow transition-transform"
-                          :class="activeGroupInviteApprovalRequired ? 'translate-x-6' : 'translate-x-1'"
-                        ></span>
-                      </button>
-                    </div>
-                    <div v-if="isActiveGroupOwner" class="mt-3 flex justify-end">
-                      <button
-                        type="button"
-                        @click="saveInviteApprovalPolicy"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                      >
-                        保存邀请策略
-                      </button>
-                    </div>
-                  </div>
-
-                  <div class="flex items-center justify-end gap-2">
-                    <p class="mr-auto text-[11px] text-slate-500">同一群同时最多保留 5 条生效中的分享链接。</p>
+                  <!-- 一键生成链接 -->
+                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-4 py-4 text-center">
+                    <p class="text-sm text-slate-600">为你生成专属邀请链接，分享给朋友即可加入</p>
                     <button
                       type="button"
                       @click="createInviteFromDialog"
-                      class="rounded-full bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                      class="mt-3 inline-flex items-center justify-center rounded-full bg-slate-900 px-6 py-2 text-sm font-semibold text-white hover:bg-slate-800"
                     >
-                      生成短链接
+                      生成邀请链接
                     </button>
                   </div>
 
-                  <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-emerald-700">已生成邀请链接</p>
-                    <p class="mt-2 break-all text-sm text-slate-800">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
-                    <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                      <span>有效至 {{ inviteDialog.generatedExpiresAt ? formatDateTime(inviteDialog.generatedExpiresAt) : '--' }}</span>
-                      <span>上限 {{ inviteDialog.maxUses }} 人</span>
-                    </div>
-                    <div class="mt-3 flex items-center justify-end gap-2">
+                  <!-- 已生成的链接 -->
+                  <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+                    <p class="text-xs font-semibold text-emerald-700">你的邀请链接</p>
+                    <p class="mt-2 break-all text-sm text-slate-800 select-all">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
+                    <div class="mt-2 flex items-center justify-end gap-2">
                       <button
                         type="button"
                         @click="copyInviteDialogLink()"
@@ -1698,55 +1603,69 @@
                     </div>
                   </div>
 
-                  <div class="rounded-xl border border-slate-100 bg-white px-3 py-3">
-                    <div class="flex items-center justify-between gap-3">
-                      <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">已生成链接</p>
-                        <p class="mt-1 text-sm font-semibold text-slate-800">邀请管理</p>
-                      </div>
-                    </div>
-                    <div class="mt-3">
-                      <div v-if="groupInviteSettingsLoading" class="text-xs text-slate-500">邀请链接加载中…</div>
-                      <div v-else-if="!groupInviteEntries.length" class="rounded-xl border border-dashed border-slate-200 px-3 py-4 text-xs text-slate-500">
-                        暂无已生成的分享链接。
-                      </div>
-                      <div v-else class="grid gap-2">
-                        <div
-                          v-for="entry in groupInviteEntries"
-                          :key="`invite-dialog-entry-${entry.inviteId}`"
-                          class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3"
-                        >
-                          <div class="flex items-center justify-between gap-2">
-                            <p class="text-sm font-semibold text-slate-800">{{ inviteStatusLabel(entry) }}</p>
-                            <p class="text-[11px] text-slate-500">已用 {{ inviteUsageLabel(entry) }}</p>
-                          </div>
-                          <p class="mt-2 break-all text-xs leading-5 text-slate-600">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
-                          <div class="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-                            <span>创建者 {{ entry.creatorNickname || `用户 ${entry.creatorUid.slice(0, 6)}` }}</span>
-                            <span>创建于 {{ formatDateTime(entry.createdAt) }}</span>
-                            <span>截止 {{ formatDateTime(entry.expiresAt) }}</span>
-                          </div>
-                          <div class="mt-3 flex items-center justify-end gap-2">
-                            <button
-                              type="button"
-                              @click="copyInviteDialogLink(entry)"
-                              class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                            >
-                              复制
-                            </button>
-                            <button
-                              v-if="isActiveGroupOwner && inviteStatusLabel(entry) === '生效中'"
-                              type="button"
-                              @click="revokeGroupInvite(entry.inviteId)"
-                              class="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-semibold text-rose-700 hover:bg-rose-100"
-                            >
-                              吊销
-                            </button>
-                          </div>
+                  <!-- 我的邀请链接列表 -->
+                  <div v-if="myGroupInviteEntries.length" class="rounded-xl border border-slate-100 bg-white px-3 py-3">
+                    <p class="text-xs font-semibold text-slate-500">我的邀请链接</p>
+                    <div class="mt-2 grid gap-2">
+                      <div
+                        v-for="entry in myGroupInviteEntries"
+                        :key="`my-invite-${entry.inviteId}`"
+                        class="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5"
+                      >
+                        <div class="flex items-center justify-between gap-2">
+                          <p class="text-xs font-medium" :class="inviteStatusLabel(entry) === '生效中' ? 'text-emerald-600' : 'text-slate-400'">{{ inviteStatusLabel(entry) }}</p>
+                          <p class="text-[11px] text-slate-400">已用 {{ inviteUsageLabel(entry) }}</p>
+                        </div>
+                        <p class="mt-1.5 break-all text-xs leading-5 text-slate-600 select-all">{{ formatInviteLinkDisplay(inviteLinkForEntry(entry)) }}</p>
+                        <div class="mt-2 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            @click="copyInviteDialogLink(entry)"
+                            class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                          >
+                            复制
+                          </button>
                         </div>
                       </div>
                     </div>
                   </div>
+
+                  <!-- 高级设置（仅群主可见） -->
+                  <details v-if="isActiveGroupOwner" class="group">
+                    <summary class="cursor-pointer select-none rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs font-medium text-slate-500 hover:bg-slate-100">
+                      高级设置
+                    </summary>
+                    <div class="mt-2 grid gap-2 rounded-xl border border-slate-100 bg-white px-3 py-3">
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0">
+                          <p class="text-sm font-semibold text-slate-800">加入前是否需要审批</p>
+                          <p class="mt-0.5 text-[11px] text-slate-500">关闭后，通过链接可直接加入</p>
+                        </div>
+                        <button
+                          type="button"
+                          role="switch"
+                          :aria-checked="activeGroupInviteApprovalRequired ? 'true' : 'false'"
+                          @click="setLocalActiveGroupInviteApprovalRequired(!activeGroupInviteApprovalRequired)"
+                          class="relative inline-flex h-6 w-10 shrink-0 items-center rounded-full transition-colors"
+                          :class="activeGroupInviteApprovalRequired ? 'bg-emerald-500' : 'bg-slate-200'"
+                        >
+                          <span
+                            class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform"
+                            :class="activeGroupInviteApprovalRequired ? 'translate-x-5' : 'translate-x-1'"
+                          ></span>
+                        </button>
+                      </div>
+                      <div class="flex justify-end">
+                        <button
+                          type="button"
+                          @click="saveInviteApprovalPolicy"
+                          class="rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
+                        >
+                          保存
+                        </button>
+                      </div>
+                    </div>
+                  </details>
                 </div>
               </div>
             </div>
@@ -2461,14 +2380,14 @@
                       :class="mobileViewport ? 'mt-3 rounded-[16px] p-1.5' : 'mt-4 rounded-[22px] p-2'"
                     >
                       <p class="px-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">可用操作</p>
-                      <div class="mt-2 flex flex-wrap" :class="mobileViewport ? 'gap-1.5' : 'gap-2'">
+                      <div class="mt-2 flex flex-wrap items-center" :class="mobileViewport ? 'gap-1.5' : 'gap-2'">
                         <button
                           v-for="(item, idx) in systemCardActions(msg)"
                           :key="`system-panel-action-${msg.msgId}-${idx}`"
                           type="button"
                           @click="handleSystemAction(msg, item)"
-                          class="rounded-full text-xs font-semibold"
-                          :class="[mobileViewport ? 'px-2.5 py-1' : 'px-3 py-1.5', idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700']"
+                          class="rounded-lg text-xs font-semibold transition"
+                          :class="[mobileViewport ? 'px-3 py-1.5' : 'px-3.5 py-2', item.label === '同意' ? 'bg-emerald-500 text-white hover:bg-emerald-600' : item.label === '拒绝' ? 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50' : idx === 0 ? 'bg-slate-900 text-white' : 'border border-slate-200 bg-white text-slate-700']"
                         >
                           {{ item.label || item.action || '处理' }}
                         </button>
@@ -2745,6 +2664,46 @@
                 </div>
               </div>
 
+              <div v-if="onlineUserCards.length" class="mt-4 grid gap-2">
+                <div class="flex items-center justify-between px-1">
+                  <p class="text-xs font-semibold text-emerald-700">实时在线</p>
+                  <p class="text-[11px] text-slate-400">{{ onlineUserCards.length }} 位</p>
+                </div>
+                <div
+                  v-for="user in onlineUserCards"
+                  :key="`online-user-${user.uid}`"
+                  class="online-user-card flex flex-col gap-3 rounded-[22px] border border-emerald-100 bg-emerald-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div class="min-w-0 flex items-center gap-3">
+                    <div class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white" :style="{ background: avatarColor(user.uid) }">
+                      {{ avatarInitial(user.nickname || user.uidShort) }}
+                    </div>
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold text-slate-800">{{ user.nickname || `用户 ${user.uidShort}` }}</p>
+                      <p class="truncate text-xs text-slate-500">{{ user.os }} · {{ user.location }}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button
+                      v-if="!user.inContacts && user.canDirectRequest"
+                      type="button"
+                      @click="addContact(user)"
+                      class="shrink-0 whitespace-nowrap rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-emerald-700"
+                    >
+                      {{ user.requestPending ? '已申请' : '加通讯录' }}
+                    </button>
+                    <button
+                      v-if="!user.dmContactsOnly || user.inContacts"
+                      type="button"
+                      @click="startDirectChat(user)"
+                      class="shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white"
+                    >
+                      私聊
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div class="mt-5 rounded-2xl border border-slate-100 bg-white px-3 py-3">
                 <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">迁移通讯录</p>
                 <p class="mt-1 text-xs text-slate-500">
@@ -2907,26 +2866,25 @@
         </div>
 
         <footer
-          v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP"
-          class="mobile-footer-shell mobile-safe-footer relative z-10 border-t border-slate-100 bg-white/95 px-2.5 py-2 sm:px-3 md:px-6 md:py-3"
+          v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && activeGroup !== joinApprovalPendingGroup"
+          class="mobile-footer-shell mobile-safe-footer relative z-10 border-t border-slate-100 bg-white/95 px-3 py-2.5 sm:px-3 md:px-6 md:py-3"
         >
           <div
             v-if="voiceComposerActive && mobileViewport"
             class="pointer-events-none absolute inset-x-3 bottom-full z-20 mb-3"
           >
             <div
-              class="mobile-voice-panel voice-mobile-panel pointer-events-auto rounded-2xl border border-slate-200/90 px-4 py-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
+              class="mobile-voice-panel voice-mobile-panel pointer-events-auto rounded-2xl border border-slate-200/90 bg-white px-4 py-4 shadow-[0_24px_60px_rgba(15,23,42,0.18)]"
               :class="voiceComposerShellClass"
             >
               <div class="flex items-center justify-between gap-3">
                 <div class="flex items-center gap-2 min-w-0">
-                  <span class="voice-recording-dot h-3 w-3 shrink-0 rounded-full bg-rose-500"></span>
+                  <span v-if="voiceComposeState === 'recording'" class="voice-recording-dot h-3 w-3 shrink-0 rounded-full bg-rose-500"></span>
                   <div class="min-w-0">
-                    <p class="truncate text-base font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
-                    <p class="mt-0.5 text-xs leading-5 text-slate-500">{{ voiceComposerSubtitle }}</p>
+                    <p class="truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
                   </div>
                 </div>
-                <p class="shrink-0 text-sm font-semibold tabular-nums text-slate-700">{{ voiceComposerElapsedLabel }}</p>
+                <p class="shrink-0 text-base font-semibold tabular-nums text-slate-700">{{ voiceComposerElapsedLabel }}</p>
               </div>
               <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-4 flex items-center justify-center gap-2">
                 <span class="voice-waiting-dot"></span>
@@ -2941,11 +2899,10 @@
                   :style="audioWaveformBarStyle(bar)"
                 ></span>
               </div>
-              <p class="mt-2 text-center text-[11px] text-slate-400">← 左滑取消</p>
-              <div class="mt-2 grid grid-cols-2 gap-2">
+              <div class="mt-3 grid grid-cols-2 gap-3">
                 <button
                   type="button"
-                  class="inline-flex h-10 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="inline-flex h-11 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-medium text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   :disabled="voiceComposeState === 'encoding' || voiceComposeState === 'sending'"
                   @click="cancelVoiceRecording"
                 >
@@ -2953,7 +2910,7 @@
                 </button>
                 <button
                   type="button"
-                  class="voice-recorder-action inline-flex h-10 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
+                  class="voice-recorder-action inline-flex h-11 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
                   :disabled="voiceComposeState !== 'recording'"
                   @click="finishVoiceRecording"
                 >
@@ -2961,8 +2918,8 @@
                     <span class="voice-recorder-dot h-2 w-2 rounded-full bg-white"></span>
                     发送
                   </span>
-                  <span v-else-if="voiceComposeState === 'encoding'">整理中</span>
-                  <span v-else>发送中</span>
+                  <span v-else-if="voiceComposeState === 'encoding'">整理中…</span>
+                  <span v-else>发送中…</span>
                 </button>
               </div>
             </div>
@@ -2994,7 +2951,7 @@
                 </svg>
               </button>
             </div>
-            <div class="flex w-full items-end gap-2">
+            <div class="flex w-full items-end gap-2.5">
             <div class="relative">
               <button
                 type="button"
@@ -3096,7 +3053,7 @@
             </div>
             <div
               v-else-if="voiceComposerActive"
-              class="voice-composer-shell relative flex min-h-[46px] flex-1 flex-wrap items-center gap-2 overflow-hidden rounded-[24px] border border-slate-200/90 bg-white px-2 py-2 shadow-[0_18px_48px_rgba(15,23,42,0.12)] sm:flex-nowrap"
+              class="voice-composer-shell relative flex min-h-[46px] flex-1 items-center gap-3 overflow-hidden rounded-[24px] border border-slate-200/90 bg-white px-3 py-2 shadow-[0_18px_48px_rgba(15,23,42,0.12)]"
               :class="voiceComposerShellClass"
             >
               <button
@@ -3110,22 +3067,17 @@
                   <path d="M6 6l12 12M18 6 6 18"/>
                 </svg>
               </button>
-              <div class="order-2 min-w-0 basis-[calc(100%-3rem)] flex-1 sm:order-none sm:basis-auto">
-                <div class="flex flex-wrap items-start justify-between gap-2">
-                  <div class="min-w-0">
-                    <p class="voice-status-title truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
-                    <p class="voice-status-subtitle mt-0.5 text-[11px] text-slate-500">{{ voiceComposerSubtitle }}</p>
-                  </div>
-                  <div class="shrink-0 text-right">
-                    <p class="text-[11px] font-semibold text-slate-700">{{ voiceComposerElapsedLabel }}</p>
-                  </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <p class="truncate text-sm font-semibold text-slate-900">{{ voiceComposerTitle }}</p>
+                  <p class="shrink-0 text-sm font-semibold tabular-nums text-slate-700">{{ voiceComposerElapsedLabel }}</p>
                 </div>
-                <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-2 flex items-center gap-1.5">
+                <div v-if="voiceComposeState === 'requesting'" class="voice-waiting mt-1.5 flex items-center gap-1.5">
                   <span class="voice-waiting-dot"></span>
                   <span class="voice-waiting-dot"></span>
                   <span class="voice-waiting-dot"></span>
                 </div>
-                <div v-else class="mt-2 flex h-9 items-end gap-1.5">
+                <div v-else class="mt-1.5 flex h-7 items-end gap-1">
                   <span
                     v-for="(bar, idx) in voiceComposerWaveform"
                     :key="`composer-wave-${idx}`"
@@ -3136,16 +3088,16 @@
               </div>
               <button
                 type="button"
-                class="voice-recorder-action order-3 inline-flex h-11 w-full shrink-0 items-center justify-center rounded-full px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 sm:order-none sm:ml-1 sm:w-auto sm:whitespace-nowrap"
+                class="voice-recorder-action inline-flex h-10 shrink-0 items-center justify-center rounded-full px-5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 whitespace-nowrap"
                 :disabled="voiceComposeState !== 'recording'"
                 @click="finishVoiceRecording"
               >
                 <span v-if="voiceComposeState === 'recording'" class="inline-flex items-center gap-2">
                   <span class="voice-recorder-dot h-2.5 w-2.5 rounded-full bg-white"></span>
-                  结束并发送
+                  发送
                 </span>
-                <span v-else-if="voiceComposeState === 'encoding'">整理中</span>
-                <span v-else>发送中</span>
+                <span v-else-if="voiceComposeState === 'encoding'">整理中…</span>
+                <span v-else>发送中…</span>
               </button>
             </div>
             <template v-else>
@@ -3186,6 +3138,12 @@
             </div>
           </div>
         </footer>
+        <div
+          v-else-if="activeGroup === joinApprovalPendingGroup"
+          class="mobile-footer-shell mobile-safe-footer relative z-10 border-t border-slate-100 bg-white/95 px-3 py-2.5 sm:px-3 md:px-6 md:py-3"
+        >
+          <p class="text-center text-sm text-slate-500">你的入群申请还在审批中，请耐心等待群主/管理员审批。</p>
+        </div>
       </main>
     </div>
   </div>
@@ -3245,6 +3203,7 @@ const groups = ref([
   { id: SYSTEM_NOTICE_GROUP, name: '系统消息', onlineCount: 0 },
 ]);
 const pendingJoin = ref({ groupId: '', inviteCode: '', select: true, groupName: '', joinStatement: '' });
+const joinApprovalPendingGroup = ref('');
 const connectionState = ref('connecting'); // connecting | verifying | connected | reconnecting | offline
 const showMobilePanel = ref(false);
 const mobileDrawerMode = ref('home'); // 'home' | 'group'
@@ -3404,6 +3363,8 @@ let voicePlaybackAudio = null;
 const outgoingAckTimers = new Map();
 let reconnectTimer = 0;
 let reconnectTicker = 0;
+let heartbeatTimer = 0;
+let lastPongAt = 0;
 let wsConnectionSeq = 0;
 let dmNegotiationTimer = 0;
 const directRestoreAttempts = new Map();
@@ -3437,6 +3398,37 @@ const resetReconnectTimer = () => {
 const resetReconnectState = () => {
   resetReconnectTimer();
   reconnectState.value = { attempt: 0, nextAt: 0, lastReason: '' };
+};
+
+const stopHeartbeat = () => {
+  if (heartbeatTimer) {
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = 0;
+  }
+  lastPongAt = 0;
+};
+
+const startHeartbeat = () => {
+  stopHeartbeat();
+  lastPongAt = Date.now();
+  heartbeatTimer = window.setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      stopHeartbeat();
+      return;
+    }
+    const now = Date.now();
+    // If no pong received in 35s, connection is likely dead
+    if (lastPongAt && now - lastPongAt > 35000) {
+      stopHeartbeat();
+      ws.close();
+      return;
+    }
+    try {
+      ws.send(JSON.stringify({ type: 'ping' }));
+    } catch {
+      stopHeartbeat();
+    }
+  }, 25000);
 };
 
 const resetDmNegotiationTimer = () => {
@@ -3592,6 +3584,12 @@ const isActiveGroupOwner = computed(() => {
 
 const activeGroupInviteApprovalRequired = computed(() => {
   return activeGroupMeta.value?.inviteApprovalRequired !== false;
+});
+
+const myGroupInviteEntries = computed(() => {
+  const uid = myUid.value;
+  if (!uid) return [];
+  return groupInviteEntries.value.filter((entry) => entry.creatorUid === uid);
 });
 
 const activeGroupAnnouncement = computed(() => {
@@ -5095,16 +5093,9 @@ const systemCardActions = (msg) => {
   const actions = normalizeSystemActions(msg?.systemActions, msg?.systemAction, msg?.systemActionLabel)
     .filter((item) => item.action !== 'open_system_notice')
     .map((item) => ({ ...item }));
-  const targetGroupId = systemMessageTargetGroupId(msg);
   const kind = systemMessageKind(msg);
 
-  if (targetGroupId && !actions.some((item) => item.action === 'open_related_group')) {
-    actions.unshift({
-      action: 'open_related_group',
-      label: '进入群聊',
-      groupId: targetGroupId,
-    });
-  }
+  // 不再自动添加"进入群聊"按钮 — 用户可通过侧边栏进入群聊
   if (kind.startsWith('contact') && !actions.some((item) => item.action === 'open_contacts')) {
     actions.push({ action: 'open_contacts', label: '打开通讯录' });
   }
@@ -5944,9 +5935,9 @@ const scheduleReconnect = (reason = '') => {
     return;
   }
   const attempt = reconnectState.value.attempt + 1;
-  const baseDelay = Math.min(1000 * (2 ** Math.min(attempt - 1, 4)), 15000);
-  const jitter = Math.min(900, 180 * attempt);
-  const delay = attempt === 1 ? 1200 : baseDelay + Math.floor(Math.random() * jitter);
+  const baseDelay = Math.min(2000 * (2 ** Math.min(attempt - 1, 4)), 30000);
+  const jitter = Math.min(1200, 250 * attempt);
+  const delay = attempt === 1 ? 2000 : baseDelay + Math.floor(Math.random() * jitter);
   const nextAt = Date.now() + delay;
   reconnectState.value = {
     attempt,
@@ -6169,11 +6160,12 @@ const playNotifySound = async () => {
 const checkEnvironment = () => {
   const ua = navigator.userAgent.toLowerCase();
   const isWechat = ua.includes('micromessenger');
+  const isQQBrowser = ua.includes('qqbrowser');
   const isUC = ua.includes('ucbrowser');
   const isQuark = ua.includes('quark');
   const isBaidu = ua.includes('baidu');
 
-  isInsecureBrowser.value = isWechat || isUC || isQuark || isBaidu;
+  isInsecureBrowser.value = isWechat || isQQBrowser || isUC || isQuark || isBaidu;
 };
 
 const detectMobileViewport = (width) => {
@@ -8998,7 +8990,7 @@ const clearOutgoingAckTimeout = (msgId) => {
   outgoingAckTimers.delete(msgId);
 };
 
-const markOutgoingFailed = (msgId, errorText = '发送失败，可点击重试') => {
+const markOutgoingFailed = (msgId, errorText = '发送失败') => {
   clearOutgoingAckTimeout(msgId);
   markOutgoingStatus(msgId, 'failed', errorText);
   const item = findOutboxEntry(msgId);
@@ -9014,7 +9006,7 @@ const scheduleOutgoingAckTimeout = (msgId) => {
   const timer = window.setTimeout(() => {
     const local = findLocalOutgoing(msgId);
     if (!local || local.clientStatus === 'delivered' || local.clientStatus === 'read') return;
-    markOutgoingFailed(msgId, '发送超时，可点击重试');
+    markOutgoingFailed(msgId, '发送超时，请检查网络后重新发送');
   }, OUTGOING_ACK_TIMEOUT_MS);
   outgoingAckTimers.set(msgId, timer);
 };
@@ -9253,7 +9245,7 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
   );
 
   if (!recipients.length) {
-    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '暂无接收者，可点击重试');
+    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '当前群组暂无在线成员');
     pushSendBlockedTip(groupId, {
       title: '发送未完成',
       text: '当前群组暂无可接收消息的在线成员。建议先邀请成员加入，或稍后重试。',
@@ -9299,7 +9291,7 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
   const msgId = typeof options.msgId === 'string' && options.msgId ? options.msgId : createMsgId();
   const targetUid = getDirectTargetUid(groupId);
   if (!targetUid) {
-    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '私聊对象不存在，可点击重试');
+    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '私聊对象不存在，请稍候再试');
     pushSendBlockedTip(groupId, {
       title: '发送失败：私聊对象不存在',
       text: '当前私聊会话信息不完整，请重新发起私聊。',
@@ -9319,7 +9311,7 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
 
   const target = onlineUsers.value.find((u) => u.uid === targetUid);
   if (!target || !target.identityDh || !target.identitySign) {
-    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '对方身份未就绪，可点击重试');
+    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '对方身份未就绪，请稍候再试');
     pushSendBlockedTip(groupId, {
       title: '发送未完成：对方身份未就绪',
       text: '对方可能刚上线，身份信息尚未同步完成，请稍后重试。',
@@ -9342,7 +9334,7 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
 
   const encrypted = await dmEncryptPayload(targetUid, target.identityDh, payload);
   if (!encrypted) {
-    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '本地加密失败，可点击重试');
+    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '本地加密失败，请稍候再试');
     pushSendBlockedTip(groupId, {
       title: '发送失败：加密异常',
       text: '本地加密失败，请稍后重试。',
@@ -10049,6 +10041,11 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       return;
     }
 
+    if (data.type === 'pong') {
+      lastPongAt = Date.now();
+      return;
+    }
+
     if (data.type === 'identity') {
       powUid.value = typeof data.powUid === 'string' && data.powUid ? data.powUid : data.uid || '';
       powState.value.nonce = typeof data.powNonce === 'string' ? data.powNonce : '';
@@ -10230,6 +10227,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
 
     if (data.type === 'invite_join_approval_pending') {
       const pendingGroupId = sanitizeGroupId(data.groupId) || sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
+      joinApprovalPendingGroup.value = pendingGroupId;
       toast('入群申请已提交，等待群主确认。', 'info');
       pushSendBlockedTip(pendingGroupId, {
         title: '入群审批中',
@@ -10303,6 +10301,9 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       if (!approved && pendingInviteRequest.value.reqId) {
         pendingInviteRequest.value = { reqId: '', groupId: '', mode: 'dialog' };
         inviteText.value = '邀请新人';
+      }
+      if (!approved && joinApprovalPendingGroup.value) {
+        joinApprovalPendingGroup.value = '';
       }
       pendingInviteApprovals.value = pendingInviteApprovals.value.filter((item) => item.requestId !== requestId);
       toast(approved ? '群主已通过入群申请。' : '群主拒绝了本次入群申请。', approved ? 'info' : 'error');
@@ -10547,6 +10548,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       powState.value.solving = false;
       connectionState.value = 'connected';
       resetReconnectState();
+      startHeartbeat();
       if (recoveredAfterReconnect) {
         toast('连接已恢复。', 'info');
       }
@@ -10728,6 +10730,9 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
 
     if (data.type === 'group_joined') {
       const gid = sanitizeGroupId(data.groupId);
+      if (gid && joinApprovalPendingGroup.value === gid) {
+        joinApprovalPendingGroup.value = '';
+      }
       directRestoreAttempts.delete(gid);
       ownedGroupRestoreAttempts.delete(gid);
       const directName = nameForDirectGroup(gid);
@@ -10884,7 +10889,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       const pendingLeaveGroupId = getPendingLeaveGroupId(reqId);
       const markFailedByReqId = (errorText = '') => {
         if (!reqId || !findLocalOutgoing(reqId)) return;
-        markOutgoingFailed(reqId, errorText || '发送失败，可点击重试');
+        markOutgoingFailed(reqId, errorText || '发送失败');
       };
       dmPreferenceSaving.value = false;
       if (code.startsWith('GROUP_')) {
@@ -10896,7 +10901,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
 
       if (code === 'POW_REQUIRED') {
         powState.value.verified = false;
-        markFailedByReqId('安全验证未完成，可点击重试');
+        markFailedByReqId('安全验证未完成，请稍候');
         pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
           title: '发送前需安全验证',
           text: '连接已重置，需重新完成反机器人校验后再发送。',
@@ -10997,7 +11002,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'DEVICE_BIND_REQUIRED') {
-        markFailedByReqId('设备未绑定，可点击重试');
+        markFailedByReqId('设备未绑定');
         pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
           title: '发送失败：未完成设备绑定',
           text: '请先完成设备绑定，再进行私聊或通讯录操作。',
@@ -11009,7 +11014,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'DM_WAIT_REPLY') {
-        markFailedByReqId('请等待对方回复后再重试');
+        markFailedByReqId('请等待对方回复后重试');
         const gid = isDirectGroupId(activeGroup.value) ? activeGroup.value : '';
         if (gid) {
           setDmLock(gid, true);
@@ -11020,10 +11025,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'RATE_LIMIT') {
-        markFailedByReqId('发送过快，可稍后重试');
+        markFailedByReqId('发送过快，请稍候再试');
         pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
-          title: '发送频率过快',
-          text: '触发频率限制，请稍后再发送。建议先整理一条完整消息后再发。',
+          title: '发送过于频繁',
+          text: '消息发送太快了，请稍候片刻再试。',
           dedupeKey: 'error-rate-limit',
         });
         toast('发送过快，请稍后重试。', 'info');
@@ -11031,11 +11036,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'NO_RECIPIENT') {
-        markFailedByReqId('当前无人接收，可点击重试');
+        markFailedByReqId('当前群组暂无在线成员');
         pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
           title: '发送未完成',
-          text: '当前群组没有可接收消息的在线成员。',
-          actions: [{ action: 'copy_invite', label: '复制群邀请' }],
+          text: '当前群组没有可接收消息的在线成员，请稍后再试。',
           dedupeKey: 'error-no-recipient',
         });
         toast('当前群组暂无可接收消息的在线成员。', 'info');
@@ -11222,7 +11226,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'NOT_IN_GROUP' && isDirectGroupId(currentGroupId)) {
-        markFailedByReqId('私聊恢复中，可点击重试');
+        markFailedByReqId('私聊恢复中，请稍候');
         joinedGroups.delete(currentGroupId);
         joinGroup(currentGroupId, '', { select: false });
         pushSendBlockedTip(currentGroupId, {
@@ -11390,7 +11394,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
           pruneOutboxQueue();
         } else {
           local.clientStatus = 'failed';
-          local.clientError = '暂无接收者，可点击重试';
+          local.clientError = '暂无接收者，请稍候再试';
         }
       }
       if (local && isDirectGroupId(local.groupId) && !isDmUnlocked(local.groupId)) {
@@ -11432,6 +11436,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
   };
 
   socket.onclose = (event) => {
+    stopHeartbeat();
     if (ws === socket) {
       ws = null;
     }
