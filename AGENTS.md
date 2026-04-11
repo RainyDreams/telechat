@@ -17,17 +17,16 @@
 
 | 区域 | 大致行号 | 内容 |
 |------|---------|------|
-| `<template>` | 1–2700 | 所有 UI 模板 |
-| `<script setup>` | 2700–11500 | 响应式状态 + 业务逻辑 |
-| `<style scoped>` | 11500–末尾 | CSS 动画 + 工具类 |
+| `<template>` | 1–3176 | 所有 UI 模板 |
+| `<script setup>` | 3177–11620 | 响应式状态 + 业务逻辑 |
+| `<style scoped>` | 11621–末尾 | CSS 动画 + 工具类 |
 
 Template 内按功能分区：
-- **Header**: 移动端/桌面端页眉 (~275–360)
-- **Sidebar (desktop)**: 左侧面板 (~130–270)
-- **Mobile drawer**: 侧边抽屉 (~473–880)
-- **Message list**: 消息列表 (~880–1500)
-- **Dialogs**: 各种弹窗 (~1500–2700)
-- **Footer**: 输入框 + 语音录制 (~2630–2950)
+- **Header**: 移动端/桌面端页眉 (~303–361)
+- **Mobile drawer**: 侧边抽屉 (~518–880)
+- **Message list**: 消息列表 (~1268–1500)
+- **Dialogs**: 各种弹窗 (~1448–2147)
+- **Footer**: 输入框 + 语音录制 (~2893–3168)
 
 ---
 
@@ -100,7 +99,7 @@ const leaveGroupDialog = ref({ open: false, groupId: '', name: '', ownerAction: 
 ```
 
 **添加新状态时：**
-1. 找到同类状态的区域（行号 ~3095–3200 是 ref 集中区）
+1. 找到同类状态的区域（行号 ~3210+ 是 ref 集中区）
 2. 按照现有命名风格添加
 3. 在 template 中通过 `v-if` / `:class` / `v-model` 绑定
 
