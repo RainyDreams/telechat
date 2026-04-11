@@ -111,7 +111,7 @@
               <p class="text-xs font-semibold uppercase tracking-wide text-rose-400">已下线</p>
               <h3 class="mt-1 text-lg font-semibold text-slate-800">你的账号在同一设备被重新登录</h3>
               <p class="mt-2 text-sm leading-6 text-slate-600">
-                为保证“一台设备一个用户”，本窗口已断开连接。
+                为保证"一台设备一个用户"，本窗口已断开连接。
                 {{ deviceKicked.reason ? `原因：${deviceKicked.reason}` : '' }}
               </p>
               <div class="mt-4 flex flex-wrap items-center justify-end gap-2">
@@ -953,7 +953,7 @@
                   </span>
                 </button>
               </div>
-              <p v-else class="mt-3 text-xs text-slate-500">在群聊页面点“加入通讯录”后，会出现在这里。</p>
+              <p v-else class="mt-3 text-xs text-slate-500">在群聊页面点"加入通讯录"后，会出现在这里。</p>
             </div>
 
             <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
@@ -1959,160 +1959,151 @@
             aria-label="Close group manage modal"
           ></button>
           <div class="viewport-modal-scroll">
-            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 34rem;">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 30rem;">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">群设置</p>
-                <p class="text-sm font-semibold text-slate-800">{{ activeGroupName }}</p>
-              </div>
+              <p class="text-sm font-semibold text-slate-800">群设置</p>
               <button
                 type="button"
                 @click="groupManageOpen = false"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+                class="text-xs font-medium text-slate-500"
               >
-                关闭
+                完成
               </button>
             </div>
-            <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
-              <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                <div class="flex items-center justify-between gap-2">
-                  <div class="min-w-0">
-                    <p class="text-xs font-semibold text-slate-600">群名称</p>
-                    <p class="truncate text-[11px] text-slate-500">群 ID：{{ activeGroup }}</p>
+            <div class="viewport-modal-body" style="--dialog-offset: 6rem;">
+
+              <!-- 群名称 -->
+              <div class="divide-y divide-slate-100">
+                <div class="flex items-center justify-between px-4 py-3">
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2">
+                      <p class="text-sm text-slate-800">群名称</p>
+                      <span
+                        class="rounded px-1.5 py-0.5 text-[10px] font-semibold"
+                        :class="isActiveGroupOwner ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'"
+                      >
+                        {{ isActiveGroupOwner ? '群主' : '成员' }}
+                      </span>
+                    </div>
+                    <p class="mt-0.5 text-[11px] text-slate-400 truncate">{{ activeGroup }}</p>
                   </div>
-                  <span
-                    class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                    :class="isActiveGroupOwner ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'"
-                  >
-                    {{ isActiveGroupOwner ? '你是群主' : '成员' }}
-                  </span>
-                </div>
-                <div class="mt-2 flex items-center gap-2">
-                  <input
-                    v-model="groupRenameInput"
-                    maxlength="40"
-                    :disabled="!isActiveGroupOwner"
-                    class="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 disabled:opacity-60"
-                    placeholder="修改群名称"
-                  />
-                  <button
-                    type="button"
-                    :disabled="!isActiveGroupOwner"
-                    @click="renameActiveGroup"
-                    class="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
-                  >
-                    保存
-                  </button>
-                </div>
-                <div class="mt-3 flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
-                  <div class="min-w-0">
-                    <p class="text-xs font-semibold text-slate-700">群置顶</p>
-                    <p class="mt-0.5 text-[11px] text-slate-500">仅对当前设备生效，置顶后会排在最近聊天之前。</p>
+                  <div class="flex items-center gap-2">
+                    <input
+                      v-model="groupRenameInput"
+                      maxlength="40"
+                      :disabled="!isActiveGroupOwner"
+                      class="w-28 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-sm text-slate-700 text-right outline-none disabled:opacity-60"
+                      :placeholder="activeGroupName || '群名称'"
+                    />
+                    <button
+                      type="button"
+                      :disabled="!isActiveGroupOwner"
+                      @click="renameActiveGroup"
+                      class="text-xs font-medium text-sky-600 disabled:opacity-50"
+                    >保存</button>
                   </div>
+                </div>
+                <div class="flex items-center justify-between px-4 py-3">
+                  <p class="text-sm text-slate-800">群置顶</p>
                   <button
                     type="button"
                     @click="toggleActiveGroupPinned"
-                    class="shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold"
-                    :class="activeGroupPinned ? 'bg-amber-500 text-white' : 'border border-slate-200 bg-white text-slate-700'"
+                    class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors"
+                    :class="activeGroupPinned ? 'bg-amber-500' : 'bg-slate-200'"
                   >
-                    {{ activeGroupPinned ? '已置顶' : '设为置顶' }}
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="activeGroupPinned ? 'translate-x-5' : 'translate-x-1'"></span>
                   </button>
                 </div>
               </div>
 
-              <div class="mt-3 rounded-xl border border-slate-100 bg-white px-3 py-3">
-                <div class="flex items-start justify-between gap-3">
-                  <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群公告</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">展示在群聊顶部</p>
-                    <p class="mt-1 text-xs text-slate-500">群公告保存在服务器，群主修改后所有成员会同步看到。</p>
+              <!-- 群公告 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="border-b border-slate-100 px-4 py-2 bg-slate-50">
+                  <div class="flex items-center justify-between">
+                    <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">群公告</p>
+                    <span class="text-[10px] text-slate-400">{{ groupAnnouncementInput.length }}/{{ GROUP_ANNOUNCEMENT_MAX }}</span>
                   </div>
-                  <span class="shrink-0 text-[11px] text-slate-400">{{ groupAnnouncementInput.length }}/{{ GROUP_ANNOUNCEMENT_MAX }}</span>
                 </div>
-                <textarea
-                  v-model="groupAnnouncementInput"
-                  rows="4"
-                  :maxlength="GROUP_ANNOUNCEMENT_MAX"
-                  :disabled="!isActiveGroupOwner"
-                  class="mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-800 outline-none disabled:opacity-60"
-                  placeholder="写一段群公告，成员进入群聊时会直接看到。"
-                ></textarea>
-                <div class="mt-3 flex items-center justify-between gap-2">
-                  <p class="text-[11px] text-slate-500">{{ activeGroupAnnouncement ? '当前已有群公告。' : '当前未设置群公告。' }}</p>
-                  <button
-                    type="button"
+                <div class="px-4 py-3">
+                  <textarea
+                    v-model="groupAnnouncementInput"
+                    rows="3"
+                    :maxlength="GROUP_ANNOUNCEMENT_MAX"
                     :disabled="!isActiveGroupOwner"
-                    @click="saveGroupAnnouncement"
-                    class="shrink-0 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
-                  >
-                    保存公告
-                  </button>
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none disabled:opacity-60"
+                    placeholder="群公告会展示在群聊顶部"
+                  ></textarea>
+                  <div class="mt-2 flex justify-end">
+                    <button
+                      type="button"
+                      :disabled="!isActiveGroupOwner"
+                      @click="saveGroupAnnouncement"
+                      class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50"
+                    >保存公告</button>
+                  </div>
                 </div>
               </div>
 
-              <div class="mt-3 rounded-xl border border-slate-100 bg-white px-3 py-3">
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">分享链接</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">打开邀请管理</p>
-                    <p class="mt-1 text-xs text-slate-500">分享链接配置、审批开关、已生成链接和吊销操作都在“邀请新人”里处理。</p>
-                  </div>
+              <!-- 邀请与链接 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="divide-y divide-slate-100">
                   <button
                     type="button"
                     @click="openInviteDialog(activeGroup)"
-                    class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-800"
+                    class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50"
                   >
-                    邀请新人
+                    <p class="text-sm text-slate-800">邀请新人</p>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                   </button>
                 </div>
               </div>
 
-              <div class="mt-3 rounded-xl border border-slate-100 bg-white px-3 py-3">
-                <div class="mb-2 flex items-center justify-between">
-                  <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">群成员</p>
+              <!-- 群成员 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="flex items-center justify-between border-b border-slate-100 px-4 py-2 bg-slate-50">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">群成员 · {{ groupMembers.length }}</p>
                   <button
                     type="button"
                     @click="requestGroupMembers"
-                    class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    刷新
-                  </button>
+                    class="text-[11px] font-medium text-sky-600"
+                  >刷新</button>
                 </div>
-                <div v-if="groupMembersLoading" class="text-xs text-slate-500">加载中…</div>
-                <div v-else-if="!groupMembers.length" class="text-xs text-slate-500">暂无成员。</div>
-                <div v-else class="grid gap-2">
+                <div v-if="groupMembersLoading" class="px-4 py-4 text-xs text-slate-500">加载中…</div>
+                <div v-else-if="!groupMembers.length" class="px-4 py-4 text-xs text-slate-500">暂无成员</div>
+                <div v-else class="divide-y divide-slate-100 max-h-60 overflow-y-auto">
                   <div
                     v-for="member in groupMembers"
                     :key="`gm-${member.uid}`"
-                    class="flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg border border-slate-100 bg-slate-50 px-2.5 py-2"
+                    class="flex w-full min-w-0 items-center gap-2 px-4 py-2.5"
                   >
-                    <div class="min-w-0 flex-1 overflow-hidden">
-                      <p class="truncate text-sm font-semibold text-slate-800">
-                        {{ member.nickname || `用户 ${member.uidShort}` }}
-                      </p>
-                      <p class="block max-w-full truncate text-[11px] text-slate-500">
-                        {{ member.uidShort }} · {{ member.os || '未知系统' }} · {{ member.location || '未知地区' }}
-                      </p>
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center gap-1.5">
+                        <p class="truncate text-sm text-slate-800">{{ member.nickname || `用户 ${member.uidShort}` }}</p>
+                        <span v-if="member.isOwner" class="rounded px-1 py-0.5 text-[9px] font-semibold bg-emerald-100 text-emerald-700">群主</span>
+                      </div>
+                      <p class="truncate text-[11px] text-slate-400">{{ member.os || '未知' }} · {{ member.location || '未知' }}</p>
                     </div>
                     <button
                       v-if="isActiveGroupOwner && !member.isOwner"
                       type="button"
                       @click="kickGroupMember(member.uid)"
-                      class="shrink-0 whitespace-nowrap rounded-full border border-rose-200 bg-rose-50 px-3 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-100"
-                    >
-                      移出
-                    </button>
+                      class="shrink-0 text-[11px] font-medium text-rose-500"
+                    >移出</button>
                   </div>
                 </div>
               </div>
 
-              <button
-                type="button"
-                @click="leaveActiveGroup"
-                class="mt-3 w-full rounded-xl border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-700 hover:bg-rose-100"
-              >
-                退出群聊
-              </button>
+              <!-- 退出 -->
+              <div class="mt-3 border-y border-slate-100">
+                <button
+                  type="button"
+                  @click="leaveActiveGroup"
+                  class="w-full px-4 py-3 text-sm text-center text-rose-500 font-medium active:bg-rose-50"
+                >
+                  退出群聊
+                </button>
+              </div>
+
             </div>
             </div>
           </div>
@@ -2127,15 +2118,17 @@
           ></button>
           <div
             v-if="groupQuickMenu.mobile"
-            class="absolute inset-x-0 bottom-0 rounded-t-3xl border border-slate-200 bg-white px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 shadow-2xl"
+            class="absolute inset-x-0 bottom-0 rounded-t-2xl border-t border-slate-200 bg-white pb-[calc(env(safe-area-inset-bottom)+0.5rem)] shadow-2xl"
           >
-            <div class="mx-auto h-1.5 w-10 rounded-full bg-slate-200"></div>
-            <p class="mt-3 truncate text-sm font-semibold text-slate-800">{{ groupQuickMenuName }}</p>
-            <div class="mt-4 grid gap-2">
+            <div class="flex justify-center py-2">
+              <div class="h-1 w-8 rounded-full bg-slate-300"></div>
+            </div>
+            <p class="px-4 pb-2 truncate text-sm font-medium text-slate-500">{{ groupQuickMenuName }}</p>
+            <div class="divide-y divide-slate-100 border-y border-slate-100">
               <button
                 type="button"
                 @click="toggleQuickMenuGroupPinned"
-                class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-semibold text-slate-700"
+                class="w-full px-4 py-3 text-left text-sm text-slate-800 active:bg-slate-50"
               >
                 {{ groupQuickMenuPinned ? '取消置顶' : '置顶' }}
               </button>
@@ -2143,16 +2136,9 @@
                 v-if="groupQuickMenuCanLeave"
                 type="button"
                 @click="promptLeaveGroup(groupQuickMenu.groupId)"
-                class="w-full rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-left text-sm font-semibold text-rose-700"
+                class="w-full px-4 py-3 text-left text-sm text-rose-500 active:bg-rose-50"
               >
                 退出群聊
-              </button>
-              <button
-                type="button"
-                @click="closeGroupQuickMenu"
-                class="w-full rounded-2xl border border-slate-200 bg-slate-100 px-4 py-3 text-sm font-semibold text-slate-600"
-              >
-                取消
               </button>
             </div>
           </div>
@@ -2190,7 +2176,7 @@
             <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
               <div class="border-b border-slate-100 px-4 py-3">
                 <p class="text-sm font-semibold text-slate-800">退出群聊</p>
-                <p class="mt-1 text-xs text-slate-500">确认退出“{{ leaveGroupDialog.name || leaveGroupDialog.groupId }}”？</p>
+                <p class="mt-1 text-xs text-slate-500">确认退出"{{ leaveGroupDialog.name || leaveGroupDialog.groupId }}"？</p>
               </div>
               <div class="px-4 py-4">
                 <template v-if="leaveGroupDialogIsOwner">
@@ -2673,7 +2659,7 @@
                 正在加载通讯录…
               </div>
               <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人，可在“实时在线”列表中添加。' }}
+                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人，可在"实时在线"列表中添加。' }}
               </div>
               <div v-else class="mt-3 grid gap-4">
                 <div v-if="onlineContactCards.length" class="grid gap-2">
@@ -10201,7 +10187,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
           buildExplanationAction({
             label: '为什么要等待',
             title: '为什么私聊请求要等待',
-            text: '陌生人私聊现在采用“先请求、后建立会话”的方式，只有对方明确接受后才会创建私聊窗口。',
+            text: '陌生人私聊现在采用"先请求、后建立会话"的方式，只有对方明确接受后才会创建私聊窗口。',
             tip: '如果你们已经互加通讯录，对方接受后会立即进入正常私聊。',
           }),
         ],
@@ -10314,7 +10300,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       pushSystemMessageToGroup({
         groupId: sanitizeGroupId(data.groupId) || SYSTEM_NOTICE_GROUP,
         title: '入群待审批',
-        text: `${requester} 想加入“${groupName}”。邀请人：${inviter}${requesterStatement ? `；申请说明：${requesterStatement}` : ''}${inviterStatement ? `；邀请说明：${inviterStatement}` : ''}`,
+        text: `${requester} 想加入"${groupName}"。邀请人：${inviter}${requesterStatement ? `；申请说明：${requesterStatement}` : ''}${inviterStatement ? `；邀请说明：${inviterStatement}` : ''}`,
         actions: [
           { action: 'approve_group_join', label: '同意', requestId },
           { action: 'reject_group_join', label: '拒绝', requestId },
@@ -10539,14 +10525,14 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       setMigrationStatus(
         'success',
         transferredNickname
-          ? `通讯录迁移完成，共 ${count} 条，昵称“${transferredNickname}”已转让到当前设备。`
+          ? `通讯录迁移完成，共 ${count} 条，昵称"${transferredNickname}"已转让到当前设备。`
           : `通讯录迁移完成，共 ${count} 条。新设备可刷新通讯录确认。`
       );
       toast(`通讯录迁移完成（${count} 条）。`, 'info');
       pushSystemMessage({
         title: '通讯录迁移完成',
         text: transferredNickname
-          ? `已同步 ${count} 位联系人，昵称“${transferredNickname}”已完成转让。`
+          ? `已同步 ${count} 位联系人，昵称"${transferredNickname}"已完成转让。`
           : `已同步 ${count} 位联系人。`,
         meta: { kind: 'migration_done', peerNickname: transferredNickname },
       });
@@ -10972,7 +10958,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
               label: '为什么不能邀请',
               title: '为什么这里不能生成邀请',
               text: '当前会话属于系统通知或双人私聊，这两类会话不是可扩员的普通群聊，所以系统不会为它们生成邀请链接。',
-              tip: '先切换到普通群聊，再使用“邀请新人”创建可分享的助记词链接。',
+              tip: '先切换到普通群聊，再使用"邀请新人"创建可分享的助记词链接。',
             }),
           ],
           dedupeKey: 'error-invite-forbidden-group',
