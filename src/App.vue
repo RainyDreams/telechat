@@ -9527,13 +9527,29 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
   return msgId;
 };
 
-const flushOutbox = async () => {
+const flushOutbox = async (onlyMsgId = '') => {
   if (isFlushingOutbox.value) return;
   pruneOutboxQueue();
   if (!outboxQueue.value.length) return;
   if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) return;
   isFlushingOutbox.value = true;
   try {
+    if (onlyMsgId) {
+      // 精准重试：只发指定这一条
+      const item = outboxQueue.value.find((entry) => entry.msgId === onlyMsgId);
+      if (item) {
+        const local = findLocalOutgoing(item.msgId);
+        if (local?.clientStatus !== 'sending') {
+          markOutgoingStatus(item.msgId, 'sending');
+          await sendEncryptedPayload(item.payloadType, item.payload, {
+            groupId: item.groupId,
+            msgId: item.msgId,
+            skipLocalPush: Boolean(findLocalOutgoing(item.msgId)),
+          });
+        }
+      }
+      return;
+    }
     let idx = 0;
     while (idx < outboxQueue.value.length) {
       const item = outboxQueue.value[idx];
@@ -9577,13 +9593,19 @@ const retryOutbox = () => {
 
 const retryMessage = (msg) => {
   if (!msg || !msg.msgId) return;
-  const existing = outboxQueue.value.find((item) => item.msgId === msg.msgId);
-  if (!existing) return;
+  const idx = outboxQueue.value.findIndex((item) => item.msgId === msg.msgId);
+  if (idx < 0) return;
+  // 移到队尾，让其他消息先发
+  const entry = outboxQueue.value.splice(idx, 1)[0];
+  entry.retries = Number(entry.retries || 0) + 1;
+  entry.createdAt = Date.now();
+  outboxQueue.value.push(entry);
+  persistOutboxQueue();
   markOutgoingStatus(msg.msgId, 'queued');
   if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) {
     manualReconnect();
   }
-  void flushOutbox();
+  void flushOutbox(msg.msgId);
 };
 
 const handleSend = async () => {
@@ -11566,15 +11588,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
       clearOutgoingAckTimeout(data.msgId);
       if (local) {
-        if (Number(data.delivered) > 0) {
-          local.clientStatus = 'delivered';
-          local.clientError = '';
-          removeOutboxEntry(data.msgId);
-          pruneOutboxQueue();
-        } else {
-          local.clientStatus = 'failed';
-          local.clientError = '暂无接收者，请稍候再试';
-        }
+        local.clientStatus = 'delivered';
+        local.clientError = '';
+        removeOutboxEntry(data.msgId);
+        pruneOutboxQueue();
       }
       if (local && isDirectGroupId(local.groupId) && !isDmUnlocked(local.groupId)) {
         const delivered = Number(data.delivered) || 0;
