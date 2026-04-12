@@ -3154,6 +3154,35 @@ const identitySignPublicBase64 = ref('');
 const identityDhPublicBase64 = ref('');
 const peerIdentityMap = ref({});
 const messages = ref([]);
+const MSG_STORAGE_KEY = 'telechat_messages_v1';
+const MSG_STORAGE_MAX = 300;
+const saveMessages = () => {
+  try {
+    const trimmed = messages.value.slice(-MSG_STORAGE_MAX).map((m) => {
+      const copy = { ...m };
+      // strip large base64 data to stay within localStorage limits
+      if (copy.imageData) copy.imageData = '';
+      if (copy.audioData) copy.audioData = '';
+      return copy;
+    });
+    localStorage.setItem(MSG_STORAGE_KEY, JSON.stringify(trimmed));
+  } catch { /* quota exceeded, ignore */ }
+};
+const loadMessages = () => {
+  try {
+    const raw = localStorage.getItem(MSG_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length) {
+      messages.value = parsed;
+    }
+  } catch { /* corrupted data, ignore */ }
+};
+let saveMessagesTimer = null;
+const scheduleSaveMessages = () => {
+  if (saveMessagesTimer) clearTimeout(saveMessagesTimer);
+  saveMessagesTimer = setTimeout(saveMessages, 2000);
+};
 const inputMsg = ref('');
 const activeGroup = ref(SYSTEM_GROUP);
 const groups = ref([
@@ -6841,6 +6870,13 @@ watch(
   () => activeGroup.value,
   () => {
     clearReplyDraft();
+  }
+);
+
+watch(
+  () => messages.value.length,
+  () => {
+    scheduleSaveMessages();
   }
 );
 
@@ -11723,6 +11759,7 @@ onMounted(async () => {
   loadSystemNotifySetting();
   loadTrustedKeys();
   loadOutboxQueue();
+  loadMessages();
   pruneOutboxQueue();
   void initDeviceFingerprint();
   notificationAudio = new Audio(SOUND_URL);
