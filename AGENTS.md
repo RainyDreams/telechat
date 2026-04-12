@@ -249,97 +249,149 @@ npm run deploy
 
 ## 7. Git 协作与冲突预防
 
-### 7.1 分支规范
+### 7.1 铁律
 
-```
-main ← feat/your-branch (从 main 最新 HEAD 切出)
-```
+1. **main 是只读的** — 所有改动通过 PR 合入，禁止直接 push main
+2. **一个分支一件事** — 不混杂不相关的改动
+3. **创建 PR 前必须 rebase 到最新 main** — 这是冲突的根源
+4. **PR 合并后分支自动删除** — 保持远程干净（需在 GitHub Settings 开启）
 
-1. **永远从最新 main 切分支**：
-   ```bash
-   git checkout main && git pull origin main
-   git checkout -b feat/描述
-   ```
-2. **commit message 格式**：`type: 简短描述`
-   - `feat:` 新功能 / `fix:` 修复 / `refactor:` 重构 / `style:` 样式调整
-3. **一个分支一件事**：不要在同一个分支里混杂不相关的改动
-
-### 7.2 PR 创建前的检查清单
-
-创建 PR 前**必须**执行以下步骤，否则容易出现合并冲突：
+### 7.2 开发流程（必须按顺序）
 
 ```bash
-# 1. 检查 main 是否有新提交
-git fetch origin main
-git log --oneline HEAD..origin/main
+# ① 永远从最新 main 切分支
+git checkout main
+git pull origin main
+git checkout -b feat/你的描述
 
-# 2. 如果 main 有新提交，rebase 到最新
+# ② 开发，小步提交
+git add -A
+git commit -m "feat: 简短描述"
+
+# ③ Push 前：拉取 main 最新，rebase 上去
+git fetch origin main
+git log --oneline HEAD..origin/main   # 查看 main 有没有新提交
+# 如果有新提交：
 git rebase origin/main
 
-# 3. 检查自己改了哪些文件，确保没有碰别人正在改的区域
-git diff origin/main --stat
-
-# 4. 构建检查
+# ④ 构建检查
 npm run build
-```
 
-**关键规则：如果 `git fetch` 发现 main 有更新，必须先 rebase 再 push。**
+# ⑤ Push + 创建 PR
+git push origin feat/你的描述
+# 用 API 或 GitHub UI 创建 PR
 
-### 7.3 避免区域冲突的机制
-
-`App.vue` 是 12000 行单文件，多人/多分支改同一区域必然冲突。以下是预防机制：
-
-#### 热区标注
-
-以下区域是**高频改动区**，改这些区域时要特别小心：
-
-| 区域 | 行号范围 | 风险 |
-|------|---------|------|
-| Debug Panel（移动端） | ~1094–1120 | 高 — 多分支同时改 |
-| Debug Panel（桌面端） | ~2306–2330 | 高 — 同上 |
-| Debug info computed | ~3560–3610 | 中 — 新增 debug 字段时 |
-| Toast/通知区域 | ~48–65 | 中 |
-| 连接状态处理 | ~3300–3400 | 低 |
-
-**规则：如果要改以上区域，先 `git fetch` 确认 main 没有同时在改。**
-
-#### 分支命名防重
-
-如果两个分支要改同一区域（比如都改 Debug Panel），应该：
-1. 在同一个分支里一起改，改完一个 PR 解决
-2. 或者明确分工：一个改模板，一个改 JS 逻辑
-
-### 7.4 合并后清理
-
-```bash
-# PR 合并后删除远程分支
-git push origin --delete feat/已合并的分支
-
-# 清理本地
-git branch -d feat/已合并的分支
+# ⑥ PR 合并后，清理本地
+git checkout main && git pull origin main
+git branch -d feat/你的描述
 git remote prune origin
 ```
 
-**定期执行**：每周检查一次远程分支列表，删除已合并或废弃的分支：
+### 7.3 防冲突：App.vue 热区地图
+
+`App.vue` 是 12000 行单文件。多人同时改同一区域 = 冲突。以下是最容易撞车的区域：
+
+| 热区 | 行号范围 | 内容 | 冲突风险 |
+|------|---------|------|---------|
+| Toast/Banner | ~48–70 | 浮层提示 | 🔴 高 |
+| 移动端 Debug Panel | ~1094–1160 | 调试信息 + 待发队列 | 🔴 高 |
+| 桌面端 Debug Panel | ~2306–2370 | 同上 | 🔴 高 |
+| Debug info computed | ~3560–3610 | debugInfo 计算属性 | 🟡 中 |
+| 连接状态逻辑 | ~3090–3400 | WS 状态管理 | 🟡 中 |
+| Message list template | ~1268–1500 | 消息列表渲染 | 🟡 中 |
+| CSS animations | ~12085–末尾 | 动画定义 | 🟢 低 |
+
+**操作规则：**
+- 改 🔴 高风险区 → 先 `git fetch origin main` 确认 main 没有同时在改
+- 如果两个分支都要改同一个热区 → 合到一个分支里做
+- 改完立刻提 PR 合入，不要让分支悬着
+
+### 7.4 PR 创建前检查脚本
+
+创建 PR 前**必须**跑这个检查：
+
 ```bash
-# 查看所有分支及其最后提交时间
-git for-each-ref --sort=-committerdate --format='%(refname:short) %(committerdate:relative)' refs/remotes/origin
+#!/bin/bash
+# scripts/pre-pr-check.sh
+
+set -e
+
+echo "=== 1. Fetch latest main ==="
+git fetch origin main
+BEHIND=$(git rev-list --count HEAD..origin/main)
+echo "  Behind main: $BEHIND commits"
+
+if [ "$BEHIND" -gt 0 ]; then
+  echo "  ⚠️  main 有更新，正在 rebase..."
+  git rebase origin/main
+fi
+
+echo "=== 2. Changed files ==="
+git diff origin/main --stat
+
+echo "=== 3. Check hot zones ==="
+CHANGED=$(git diff origin/main --name-only)
+for file in $CHANGED; do
+  if [ "$file" = "src/App.vue" ]; then
+    # Check if changes touch debug panel areas
+    LINES=$(git diff origin/main -- src/App.vue | grep "^@@" | head -5)
+    echo "  App.vue changes:"
+    echo "$LINES"
+    if echo "$LINES" | grep -qE "@@.*109[0-9]|@@.*23[0-3][0-9]|@@.*48|@@.*6[0-9]"; then
+      echo "  🔴 警告：改动触及热区，可能与其他分支冲突！"
+    fi
+  fi
+done
+
+echo "=== 4. Build check ==="
+npm run build
+
+echo "=== ✅ All checks passed ==="
 ```
 
-### 7.5 批量创建 PR 的冲突检测
+### 7.5 分支生命周期管理
 
-在批量创建 PR 时，用 GitHub API 检查合并状态：
+**规则：PR 合并后分支必须当天删除。**
 
 ```bash
-# 检查 PR 是否有合并冲突
-curl -s "https://api.github.com/repos/OWNER/REPO/compare/main...BRANCH" | python3 -c "
-import json,sys; d=json.load(sys.stdin)
-print('status:', d['status'])  # 'identical' | 'ahead' | 'behind' | 'diverged'
-print('can merge:', d.get('status') != 'conflicted')
-"
+# 查看哪些远程分支是已合并的
+git fetch origin
+git branch -r --merged origin/main | grep -v "origin/main" | sed 's/origin\///'
+
+# 批量清理已合并的远程分支
+git branch -r --merged origin/main | grep -v "origin/main" | sed 's/origin\///' | \
+  xargs -I{} git push origin --delete {}
 ```
 
-如果 `status` 是 `diverged` 且 behind 数较大（>5），说明分支太旧，先 rebase 再创建 PR。
+**GitHub 设置（需手动开启）：**
+- Settings → General → **Automatically delete head branches** ✅
+- Settings → Branches → Add rule for `main` → **Require a pull request before merging** ✅
+
+### 7.6 仓库清理检查（定期执行）
+
+```bash
+# 查看所有分支和最后更新时间
+git for-each-ref --sort=-committerdate \
+  --format='%(refname:short) | %(committerdate:relative) | %(authorname)' \
+  refs/remotes/origin | head -20
+
+# 检查未合并的分支（有风险的）
+git branch -r --no-merged origin/main | grep -v "origin/main"
+```
+
+### 7.7 冲突检测 API
+
+批量创建 PR 前，用 API 检查状态：
+
+```bash
+# 检查分支是否可以无冲突合并
+check_branch() {
+  STATUS=$(curl -s "https://api.github.com/repos/OWNER/REPO/compare/main...$1" \
+    -H "Authorization: Bearer $TOKEN" | python3 -c "import json,sys; print(json.load(sys.stdin).get('status',''))")
+  echo "$1: $STATUS"
+  # identical = 已合并 | ahead = 有新 commit | diverged = 需要 rebase | conflicted = 有冲突
+}
+```
 
 ---
 
