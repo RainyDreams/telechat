@@ -4469,8 +4469,6 @@ export class ChatRoom {
       reqId,
     });
 
-    if (!delivered) {
-      this.sendError(ws, 'NO_RECIPIENT', 'No available recipients in this group', reqId);
     } else if (isDirectGroupId(groupId)) {
       if (dmPairKey && !this.dmUnlocked.has(dmPairKey)) {
         const lastSender = this.dmLastSender.get(dmPairKey);
