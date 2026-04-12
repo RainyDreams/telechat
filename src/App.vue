@@ -1592,6 +1592,7 @@
                   <div v-if="inviteDialog.generatedShortCode || inviteDialog.generatedInviteCode" class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
                     <p class="text-xs font-semibold text-emerald-700">你的邀请链接</p>
                     <p class="mt-2 break-all text-sm text-slate-800 select-all">{{ inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }) }}</p>
+                    <div class="mt-3 flex justify-center rounded-xl bg-white p-3" v-html="inviteDialogQR"></div>
                     <div class="mt-2 flex items-center justify-end gap-2">
                       <button
                         type="button"
@@ -1599,6 +1600,13 @@
                         class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
                       >
                         复制链接
+                      </button>
+                      <button
+                        type="button"
+                        @click="saveGroupInviteCard(inviteLinkForEntry({ inviteCode: inviteDialog.generatedInviteCode, shortCode: inviteDialog.generatedShortCode }))"
+                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                      >
+                        保存名片
                       </button>
                     </div>
                   </div>
@@ -1612,6 +1620,7 @@
                         <p class="text-[11px] text-slate-400">已用 {{ inviteUsageLabel(myActiveGroupInvite) }}</p>
                       </div>
                       <p class="mt-1.5 break-all text-xs leading-5 text-slate-600 select-all">{{ formatInviteLinkDisplay(inviteLinkForEntry(myActiveGroupInvite)) }}</p>
+                      <div class="mt-3 flex justify-center rounded-lg bg-white p-2" v-html="activeInviteQR"></div>
                       <div class="mt-2 flex items-center justify-end gap-2">
                         <button
                           type="button"
@@ -1619,6 +1628,13 @@
                           class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
                         >
                           复制
+                        </button>
+                        <button
+                          type="button"
+                          @click="saveGroupInviteCard(inviteLinkForEntry(myActiveGroupInvite))"
+                          class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100"
+                        >
+                          保存名片
                         </button>
                         <button
                           type="button"
@@ -3244,7 +3260,7 @@ import appPackage from '../package.json';
 import { TransportSocket, createTransportSocket } from './lib/transport-socket.js';
 import { generateSnowflakeId } from './lib/snowflake.js';
 import { initPush, getPushStatus, registerServiceWorker } from './lib/push.js';
-import { generateDeviceQRSvg, buildDeviceShareString, parseDeviceShareString } from './lib/qrcode.js';
+import { generateDeviceQRSvg, generateInviteQRSvg, buildDeviceShareString, parseDeviceShareString } from './lib/qrcode.js';
 
 // WebSocket readyState 兼容常量（TransportSocket 也使用这些值）
 const WS_CONNECTING = 0;
@@ -3703,6 +3719,19 @@ const myActiveGroupInvite = computed(() => {
     if (Number(entry.expiresAt) > 0 && Number(entry.expiresAt) <= Date.now()) return false;
     return true;
   }) || null;
+});
+
+// 邀请弹窗中的二维码（刚生成的链接）
+const inviteDialogQR = computed(() => {
+  const link = inviteLinkForEntry({ inviteCode: inviteDialog.value.generatedInviteCode, shortCode: inviteDialog.value.generatedShortCode });
+  return link ? generateInviteQRSvg(link, 160) : '';
+});
+
+// 已有邀请链接的二维码
+const activeInviteQR = computed(() => {
+  if (!myActiveGroupInvite.value) return '';
+  const link = inviteLinkForEntry(myActiveGroupInvite.value);
+  return link ? generateInviteQRSvg(link, 140) : '';
 });
 
 const otherMembersGroupInvites = computed(() => {
@@ -7211,6 +7240,63 @@ const copyInviteDialogLink = async (entry = null) => {
   } catch {
     toast('复制失败，请稍后重试。', 'error');
   }
+};
+
+const saveGroupInviteCard = (inviteUrl) => {
+  if (!inviteUrl) return;
+  const groupName = groupMetaMap[inviteDialog.value.groupId]?.groupName || activeGroupName.value || '群聊';
+  const svgStr = generateInviteQRSvg(inviteUrl, 280);
+  const cardW = 360;
+  const cardH = 480;
+  const canvas = document.createElement('canvas');
+  canvas.width = cardW * 2;
+  canvas.height = cardH * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, cardW, cardH);
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, cardW, 56);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px -apple-system, "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LINKCONNECT', cardW / 2, 36);
+
+  const img = new Image();
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  img.onload = () => {
+    const qrSize = 200;
+    const qrX = (cardW - qrSize) / 2;
+    const qrY = 80;
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, qrX - 16, qrY - 16, qrSize + 32, qrSize + 32, 12);
+    ctx.fill();
+    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+    URL.revokeObjectURL(url);
+
+    ctx.fillStyle = '#334155';
+    ctx.font = 'bold 14px -apple-system, "Segoe UI", sans-serif';
+    ctx.textAlign = 'center';
+    const shortName = groupName.length > 18 ? groupName.slice(0, 18) + '…' : groupName;
+    ctx.fillText(shortName, cardW / 2, qrY + qrSize + 36);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px -apple-system, "Segoe UI", sans-serif';
+    ctx.fillText('扫码加入群聊', cardW / 2, qrY + qrSize + 60);
+
+    canvas.toBlob((b) => {
+      if (!b) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = `linkconnect-${groupName}.png`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('群名片已保存。', 'info');
+    }, 'image/png');
+  };
+  img.src = url;
 };
 
 const saveInviteApprovalPolicy = () => {
@@ -11831,6 +11917,17 @@ onMounted(async () => {
     pendingJoin.value = { groupId: gid, inviteCode: inviteOnly, select: true, groupName: '', joinStatement: '' };
     activeGroup.value = gid;
     ensureGroupInList(gid);
+  }
+
+  // ?add=deviceId → 自动打开添加好友弹窗
+  const addDeviceId = url.searchParams.get('add');
+  if (addDeviceId && parseDeviceShareString(addDeviceId)) {
+    url.searchParams.delete('add');
+    window.history.replaceState({}, '', url.toString());
+    // 延迟打开，等连接建立
+    setTimeout(() => {
+      addFriendDialog.value = { open: true, deviceIdInput: parseDeviceShareString(addDeviceId) || addDeviceId, error: '', mode: 'input' };
+    }, 1500);
   }
 
   checkEnvironment();
