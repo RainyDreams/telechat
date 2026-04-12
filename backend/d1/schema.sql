@@ -38,3 +38,10 @@ CREATE TABLE IF NOT EXISTS offline_messages (
 
 CREATE INDEX IF NOT EXISTS idx_offline_msgs_target ON offline_messages (target_fp, msg_id);
 CREATE INDEX IF NOT EXISTS idx_offline_msgs_created ON offline_messages (created_at);
+
+-- 设备公钥持久化（支持离线成员消息加密）
+CREATE TABLE IF NOT EXISTS device_public_keys (
+  device_fp TEXT PRIMARY KEY,
+  public_key TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);

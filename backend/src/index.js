@@ -393,6 +393,7 @@ export class ChatRoom {
     this.contactsSchemaReady = false;
     this.offlineSchemaReady = false;
     this.offlineLoaded = false;
+    this.pubKeySchemaReady = false;
     this.groupMetaById = new Map();
     this.groupMetaLoaded = false;
     this.inviteRecordsById = new Map();
@@ -440,6 +441,16 @@ export class ChatRoom {
     // HTTP 发送端点（长轮询模式下发送消息）
     if (url.pathname === '/api/send' && request.method === 'POST') {
       return this.handleHttpSend(request);
+    }
+
+    // 查询群组成员公钥（支持离线成员消息加密）
+    if (url.pathname === '/api/group-public-keys' && request.method === 'GET') {
+      const groupId = sanitizeGroupId(url.searchParams.get('groupId'));
+      if (!groupId) {
+        return new Response(JSON.stringify({ ok: false, error: 'MISSING_GROUP_ID' }), { status: 400, headers: jsonHeaders });
+      }
+      const publicKeys = await this.getGroupPublicKeys(groupId);
+      return new Response(JSON.stringify({ ok: true, groupId, publicKeys }), { status: 200, headers: jsonHeaders });
     }
 
     // WebSocket 连接
@@ -1006,6 +1017,74 @@ export class ChatRoom {
     } catch (e) {
       console.warn('[OfflineQueue] Failed to load from D1:', e.message);
     }
+  }
+
+  /**
+   * 确保公钥 D1 表存在
+   */
+  async ensurePublicKeysSchema() {
+    if (this.pubKeySchemaReady || !this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    try {
+      await this.env.DB.prepare(
+        'CREATE TABLE IF NOT EXISTS device_public_keys (device_fp TEXT PRIMARY KEY, public_key TEXT NOT NULL, updated_at INTEGER NOT NULL)'
+      ).run();
+      this.pubKeySchemaReady = true;
+    } catch {
+      // no-op
+    }
+  }
+
+  /**
+   * 持久化设备公钥到 D1
+   */
+  async persistPublicKey(deviceFp, publicKey) {
+    if (!deviceFp || !publicKey || !this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    try {
+      await this.ensurePublicKeysSchema();
+      await this.env.DB.prepare(
+        'INSERT INTO device_public_keys (device_fp, public_key, updated_at) VALUES (?, ?, ?) ON CONFLICT(device_fp) DO UPDATE SET public_key = excluded.public_key, updated_at = excluded.updated_at'
+      ).bind(deviceFp, publicKey, Date.now()).run();
+    } catch (e) {
+      console.warn('[PublicKeys] D1 persist failed:', e.message);
+    }
+  }
+
+  /**
+   * 获取群组所有成员的公钥（在线从内存，离线从 D1）
+   */
+  async getGroupPublicKeys(groupId) {
+    const result = {};
+    // 在线成员：直接从 session 取
+    for (const session of this.sessions.values()) {
+      if (session.groups?.has(groupId) && session.publicKey && session.uid) {
+        result[session.uid] = session.publicKey;
+      }
+    }
+    // 全量成员（含离线）：从 D1 取
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return result;
+    try {
+      await this.ensureContactsSchema();
+      await this.ensurePublicKeysSchema();
+      const fps = await this.getPersistedGroupMemberIds(groupId);
+      if (!fps.length) return result;
+      for (const fp of fps) {
+        if (Object.values(result).length > 0) {
+          // 跳过已有在线公钥的
+          const onlineFp = [...this.sessions.values()].find(s => s.deviceFingerprint === fp);
+          if (onlineFp) continue;
+        }
+        const row = await this.env.DB.prepare(
+          'SELECT public_key FROM device_public_keys WHERE device_fp = ?'
+        ).bind(fp).first();
+        if (row?.public_key) {
+          // 用 deviceFp 作为 uid（离线成员的 uid 即其 deviceFingerprint）
+          result[fp] = row.public_key;
+        }
+      }
+    } catch (e) {
+      console.warn('[PublicKeys] getGroupPublicKeys failed:', e.message);
+    }
+    return result;
   }
 
   async hasContactEntry(deviceFp, contactFp) {
@@ -2119,6 +2198,10 @@ export class ChatRoom {
     }
 
     sender.publicKey = data.publicKey;
+    // 持久化到 D1（支持离线成员消息加密）
+    if (sender.deviceFingerprint) {
+      this.persistPublicKey(sender.deviceFingerprint, data.publicKey).catch(() => {});
+    }
     this.sendTo(ws, { type: 'key_registered', reqId });
     this.broadcastSystemStatus();
   }
@@ -4375,17 +4458,95 @@ export class ChatRoom {
       delivered += 1;
     }
 
+    // 离线成员投递：将消息加入离线队列（含加密密钥）
+    let offlineQueued = 0;
+    if (!isDirectGroupId(groupId)) {
+      try {
+        const memberFps = await this.getPersistedGroupMemberIds(groupId);
+        const onlineFps = new Set();
+        for (const session of this.sessions.values()) {
+          if (session.deviceFingerprint) onlineFps.add(session.deviceFingerprint);
+        }
+        for (const fp of memberFps) {
+          if (fp === sender.deviceFingerprint) continue;
+          if (onlineFps.has(fp)) continue;
+          const encryptedKey = data.keys[fp];
+          if (!isBase64(encryptedKey, MAX_ENCRYPTED_KEY_LENGTH)) continue;
+          this.enqueueOfflineMessage(fp, {
+            id: String(++this.globalMsgSeq),
+            data: {
+              type: 'chat',
+              msgId,
+              groupId,
+              sender: sender.uid,
+              ts,
+              payloadType,
+              iv: data.iv,
+              ciphertext: data.ciphertext,
+              encryptedKey,
+              encType: encType || undefined,
+              mimeType,
+              name,
+              burnAfterRead,
+              burnAfterMs,
+            },
+          });
+          offlineQueued += 1;
+        }
+      } catch {
+        // non-critical
+      }
+    } else if (isDirectGroupId(groupId)) {
+      // DM：尝试投递给离线的对方
+      const participants = parseDirectGroupId(groupId);
+      if (participants) {
+        const peerUid = participants[0] === sender.uid ? participants[1] : participants[0];
+        const peerFp = sanitizeDeviceFingerprint(peerUid);
+        const peerOnline = [...this.sessions.values()].some(s => s.uid === peerUid);
+        if (!peerOnline && peerFp) {
+          const encryptedKey = data.keys[peerUid];
+          if (isBase64(encryptedKey, MAX_ENCRYPTED_KEY_LENGTH)) {
+            this.enqueueOfflineMessage(peerFp, {
+              id: String(++this.globalMsgSeq),
+              data: {
+                type: 'chat',
+                msgId,
+                groupId,
+                sender: sender.uid,
+                senderIdentitySign: sender.identitySign || '',
+                senderIdentityDh: sender.identityDh || '',
+                senderIdentitySig: sender.identitySig || '',
+                ts,
+                payloadType,
+                iv: data.iv,
+                ciphertext: data.ciphertext,
+                encryptedKey,
+                encType: 'dm',
+                mimeType,
+                name,
+                burnAfterRead,
+                burnAfterMs,
+              },
+            });
+            offlineQueued += 1;
+          }
+        }
+      }
+    }
+
+    const totalDelivered = delivered + offlineQueued;
+
     this.sendTo(ws, {
       type: 'sent_ack',
       msgId,
       groupId,
       ts,
-      delivered,
+      delivered: totalDelivered,
       dmRestricted: isDirectGroupId(groupId) ? dmRestricted : undefined,
       reqId,
     });
 
-    if (!delivered) {
+    if (!totalDelivered) {
       this.sendError(ws, 'NO_RECIPIENT', 'No available recipients in this group', reqId);
     } else if (isDirectGroupId(groupId)) {
       if (dmPairKey && !this.dmUnlocked.has(dmPairKey)) {
@@ -4401,7 +4562,7 @@ export class ChatRoom {
 
     void this.logAction(
       'CHAT',
-      `uid=${sender.uid},group=${groupId},kind=${payloadType},delivered=${delivered}`
+      `uid=${sender.uid},group=${groupId},kind=${payloadType},delivered=${delivered},offline=${offlineQueued}`
     );
   }
 

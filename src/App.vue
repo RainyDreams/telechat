@@ -9431,7 +9431,7 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
     return false;
   }
   const serverPayloadType = payloadType === 'image' ? 'image' : payloadType === 'audio' ? 'audio' : 'text';
-  const recipients = onlineUsers.value.filter(
+  const onlineRecipients = onlineUsers.value.filter(
     (u) =>
       typeof u.uid === 'string' &&
       u.uid &&
@@ -9440,19 +9440,29 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
       u.publicKey.length > 0
   );
 
-  if (!recipients.length) {
-    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '当前群组暂无在线成员');
+  // 获取离线成员公钥（用于离线消息投递）
+  const offlinePubKeys = await fetchGroupPublicKeys(groupId);
+  const onlineUids = new Set(onlineRecipients.map(u => u.uid));
+  const allRecipients = [...onlineRecipients];
+  for (const [uid, pubKey] of Object.entries(offlinePubKeys)) {
+    if (!onlineUids.has(uid) && uid !== myUid.value && typeof pubKey === 'string' && pubKey.length > 0) {
+      allRecipients.push({ uid, publicKey: pubKey });
+    }
+  }
+
+  if (!allRecipients.length) {
+    ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '当前群组暂无成员');
     pushSendBlockedTip(groupId, {
       title: '发送未完成',
-      text: '当前群组暂无可接收消息的在线成员。建议先邀请成员加入，或稍后重试。',
+      text: '当前群组没有可接收消息的成员，请先邀请成员加入。',
       actions: [{ action: 'copy_invite', label: '复制群邀请' }],
       dedupeKey: `no-recipient-${groupId}`,
     });
-    toast('当前群组暂无可接收消息的在线成员。', 'info');
+    toast('当前群组暂无成员。', 'info');
     return false;
   }
 
-  const encrypted = await encryptPayloadForRecipients(payload, recipients);
+  const encrypted = await encryptPayloadForRecipients(payload, allRecipients);
   ensureOutboxEntry(groupId, payloadType, payload, msgId);
 
   ws.send(
@@ -10167,6 +10177,19 @@ const confirmLeaveGroup = () => {
     : undefined;
   ws.send(JSON.stringify({ type: 'leave_group', groupId: gid, reqId, ownerAction }));
   closeLeaveGroupDialog();
+};
+
+// 获取群组所有成员公钥（含离线成员，用于离线消息加密）
+const fetchGroupPublicKeys = async (groupId) => {
+  try {
+    const httpUrl = resolveHttpUrl();
+    const resp = await fetch(`${httpUrl}/api/group-public-keys?groupId=${encodeURIComponent(groupId)}`);
+    if (!resp.ok) return {};
+    const result = await resp.json();
+    return result.ok && result.publicKeys ? result.publicKeys : {};
+  } catch {
+    return {};
+  }
 };
 
 const resolveWsUrl = () => {
