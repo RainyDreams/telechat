@@ -47,17 +47,20 @@
     </div>
 
     <div v-else class="flex h-full w-full">
-      <div
-        v-if="lastToast.text"
-        class="fixed left-1/2 top-4 z-[70] w-[min(92vw,560px)] -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm shadow-2xl transition"
-        :class="
-          lastToast.kind === 'error'
-            ? 'border-rose-200 bg-rose-50/90 text-rose-700'
-            : 'border-slate-200 bg-white/85 text-slate-700'
-        "
-      >
-        {{ lastToast.text }}
-      </div>
+      <Transition name="apple-toast">
+        <div
+          v-if="lastToast.text"
+          class="apple-toast fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[70] w-[min(90vw,420px)] -translate-x-1/2 cursor-pointer select-none rounded-2xl px-4 py-2.5 text-[13px] font-medium text-center shadow-xl backdrop-blur-xl active:scale-95"
+          :class="
+            lastToast.kind === 'error'
+              ? 'bg-rose-500/90 text-white'
+              : 'bg-slate-800/85 text-white'
+          "
+          @click="lastToast = { kind: 'info', text: '' }"
+        >
+          {{ lastToast.text }}
+        </div>
+      </Transition>
       <Transition name="banner-pop">
         <div
           v-if="banner.open"
@@ -363,6 +366,7 @@
             </div>
             <div class="flex items-center gap-2">
               <button
+                v-if="activeGroup === SYSTEM_GROUP"
                 type="button"
                 @click="openContacts"
                 class="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
@@ -375,8 +379,9 @@
                 ></span>
               </button>
               <button
+                v-if="activeGroup === SYSTEM_GROUP"
                 type="button"
-                @click="openSystemNoticePanel"
+                @click="openGroup(SYSTEM_NOTICE_GROUP)"
                 class="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-rose-300 hover:text-rose-700"
               >
                 通知
@@ -387,19 +392,12 @@
                 ></span>
               </button>
               <button
+                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
                 type="button"
                 @click="copyInviteLink"
                 class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
               >
                 邀请新人
-              </button>
-              <button
-                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
-                type="button"
-                @click="toggleCurrentGroupContact"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-              >
-                {{ currentGroupSavedToContacts ? '移出通讯录' : '加入通讯录' }}
               </button>
               <button
                 v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
@@ -559,7 +557,7 @@
                   <!-- 通知 -->
                   <button
                     type="button"
-                    @click="openSystemNoticePanel(); showMobilePanel = false"
+                    @click="openGroup(SYSTEM_NOTICE_GROUP); showMobilePanel = false"
                     class="mobile-panel-action relative flex min-h-[56px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
                   >
                     <div class="flex items-center gap-2">
@@ -889,6 +887,7 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
+                    <p v-if="req.description" class="text-[11px] text-slate-500 mt-0.5">{{ req.description }}</p>
                     <p class="text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
                   </div>
                   <div class="flex shrink-0 gap-1.5">
@@ -928,167 +927,261 @@
           </div>
 
           <div v-else-if="isRootSettingsPage" class="mobile-root-stack mx-auto flex w-full max-w-3xl flex-col gap-3 pb-4">
-            <!-- 昵称 -->
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-              <div class="px-4 py-3">
-                <div class="flex items-center justify-between gap-3">
-                  <p class="text-sm text-slate-800">昵称</p>
-                  <div class="flex items-center gap-2">
-                    <input
-                      v-model="nicknameInput"
-                      maxlength="24"
-                      class="w-32 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 text-right outline-none placeholder:text-slate-400"
-                      placeholder="未设置"
-                    />
-                    <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="text-xs font-medium text-sky-600 disabled:opacity-60">
-                      {{ nicknameSaving ? '…' : '保存' }}
-                    </button>
+            <!-- 设置子页面：账号与昵称 -->
+            <template v-if="settingsSubPage === 'account'">
+              <button type="button" @click="settingsSubPage = ''" class="flex items-center gap-1 px-1 py-1 text-xs font-medium text-slate-500">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                返回设置
+              </button>
+              <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div class="border-b border-slate-100 px-4 py-2.5">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">账号与昵称</p>
+                </div>
+                <div class="px-4 py-3">
+                  <div class="flex items-center justify-between gap-3">
+                    <p class="text-sm text-slate-800">昵称</p>
+                    <div class="flex items-center gap-2">
+                      <input
+                        v-model="nicknameInput"
+                        maxlength="24"
+                        class="w-32 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 text-right outline-none placeholder:text-slate-400"
+                        placeholder="未设置"
+                      />
+                      <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="text-xs font-medium text-sky-600 disabled:opacity-60">
+                        {{ nicknameSaving ? '…' : '保存' }}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </template>
 
-            <!-- 身份与安全 -->
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-              <div class="border-b border-slate-100 px-4 py-2.5">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">身份与安全</p>
-              </div>
-              <div class="divide-y divide-slate-100">
-                <div class="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p class="text-sm text-slate-800">助记词语言</p>
-                  </div>
-                  <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
-                    <button
-                      type="button"
-                      @click="identityMnemonicLanguage = 'zh'"
-                      class="rounded-md px-2.5 py-1 text-xs font-medium transition"
-                      :class="identityMnemonicLanguage === 'zh' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
-                    >
-                      中文
-                    </button>
-                    <button
-                      type="button"
-                      @click="identityMnemonicLanguage = 'en'"
-                      class="rounded-md px-2.5 py-1 text-xs font-medium transition"
-                      :class="identityMnemonicLanguage === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
-                    >
-                      EN
-                    </button>
-                  </div>
+            <!-- 设置子页面：身份与安全 -->
+            <template v-else-if="settingsSubPage === 'security'">
+              <button type="button" @click="settingsSubPage = ''" class="flex items-center gap-1 px-1 py-1 text-xs font-medium text-slate-500">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                返回设置
+              </button>
+              <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div class="border-b border-slate-100 px-4 py-2.5">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">身份与安全</p>
                 </div>
-                <button type="button" @click="exportCurrentIdentityCredential" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
-                  <p class="text-sm text-slate-800">查看助记词</p>
-                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                </button>
-                <button type="button" @click="triggerIdentityCredentialFilePicker" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
-                  <p class="text-sm text-slate-800">导入 TXT 凭证</p>
-                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                </button>
-              </div>
-              <input
-                ref="identityCredentialFilePicker"
-                type="file"
-                accept=".txt,text/plain"
-                class="hidden"
-                @change="onPickIdentityCredentialFile"
-              />
-              <div class="border-t border-slate-100 px-4 py-3">
-                <textarea
-                  v-model="identityCredentialImport"
-                  rows="3"
-                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none placeholder:text-slate-400"
-                  placeholder="粘贴助记词或 recovery_code 以恢复身份"
-                ></textarea>
-                <div class="mt-2 flex justify-end">
-                  <button type="button" @click="restoreIdentityCredential" class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">恢复身份</button>
-                </div>
-              </div>
-            </div>
-
-            <!-- 通用设置 -->
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-              <div class="border-b border-slate-100 px-4 py-2.5">
-                <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">通用</p>
-              </div>
-              <div class="divide-y divide-slate-100">
-                <div class="flex items-center justify-between px-4 py-3">
-                  <p class="text-sm text-slate-800">界面大小</p>
-                  <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
-                    <button
-                      v-for="item in sizeSettingOptions"
-                      :key="`root-scale-${item.value}`"
-                      type="button"
-                      @click="setUiScaleLevel(item.value)"
-                      class="rounded-md px-2 py-1 text-xs font-medium transition"
-                      :class="uiScale === item.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
-                    >
-                      {{ item.label }}
-                    </button>
+                <div class="divide-y divide-slate-100">
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p class="text-sm text-slate-800">助记词语言</p>
+                    </div>
+                    <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                      <button
+                        type="button"
+                        @click="identityMnemonicLanguage = 'zh'"
+                        class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                        :class="identityMnemonicLanguage === 'zh' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                      >
+                        中文
+                      </button>
+                      <button
+                        type="button"
+                        @click="identityMnemonicLanguage = 'en'"
+                        class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                        :class="identityMnemonicLanguage === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                      >
+                        EN
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div class="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p class="text-sm text-slate-800">系统通知</p>
-                    <p class="text-[11px] text-slate-400">需浏览器授权</p>
-                  </div>
-                  <button type="button" @click="toggleSystemNotify" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="systemNotifyEnabled ? 'bg-emerald-500' : 'bg-slate-200'">
-                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="systemNotifyEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                  <button type="button" @click="exportCurrentIdentityCredential" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                    <p class="text-sm text-slate-800">查看助记词</p>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                  <button type="button" @click="triggerIdentityCredentialFilePicker" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                    <p class="text-sm text-slate-800">导入 TXT 凭证</p>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                   </button>
                 </div>
-                <div class="flex items-center justify-between px-4 py-3">
-                  <p class="text-sm text-slate-800">提示音</p>
-                  <button type="button" @click="toggleSound" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="soundEnabled ? 'bg-sky-500' : 'bg-slate-200'">
-                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="soundEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
-                  </button>
-                </div>
-                <div class="flex items-center justify-between px-4 py-3">
-                  <div>
-                    <p class="text-sm text-slate-800">陌生人私聊</p>
-                    <p class="text-[11px] text-slate-400">{{ dmContactsOnly ? '仅通讯录可私聊' : '允许陌生人请求' }}</p>
+                <input
+                  ref="identityCredentialFilePicker"
+                  type="file"
+                  accept=".txt,text/plain"
+                  class="hidden"
+                  @change="onPickIdentityCredentialFile"
+                />
+                <div class="border-t border-slate-100 px-4 py-3">
+                  <textarea
+                    v-model="identityCredentialImport"
+                    rows="3"
+                    class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="粘贴助记词或 recovery_code 以恢复身份"
+                  ></textarea>
+                  <div class="mt-2 flex justify-end">
+                    <button type="button" @click="restoreIdentityCredential" class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">恢复身份</button>
                   </div>
-                  <button type="button" @click="toggleDmPreference" :disabled="dmPreferenceSaving" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors disabled:opacity-60" :class="!dmContactsOnly ? 'bg-emerald-500' : 'bg-slate-200'">
-                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="!dmContactsOnly ? 'translate-x-5' : 'translate-x-1'"></span>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置子页面：通用设置 -->
+            <template v-else-if="settingsSubPage === 'general'">
+              <button type="button" @click="settingsSubPage = ''" class="flex items-center gap-1 px-1 py-1 text-xs font-medium text-slate-500">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                返回设置
+              </button>
+              <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div class="border-b border-slate-100 px-4 py-2.5">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">通用设置</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm text-slate-800">界面大小</p>
+                    <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                      <button
+                        v-for="item in sizeSettingOptions"
+                        :key="`sub-scale-${item.value}`"
+                        type="button"
+                        @click="setUiScaleLevel(item.value)"
+                        class="rounded-md px-2 py-1 text-xs font-medium transition"
+                        :class="uiScale === item.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                      >
+                        {{ item.label }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p class="text-sm text-slate-800">系统通知</p>
+                      <p class="text-[11px] text-slate-400">需浏览器授权</p>
+                    </div>
+                    <button type="button" @click="toggleSystemNotify" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="systemNotifyEnabled ? 'bg-emerald-500' : 'bg-slate-200'">
+                      <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="systemNotifyEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <p class="text-sm text-slate-800">提示音</p>
+                    <button type="button" @click="toggleSound" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="soundEnabled ? 'bg-sky-500' : 'bg-slate-200'">
+                      <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="soundEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+                  <div class="flex items-center justify-between px-4 py-3">
+                    <div>
+                      <p class="text-sm text-slate-800">陌生人私聊</p>
+                      <p class="text-[11px] text-slate-400">{{ dmContactsOnly ? '仅通讯录可私聊' : '允许陌生人请求' }}</p>
+                    </div>
+                    <button type="button" @click="toggleDmPreference" :disabled="dmPreferenceSaving" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors disabled:opacity-60" :class="!dmContactsOnly ? 'bg-emerald-500' : 'bg-slate-200'">
+                      <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="!dmContactsOnly ? 'translate-x-5' : 'translate-x-1'"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置子页面：关于 -->
+            <template v-else-if="settingsSubPage === 'about'">
+              <button type="button" @click="settingsSubPage = ''" class="flex items-center gap-1 px-1 py-1 text-xs font-medium text-slate-500">
+                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                返回设置
+              </button>
+              <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div class="border-b border-slate-100 px-4 py-2.5">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">关于</p>
+                </div>
+                <div class="flex items-center justify-between px-4 py-3">
+                  <p class="text-sm text-slate-800">版本</p>
+                  <button
+                    type="button"
+                    @click="handleVersionTap"
+                    class="text-xs text-slate-400"
+                  >
+                    v{{ APP_VERSION }}
+                  </button>
+                </div>
+                <div v-if="debugModeEnabled" class="border-t border-slate-100 px-4 py-2.5">
+                  <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">Debug Panel</p>
+                  <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-600">
+                    <p>设备类型</p><p class="text-right font-mono">{{ debugDeviceKindLabel }}</p>
+                    <p>连接状态</p><p class="text-right font-mono">{{ debugInfo.connectionState }}</p>
+                    <p>WebSocket</p><p class="text-right font-mono">{{ debugInfo.wsState }}</p>
+                    <p>PoW 验证</p><p class="text-right font-mono">{{ debugInfo.powStatus }}</p>
+                    <p>RSA 加密</p><p class="text-right font-mono">{{ debugInfo.encStatus }}</p>
+                    <p>ECDSA 签名</p><p class="text-right font-mono">{{ debugInfo.ecdsaStatus }}</p>
+                    <p>ECDH 密钥</p><p class="text-right font-mono">{{ debugInfo.ecdhStatus }}</p>
+                    <p>消息数</p><p class="text-right font-mono">{{ debugInfo.msgCount }}</p>
+                    <p>群组数</p><p class="text-right font-mono">{{ debugInfo.groupCount }}</p>
+                    <p>联系人</p><p class="text-right font-mono">{{ debugInfo.contactCount }}</p>
+                    <p>DM 会话</p><p class="text-right font-mono">{{ debugInfo.dmSessionCount }}</p>
+                    <p>待发队列</p><p class="text-right font-mono">{{ debugInfo.outboxCount }}</p>
+                    <p>可信密钥</p><p class="text-right font-mono">{{ debugInfo.trustedKeyCount }}</p>
+                    <p>未读总数</p><p class="text-right font-mono">{{ debugInfo.unreadTotal }}</p>
+                    <p>JS 堆内存</p><p class="text-right font-mono">{{ debugInfo.memoryInfo }}</p>
+                    <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
+                    <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
+                  </div>
+                  <!-- 待发队列 -->
+                  <div class="mt-3 border-t border-sky-100 pt-2">
+                    <div class="flex items-center justify-between">
+                      <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">待发队列</p>
+                      <div class="flex gap-2">
+                        <button type="button" @click="debugRefreshKeys" class="text-[10px] font-medium text-sky-600">刷新密钥</button>
+                        <button v-if="outboxQueue.length" type="button" @click="debugClearAllOutbox" class="text-[10px] font-medium text-rose-500">清空</button>
+                      </div>
+                    </div>
+                    <div v-if="outboxQueue.length" class="mt-1.5 space-y-1">
+                      <div v-for="item in outboxQueue" :key="item.msgId" class="flex items-center justify-between rounded-lg bg-sky-50/60 px-2.5 py-1.5">
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate font-mono text-[10px] text-slate-500">{{ item.msgId }}</p>
+                          <p class="text-[11px] text-slate-700">{{ debugOutboxPreview(item.payload) }}</p>
+                        </div>
+                        <button type="button" @click="debugRemoveOutboxItem(item.msgId)" class="ml-2 shrink-0 text-[10px] font-medium text-rose-500">删除</button>
+                      </div>
+                    </div>
+                    <p v-else class="mt-1 text-[11px] text-slate-400">空</p>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置根页面：分类入口 -->
+            <template v-else>
+              <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div class="divide-y divide-slate-100">
+                  <button type="button" @click="settingsSubPage = 'account'" class="flex w-full items-center justify-between px-4 py-3.5 active:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      </span>
+                      <p class="text-sm font-medium text-slate-800">账号与昵称</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                  <button type="button" @click="settingsSubPage = 'security'" class="flex w-full items-center justify-between px-4 py-3.5 active:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                      </span>
+                      <p class="text-sm font-medium text-slate-800">身份与安全</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                  <button type="button" @click="settingsSubPage = 'general'" class="flex w-full items-center justify-between px-4 py-3.5 active:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                      </span>
+                      <p class="text-sm font-medium text-slate-800">通用设置</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                  <button type="button" @click="settingsSubPage = 'about'" class="flex w-full items-center justify-between px-4 py-3.5 active:bg-slate-50">
+                    <div class="flex items-center gap-3">
+                      <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                        <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                      </span>
+                      <p class="text-sm font-medium text-slate-800">关于</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
                   </button>
                 </div>
               </div>
-            </div>
-
-            <!-- 版本 -->
-            <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-              <div class="flex items-center justify-between px-4 py-3">
-                <p class="text-sm text-slate-800">版本</p>
-                <button
-                  type="button"
-                  @click="handleVersionTap"
-                  class="text-xs text-slate-400"
-                >
-                  v{{ APP_VERSION }}
-                </button>
-              </div>
-              <div v-if="debugModeEnabled" class="border-t border-slate-100 px-4 py-2.5">
-                <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">Debug Panel</p>
-                <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-600">
-                  <p>设备类型</p><p class="text-right font-mono">{{ debugDeviceKindLabel }}</p>
-                  <p>连接状态</p><p class="text-right font-mono">{{ debugInfo.connectionState }}</p>
-                  <p>WebSocket</p><p class="text-right font-mono">{{ debugInfo.wsState }}</p>
-                  <p>PoW 验证</p><p class="text-right font-mono">{{ debugInfo.powStatus }}</p>
-                  <p>RSA 加密</p><p class="text-right font-mono">{{ debugInfo.encStatus }}</p>
-                  <p>ECDSA 签名</p><p class="text-right font-mono">{{ debugInfo.ecdsaStatus }}</p>
-                  <p>ECDH 密钥</p><p class="text-right font-mono">{{ debugInfo.ecdhStatus }}</p>
-                  <p>消息数</p><p class="text-right font-mono">{{ debugInfo.msgCount }}</p>
-                  <p>群组数</p><p class="text-right font-mono">{{ debugInfo.groupCount }}</p>
-                  <p>联系人</p><p class="text-right font-mono">{{ debugInfo.contactCount }}</p>
-                  <p>DM 会话</p><p class="text-right font-mono">{{ debugInfo.dmSessionCount }}</p>
-                  <p>待发队列</p><p class="text-right font-mono">{{ debugInfo.outboxCount }}</p>
-                  <p>可信密钥</p><p class="text-right font-mono">{{ debugInfo.trustedKeyCount }}</p>
-                  <p>未读总数</p><p class="text-right font-mono">{{ debugInfo.unreadTotal }}</p>
-                  <p>JS 堆内存</p><p class="text-right font-mono">{{ debugInfo.memoryInfo }}</p>
-                  <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
-                  <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
-                </div>
-              </div>
-            </div>
+            </template>
           </div>
 
           <div v-else-if="!filteredMessages.length" class="flex h-full items-center justify-center">
@@ -1268,26 +1361,26 @@
                     </div>
                     <div
                       v-else-if="msg.payloadType === 'audio' && msg.audioData"
-                      class="voice-message-card rounded-[22px] px-3 py-3"
+                      class="voice-message-card rounded-2xl px-2.5 py-2"
                       :class="msg.sender === myUid ? 'bg-white/14 text-white' : 'bg-slate-50 text-slate-800'"
                     >
-                      <div class="flex items-center gap-3">
+                      <div class="flex items-center gap-2">
                         <button
                           type="button"
-                          class="voice-play-button inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                          class="voice-play-button inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
                           :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
                           @click="toggleAudioPlayback(msg)"
                           :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
                         >
-                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor">
                             <path d="M7 5h3v14H7zM14 5h3v14h-3z"/>
                           </svg>
-                          <svg v-else viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                          <svg v-else viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor">
                             <path d="M8 6.5v11l9-5.5-9-5.5Z"/>
                           </svg>
                         </button>
                         <div class="min-w-0 flex-1">
-                          <div class="voice-waveform flex h-10 items-end gap-1">
+                          <div class="voice-waveform flex h-8 items-end gap-[2px]">
                             <span
                               v-for="(bar, idx) in audioWaveformForMessage(msg)"
                               :key="`voice-wave-${msg.msgId}-${idx}`"
@@ -1296,8 +1389,8 @@
                               :style="audioWaveformBarStyle(bar)"
                             ></span>
                           </div>
-                          <div class="mt-2 flex items-center justify-between text-[11px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
-                            <span>{{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}</span>
+                          <div class="mt-1 flex items-center justify-between text-[10px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
+                            <span>{{ isAudioMessagePlaying(msg) ? '播放中' : '语音' }}</span>
                             <span>{{ audioMessageTimeLabel(msg) }}</span>
                           </div>
                         </div>
@@ -1326,11 +1419,13 @@
                           <path d="M12 3a9 9 0 1 0 9 9"/>
                         </svg>
                       </span>
-                      <span
+                      <button
                         v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
-                        class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white"
-                        :title="msg.clientError || '发送失败'"
-                      >!</span>
+                        type="button"
+                        class="inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white transition hover:bg-rose-500"
+                        :title="msg.clientError || '发送失败，点击重试'"
+                        @click.stop="retryMessage(msg)"
+                      >!</button>
                       <span
                         v-if="msg.burnAfterRead"
                         class="rounded-full border px-1.5 py-0.5"
@@ -2252,6 +2347,26 @@
                     <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
                     <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
                   </div>
+                  <!-- 待发队列 -->
+                  <div class="mt-3 border-t border-sky-100 pt-2">
+                    <div class="flex items-center justify-between">
+                      <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">待发队列</p>
+                      <div class="flex gap-2">
+                        <button type="button" @click="debugRefreshKeys" class="text-[10px] font-medium text-sky-600">刷新密钥</button>
+                        <button v-if="outboxQueue.length" type="button" @click="debugClearAllOutbox" class="text-[10px] font-medium text-rose-500">清空</button>
+                      </div>
+                    </div>
+                    <div v-if="outboxQueue.length" class="mt-1.5 space-y-1">
+                      <div v-for="item in outboxQueue" :key="item.msgId" class="flex items-center justify-between rounded-lg bg-sky-50/60 px-2.5 py-1.5">
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate font-mono text-[10px] text-slate-500">{{ item.msgId }}</p>
+                          <p class="text-[11px] text-slate-700">{{ debugOutboxPreview(item.payload) }}</p>
+                        </div>
+                        <button type="button" @click="debugRemoveOutboxItem(item.msgId)" class="ml-2 shrink-0 text-[10px] font-medium text-rose-500">删除</button>
+                      </div>
+                    </div>
+                    <p v-else class="mt-1 text-[11px] text-slate-400">空</p>
+                  </div>
                 </div>
               </div>
 
@@ -2277,6 +2392,7 @@
                 <div v-if="addFriendDialog.mode === 'input'">
                   <p class="text-xs text-slate-500 mb-2">输入对方的设备 ID 或粘贴分享字符串</p>
                   <input v-model="addFriendDialog.deviceIdInput" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400" placeholder="LC:xxxxxxxx 或设备 ID" />
+                  <textarea v-model="addFriendDialog.description" maxlength="100" class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 resize-none" rows="2" placeholder="验证描述（可选，最多100字）"></textarea>
                   <p v-if="addFriendDialog.error" class="mt-1 text-xs text-rose-500">{{ addFriendDialog.error }}</p>
                   <button type="button" @click="submitAddFriend" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">添加为好友</button>
                 </div>
@@ -2367,7 +2483,7 @@
                   :class="mobileViewport ? 'rounded-[18px] px-3 py-5' : 'rounded-[24px] px-4 py-8'"
                 >
                   <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
-                  <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
+                  <p class="mt-1 text-xs text-slate-500">群聊、设备迁移和安全提醒会出现在这里。</p>
                 </div>
                 <div v-else class="grid" :class="mobileViewport ? 'gap-2' : 'gap-3'">
                   <div
@@ -2496,19 +2612,10 @@
             aria-label="Close contacts"
           ></button>
           <div class="viewport-modal-scroll">
-          <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 38rem;">
+          <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">通讯录</p>
-                <p class="text-sm font-semibold text-slate-800">设备绑定联系人</p>
-              </div>
-              <button
-                type="button"
-                @click="contactsOpen = false"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-              >
-                关闭
-              </button>
+              <p class="text-sm font-semibold text-slate-800">通讯录</p>
+              <button type="button" @click="contactsOpen = false" class="text-xs font-medium text-slate-500">关闭</button>
             </div>
             <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
               <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -2544,189 +2651,51 @@
                   </button>
                 </div>
               </div>
-              <div
-                v-if="contactRequestCards.length"
-                class="mt-3 rounded-2xl border border-amber-100 bg-amber-50/60 px-3 py-3"
-              >
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">待处理请求</p>
-                <div class="mt-2 grid gap-2">
-                  <div
-                    v-for="req in contactRequestCards"
-                    :key="`req-${req.requestId}`"
-                    class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-slate-800">
-                        用户 {{ req.uidShort }}
-                      </p>
-                      <p class="truncate text-xs text-slate-500">
-                        {{ req.os }} · {{ req.location }}
-                      </p>
-                      <p class="truncate text-[11px] text-slate-400">
-                        指纹：{{ req.fingerprintShort }}
-                      </p>
+              <div class="divide-y divide-slate-100">
+                <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  </div>
+                  <p class="text-sm text-slate-800">新的朋友</p>
+                  <span v-if="contactRequestCards.length" class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{{ contactRequestCards.length }}</span>
+                </button>
+                <button type="button" @click="contactsOpen = false; openAddFriendDialog()" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                  </div>
+                  <p class="text-sm text-slate-800">添加好友</p>
+                </button>
+              </div>
+              <div v-if="contactRequestCards.length" class="mt-1">
+                <div class="px-4 py-2"><p class="text-[11px] font-medium text-slate-400">待处理请求</p></div>
+                <div class="divide-y divide-slate-100">
+                  <div v-for="req in contactRequestCards" :key="`pc-req-${req.requestId}`" class="flex items-center gap-3 px-4 py-2.5">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">{{ req.uidShort?.slice(0,2) || '?' }}</div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
+                      <p v-if="req.description" class="text-[11px] text-slate-600 mt-0.5">「{{ req.description }}」</p>
+                      <p class="text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        @click="acceptContactRequest(req)"
-                        class="shrink-0 whitespace-nowrap rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white"
-                      >
-                        同意
-                      </button>
-                      <button
-                        type="button"
-                        @click="declineContactRequest(req)"
-                        class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
-                      >
-                        拒绝
-                      </button>
+                    <div class="flex shrink-0 gap-1.5">
+                      <button type="button" @click="acceptContactRequest(req)" class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">同意</button>
+                      <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="contactsLoading" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                正在加载通讯录…
-              </div>
-              <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}
-              </div>
-              <div v-else class="mt-3 grid gap-4">
-                <div v-if="filteredContactCards.length" class="grid gap-2">
-                  <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-semibold text-slate-600">联系人</p>
-                    <p class="text-[11px] text-slate-400">{{ filteredContactCards.length }} 位</p>
-                  </div>
-                  <div
-                    v-for="contact in filteredContactCards"
-                    :key="`contact-${contact.contactFingerprint}`"
-                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0 flex items-center gap-3">
-                      <div
-                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
-                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                      >
-                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                      </div>
-                      <div class="min-w-0">
-                        <p
-                          class="cursor-pointer text-sm font-semibold text-slate-800"
-                          :class="
-                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
-                        >
-                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                        </p>
-                        <p
-                          class="cursor-pointer text-[11px] font-mono text-slate-500"
-                          :class="
-                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
-                        >
-                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
-                        </p>
-                      </div>
+              <div v-if="contactsLoading" class="px-4 py-3 text-xs text-slate-500">正在加载通讯录…</div>
+              <div v-else-if="!filteredContactCards.length" class="px-4 py-3 text-xs text-slate-500">{{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}</div>
+              <div v-else>
+                <div class="px-4 py-2"><p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p></div>
+                <div class="divide-y divide-slate-100">
+                  <div v-for="contact in filteredContactCards" :key="`pc-contact-${contact.contactFingerprint}`" class="flex items-center gap-3 px-4 py-2.5">
+                    <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">{{ avatarInitial(contact.displayName || 'U') }}</div>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm text-slate-800">{{ contact.displayName }}</p>
+                      <p class="truncate text-[11px] text-slate-400">{{ contact.os ? `${contact.os} · ${contact.location}` : '' }}</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        @click="startContactChat(contact)"
-                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                      >
-                        私聊
-                      </button>
-                      <button
-                        type="button"
-                        @click="removeContact(contact)"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        移除
-                      </button>
-                    </div>
+                    <button type="button" @click="startContactChat(contact)" class="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">私聊</button>
                   </div>
-                </div>
-              </div>
-
-              <div class="mt-5 rounded-2xl border border-slate-100 bg-white px-3 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">迁移通讯录</p>
-                <p class="mt-1 text-xs text-slate-500">
-                  新旧设备同时打开。新设备生成迁移码，旧设备输入后授权迁移，可选择同时转让昵称。
-                </p>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-slate-700">新设备</p>
-                    <button
-                      type="button"
-                      @click="requestMigrationCode"
-                      class="mt-2 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      生成迁移码
-                    </button>
-                    <p v-if="migrationCode" class="mt-2 font-mono text-sm text-slate-800">
-                      {{ migrationCode }}
-                    </p>
-                    <p v-if="migrationExpireText" class="mt-1 text-[11px] text-slate-500">
-                      有效期至 {{ migrationExpireText }}
-                    </p>
-                    <div
-                      v-if="migrationConfirm.code"
-                      class="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-700"
-                    >
-                      <p class="font-semibold">旧设备已授权</p>
-                      <p class="mt-1 text-[11px] text-emerald-600">
-                        {{
-                          migrationConfirm.fromOs || migrationConfirm.fromLocation
-                            ? `${migrationConfirm.fromOs} · ${migrationConfirm.fromLocation}`
-                            : migrationConfirm.fromFingerprintShort
-                              ? `设备指纹 ${migrationConfirm.fromFingerprintShort}`
-                              : '请确认迁移请求'
-                        }}
-                      </p>
-                      <button
-                        type="button"
-                        @click="confirmMigration(migrationConfirm.code)"
-                        class="mt-2 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white"
-                      >
-                        确认迁移
-                      </button>
-                      <p v-if="migrationConfirm.transferNickname" class="mt-2 text-[11px] text-emerald-700">
-                        将同步转让昵称{{ migrationConfirm.oldNickname ? `：${migrationConfirm.oldNickname}` : '' }}，旧设备会恢复默认身份显示。
-                      </p>
-                    </div>
-                  </div>
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-slate-700">旧设备</p>
-                    <input
-                      v-model="migrationInput"
-                      class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700"
-                      placeholder="输入迁移码"
-                    />
-                    <label class="mt-2 flex items-center gap-2 text-[11px] text-slate-600">
-                      <input v-model="transferNicknameOnMigration" type="checkbox" class="h-3.5 w-3.5" />
-                      授权同时转让昵称（旧设备回默认）
-                    </label>
-                    <button
-                      type="button"
-                      @click="approveMigration"
-                      class="mt-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      授权迁移
-                    </button>
-                  </div>
-                </div>
-                <div
-                  v-if="migrationStatus.text"
-                  class="mt-3 rounded-xl border px-3 py-2 text-xs"
-                  :class="migrationStatusClass"
-                >
-                  {{ migrationStatus.text }}
                 </div>
               </div>
             </div>
@@ -3154,6 +3123,35 @@ const identitySignPublicBase64 = ref('');
 const identityDhPublicBase64 = ref('');
 const peerIdentityMap = ref({});
 const messages = ref([]);
+const MSG_STORAGE_KEY = 'telechat_messages_v1';
+const MSG_STORAGE_MAX = 300;
+const saveMessages = () => {
+  try {
+    const trimmed = messages.value.slice(-MSG_STORAGE_MAX).map((m) => {
+      const copy = { ...m };
+      // strip large base64 data to stay within localStorage limits
+      if (copy.imageData) copy.imageData = '';
+      if (copy.audioData) copy.audioData = '';
+      return copy;
+    });
+    localStorage.setItem(MSG_STORAGE_KEY, JSON.stringify(trimmed));
+  } catch { /* quota exceeded, ignore */ }
+};
+const loadMessages = () => {
+  try {
+    const raw = localStorage.getItem(MSG_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length) {
+      messages.value = parsed;
+    }
+  } catch { /* corrupted data, ignore */ }
+};
+let saveMessagesTimer = null;
+const scheduleSaveMessages = () => {
+  if (saveMessagesTimer) clearTimeout(saveMessagesTimer);
+  saveMessagesTimer = setTimeout(saveMessages, 2000);
+};
 const inputMsg = ref('');
 const activeGroup = ref(SYSTEM_GROUP);
 const groups = ref([
@@ -3205,12 +3203,13 @@ const bannerSwipe = ref({ active: false, pointerId: null, startX: 0, startY: 0, 
 const notificationPrompted = ref(false);
 const systemNotifyEnabled = ref(false);
 const settingsOpen = ref(false);
+const settingsSubPage = ref(''); // '' = root, 'account', 'security', 'general', 'about'
 const debugModeEnabled = ref(false);
 // Web Push 状态
 const pushStatus = ref({ supported: false, permission: 'default', subscribed: false });
 const pushInitializing = ref(false);
 // 好友系统 — 添加设备好友
-const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: 'input' }); // mode: 'input' | 'qr'
+const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: 'input', description: '' }); // mode: 'input' | 'qr'
 const qrImagePicker = ref(null);
 const showDeviceQR = ref(false); // 在设置中显示设备二维码
 const versionTapState = ref({ count: 0, lastAt: 0 });
@@ -3676,6 +3675,45 @@ const debugInfo = computed(() => {
   };
 });
 
+const debugOutboxPreview = (payload) => {
+  if (!payload || typeof payload !== 'object') return '';
+  const kind = payload.kind || '';
+  if (kind === 'text') return payload.text?.slice(0, 40) || '(空)';
+  if (kind === 'image') return '🖼 图片';
+  if (kind === 'audio') return '🎤 语音';
+  return kind || '(未知)';
+};
+
+const debugRemoveOutboxItem = (msgId) => {
+  if (!msgId) return;
+  removeOutboxEntry(msgId);
+  const local = findLocalOutgoing(msgId);
+  if (local) {
+    local.clientStatus = 'failed';
+    local.clientError = '已从队列移除';
+  }
+  toast('已移除', 'info');
+};
+
+const debugClearAllOutbox = () => {
+  const ids = outboxQueue.value.map((item) => item.msgId);
+  outboxQueue.value = [];
+  persistOutboxQueue();
+  for (const msgId of ids) {
+    const local = findLocalOutgoing(msgId);
+    if (local) {
+      local.clientStatus = 'failed';
+      local.clientError = '已清空队列';
+    }
+  }
+  toast('待发队列已清空', 'info');
+};
+
+const debugRefreshKeys = () => {
+  groupPublicKeysCache.clear();
+  toast('密钥缓存已清除', 'info');
+};
+
 const leaveGroupDialogIsOwner = computed(() => {
   return isOwnedGroupByMe(leaveGroupDialog.value.groupId);
 });
@@ -4030,6 +4068,7 @@ const contactRequestCards = computed(() => {
       os: req.fromOs || '未知系统',
       location: req.fromLocation || '未知地区',
       fingerprintShort: req.fromFingerprintShort || '--',
+      description: req.description || '',
     };
   });
 });
@@ -5673,14 +5712,17 @@ const submitAddFriend = () => {
   }
 
   addFriendDialog.value.error = '';
+  const description = addFriendDialog.value.description.trim();
   addFriendDialog.value.open = false;
+  addFriendDialog.value.description = '';
 
-  // 发起私聊
+  // 发起私聊 + 通讯录请求
   const dmGroupId = buildDirectGroupId(myUid.value, deviceId);
   if (!dmGroupId) return;
   if (!ws || ws.readyState !== WS_OPEN) return;
   ws.send(JSON.stringify({ type: 'direct_start', groupId: dmGroupId, targetUid: deviceId }));
-  toast('已发送私聊请求。', 'info');
+  requestContactByUid(deviceId, '', description);
+  toast('已发送私聊和好友请求。', 'info');
 };
 
 const scanFriendQR = async () => {
@@ -5894,7 +5936,7 @@ const upsertContact = (contact) => {
   contacts.value = list;
 };
 
-const requestContactByUid = (targetUid, alias = '') => {
+const requestContactByUid = (targetUid, alias = '', description = '') => {
   const uid = typeof targetUid === 'string' ? targetUid.trim() : '';
   if (!uid) return;
   if (!ws || ws.readyState !== WS_OPEN) {
@@ -5910,12 +5952,16 @@ const requestContactByUid = (targetUid, alias = '') => {
     return false;
   }
   const finalAlias = typeof alias === 'string' ? alias.trim() : '';
+  const finalDesc = typeof description === 'string' ? description.trim().slice(0, 100) : '';
   const payload = {
     type: 'contacts_add',
     targetUid: uid,
   };
   if (finalAlias && !isGeneratedContactAlias(finalAlias, uid)) {
     payload.alias = finalAlias;
+  }
+  if (finalDesc) {
+    payload.description = finalDesc;
   }
   ws.send(JSON.stringify(payload));
   return true;
@@ -6841,6 +6887,14 @@ watch(
   () => activeGroup.value,
   () => {
     clearReplyDraft();
+    settingsSubPage.value = '';
+  }
+);
+
+watch(
+  () => messages.value.length,
+  () => {
+    scheduleSaveMessages();
   }
 );
 
@@ -8980,10 +9034,6 @@ const openBannerChat = () => {
   const gid = banner.value.groupId;
   if (!gid) return;
   dismissBanner();
-  if (gid === SYSTEM_NOTICE_GROUP) {
-    openSystemNoticePanel();
-    return;
-  }
   openGroup(gid);
   nextTick(() => {
     scrollToBottom();
@@ -9002,11 +9052,7 @@ const showSystemNotification = (groupId, previewText) => {
   });
   notification.onclick = () => {
     window.focus();
-    if (groupId === SYSTEM_NOTICE_GROUP) {
-      openSystemNoticePanel();
-    } else {
-      openGroup(groupId);
-    }
+    openGroup(groupId);
     notification.close();
   };
 };
@@ -9327,7 +9373,7 @@ const handleSystemAction = (msg, actionItem = null) => {
     return;
   }
   if (action === 'open_system_notice') {
-    openSystemNoticePanel();
+    openGroup(SYSTEM_NOTICE_GROUP);
     return;
   }
   if (action === 'open_related_group') {
@@ -9593,13 +9639,29 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
   return msgId;
 };
 
-const flushOutbox = async () => {
+const flushOutbox = async (onlyMsgId = '') => {
   if (isFlushingOutbox.value) return;
   pruneOutboxQueue();
   if (!outboxQueue.value.length) return;
   if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) return;
   isFlushingOutbox.value = true;
   try {
+    if (onlyMsgId) {
+      // 精准重试：只发指定这一条
+      const item = outboxQueue.value.find((entry) => entry.msgId === onlyMsgId);
+      if (item) {
+        const local = findLocalOutgoing(item.msgId);
+        if (local?.clientStatus !== 'sending') {
+          markOutgoingStatus(item.msgId, 'sending');
+          await sendEncryptedPayload(item.payloadType, item.payload, {
+            groupId: item.groupId,
+            msgId: item.msgId,
+            skipLocalPush: Boolean(findLocalOutgoing(item.msgId)),
+          });
+        }
+      }
+      return;
+    }
     let idx = 0;
     while (idx < outboxQueue.value.length) {
       const item = outboxQueue.value[idx];
@@ -9643,13 +9705,19 @@ const retryOutbox = () => {
 
 const retryMessage = (msg) => {
   if (!msg || !msg.msgId) return;
-  const existing = outboxQueue.value.find((item) => item.msgId === msg.msgId);
-  if (!existing) return;
+  const idx = outboxQueue.value.findIndex((item) => item.msgId === msg.msgId);
+  if (idx < 0) return;
+  // 移到队尾，让其他消息先发
+  const entry = outboxQueue.value.splice(idx, 1)[0];
+  entry.retries = Number(entry.retries || 0) + 1;
+  entry.createdAt = Date.now();
+  outboxQueue.value.push(entry);
+  persistOutboxQueue();
   markOutgoingStatus(msg.msgId, 'queued');
   if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) {
     manualReconnect();
   }
-  void flushOutbox();
+  void flushOutbox(msg.msgId);
 };
 
 const handleSend = async () => {
@@ -9931,7 +9999,10 @@ const openGroup = (groupId) => {
   }
   if (gid === SYSTEM_NOTICE_GROUP) {
     ensureGroupInList(gid, '系统消息');
-    openSystemNoticePanel();
+    systemNoticeOpen.value = false;
+    mobileDrawerMode.value = 'group';
+    selectGroup(gid);
+    clearUnread(gid);
     return;
   }
   systemNoticeOpen.value = false;
@@ -10576,6 +10647,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
               fromFingerprintShort: typeof data.fromFingerprintShort === 'string' ? data.fromFingerprintShort : '',
               fromOs: typeof data.fromOs === 'string' ? data.fromOs : '',
               fromLocation: typeof data.fromLocation === 'string' ? data.fromLocation : '',
+              description: typeof data.description === 'string' ? data.description : '',
             },
             ...contactRequests.value,
           ];
@@ -10710,7 +10782,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
         transferNickname ? '旧设备已授权（含昵称转让），等待新设备确认…' : '旧设备已授权，等待新设备确认…'
       );
       pushSystemMessage({
-        title: '通讯录迁移已授权',
+        title: '设备迁移已授权',
         text: transferNickname ? '等待新设备确认后将完成迁移，昵称将一并转让。' : '等待新设备确认后将完成迁移。',
         meta: { kind: 'migration_waiting' },
       });
@@ -10736,7 +10808,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
         transferNickname ? '旧设备已授权（含昵称转让），请在新设备确认迁移。' : '旧设备已授权，请在新设备确认迁移。'
       );
       pushSystemMessage({
-        title: '通讯录迁移确认',
+        title: '设备迁移确认',
         text: fromText
           ? `旧设备（${fromText}）已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`
           : `旧设备已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`,
@@ -10754,12 +10826,12 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       setMigrationStatus(
         'success',
         transferredNickname
-          ? `通讯录迁移完成，共 ${count} 条，昵称"${transferredNickname}"已转让到当前设备。`
-          : `通讯录迁移完成，共 ${count} 条。新设备可刷新通讯录确认。`
+          ? `设备迁移完成，共 ${count} 条联系人，昵称"${transferredNickname}"已转让到当前设备。`
+          : `设备迁移完成，共 ${count} 条联系人。新设备可刷新通讯录确认。`
       );
-      toast(`通讯录迁移完成（${count} 条）。`, 'info');
+      toast(`设备迁移完成（${count} 条）。`, 'info');
       pushSystemMessage({
-        title: '通讯录迁移完成',
+        title: '设备迁移完成',
         text: transferredNickname
           ? `已同步 ${count} 位联系人，昵称"${transferredNickname}"已完成转让。`
           : `已同步 ${count} 位联系人。`,
@@ -11222,22 +11294,11 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'USER_OFFLINE') {
-        pushSendBlockedTip(currentGroupId, {
-          title: '对方不在线',
-          text: '目标用户当前不在线，请稍后重试。',
-          dedupeKey: 'error-user-offline',
-        });
-        toast('对方当前不在线，无法发起临时对话。', 'error');
+        // 对方离线不再阻断，消息已由服务端离线队列接管
         return;
       }
 
       if (code === 'DM_CONTACTS_ONLY') {
-        pushSendBlockedTip(currentGroupId, {
-          title: '私聊被限制',
-          text: '对方仅接受通讯录私聊，你暂时不能向其发起陌生人私聊请求。',
-          actions: [{ action: 'open_contacts', label: '打开通讯录' }],
-          dedupeKey: 'error-dm-contacts-only',
-        });
         toast('对方仅接受通讯录私聊。', 'info');
         return;
       }
@@ -11294,13 +11355,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'NO_RECIPIENT') {
-        markFailedByReqId('当前群组暂无在线成员');
-        pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
-          title: '发送未完成',
-          text: '当前群组没有可接收消息的在线成员，请稍后再试。',
-          dedupeKey: 'error-no-recipient',
-        });
-        toast('当前群组暂无可接收消息的在线成员。', 'info');
+        // 群组暂无在线成员不再阻断，消息已由服务端离线队列接管
         return;
       }
 
@@ -11645,15 +11700,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
       clearOutgoingAckTimeout(data.msgId);
       if (local) {
-        if (Number(data.delivered) > 0) {
-          local.clientStatus = 'delivered';
-          local.clientError = '';
-          removeOutboxEntry(data.msgId);
-          pruneOutboxQueue();
-        } else {
-          local.clientStatus = 'failed';
-          local.clientError = '暂无接收者，请稍候再试';
-        }
+        local.clientStatus = 'delivered';
+        local.clientError = '';
+        removeOutboxEntry(data.msgId);
+        pruneOutboxQueue();
       }
       if (local && isDirectGroupId(local.groupId) && !isDmUnlocked(local.groupId)) {
         const delivered = Number(data.delivered) || 0;
@@ -11729,6 +11779,7 @@ onMounted(async () => {
   loadSystemNotifySetting();
   loadTrustedKeys();
   loadOutboxQueue();
+  loadMessages();
   pruneOutboxQueue();
   void initDeviceFingerprint();
   notificationAudio = new Audio(SOUND_URL);
@@ -12014,11 +12065,11 @@ button:active:not(:disabled) {
 }
 
 .voice-play-button {
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14);
 }
 
 .voice-waveform-bar {
-  width: 4px;
+  width: 3px;
   border-radius: 999px;
   transform-origin: center bottom;
   transition: height 180ms ease, opacity 180ms ease, background-color 180ms ease;
@@ -12162,6 +12213,17 @@ button:active:not(:disabled) {
 .banner-pop-enter-to,
 .banner-pop-leave-from {
   opacity: 1;
+}
+
+.apple-toast-enter-active {
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.apple-toast-leave-active {
+  transition: opacity 180ms ease;
+}
+.apple-toast-enter-from,
+.apple-toast-leave-to {
+  opacity: 0;
 }
 
 .status-strip-enter-active,

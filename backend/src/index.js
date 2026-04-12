@@ -3955,6 +3955,7 @@ export class ChatRoom {
     }
 
     const alias = resolveContactAlias(data.alias, target, target.uid);
+    const description = sanitizeText(data.description, 100) || '';
     const now = Date.now();
     this.contactRequests.set(requestId, {
       requestId,
@@ -3965,6 +3966,7 @@ export class ChatRoom {
       toUid: target.uid,
       toFingerprint: target.deviceFingerprint,
       alias,
+      description,
       createdAt: now,
     });
 
@@ -3982,6 +3984,7 @@ export class ChatRoom {
       fromFingerprintShort: sender.deviceFingerprint.slice(0, 10),
       fromOs: sender.os || '',
       fromLocation: sender.location || '',
+      description,
       reqId,
     });
   }
