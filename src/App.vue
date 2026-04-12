@@ -6898,6 +6898,13 @@ watch(
   }
 );
 
+watch(
+  () => messages.value.length,
+  () => {
+    scheduleSaveMessages();
+  }
+);
+
 const getDirectTargetUid = (groupId) => {
   if (!groupId || !groupId.startsWith('dm-')) return '';
   const ids = groupId.slice(3).split(':').filter(Boolean);
