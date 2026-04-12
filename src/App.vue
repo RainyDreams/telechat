@@ -2367,7 +2367,7 @@
                   :class="mobileViewport ? 'rounded-[18px] px-3 py-5' : 'rounded-[24px] px-4 py-8'"
                 >
                   <p class="text-sm font-semibold text-slate-700">目前没有系统通知</p>
-                  <p class="mt-1 text-xs text-slate-500">群聊、通讯录、迁移和安全提醒会出现在这里。</p>
+                  <p class="mt-1 text-xs text-slate-500">群聊、设备迁移和安全提醒会出现在这里。</p>
                 </div>
                 <div v-else class="grid" :class="mobileViewport ? 'gap-2' : 'gap-3'">
                   <div
@@ -2648,9 +2648,9 @@
               </div>
 
               <div class="mt-5 rounded-2xl border border-slate-100 bg-white px-3 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">迁移通讯录</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">设备迁移</p>
                 <p class="mt-1 text-xs text-slate-500">
-                  新旧设备同时打开。新设备生成迁移码，旧设备输入后授权迁移，可选择同时转让昵称。
+                  新旧设备同时打开。新设备生成迁移码，旧设备输入后授权。可迁移通讯录、群组成员，并可选择转让昵称。
                 </p>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
                   <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
@@ -10661,7 +10661,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
         transferNickname ? '旧设备已授权（含昵称转让），等待新设备确认…' : '旧设备已授权，等待新设备确认…'
       );
       pushSystemMessage({
-        title: '通讯录迁移已授权',
+        title: '设备迁移已授权',
         text: transferNickname ? '等待新设备确认后将完成迁移，昵称将一并转让。' : '等待新设备确认后将完成迁移。',
         meta: { kind: 'migration_waiting' },
       });
@@ -10687,7 +10687,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
         transferNickname ? '旧设备已授权（含昵称转让），请在新设备确认迁移。' : '旧设备已授权，请在新设备确认迁移。'
       );
       pushSystemMessage({
-        title: '通讯录迁移确认',
+        title: '设备迁移确认',
         text: fromText
           ? `旧设备（${fromText}）已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`
           : `旧设备已授权，请在新设备点击确认完成迁移${transferNickname ? '并接收昵称' : ''}。`,
@@ -10705,12 +10705,12 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       setMigrationStatus(
         'success',
         transferredNickname
-          ? `通讯录迁移完成，共 ${count} 条，昵称"${transferredNickname}"已转让到当前设备。`
-          : `通讯录迁移完成，共 ${count} 条。新设备可刷新通讯录确认。`
+          ? `设备迁移完成，共 ${count} 条联系人，昵称"${transferredNickname}"已转让到当前设备。`
+          : `设备迁移完成，共 ${count} 条联系人。新设备可刷新通讯录确认。`
       );
-      toast(`通讯录迁移完成（${count} 条）。`, 'info');
+      toast(`设备迁移完成（${count} 条）。`, 'info');
       pushSystemMessage({
-        title: '通讯录迁移完成',
+        title: '设备迁移完成',
         text: transferredNickname
           ? `已同步 ${count} 位联系人，昵称"${transferredNickname}"已完成转让。`
           : `已同步 ${count} 位联系人。`,
