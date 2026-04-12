@@ -363,6 +363,7 @@
             </div>
             <div class="flex items-center gap-2">
               <button
+                v-if="activeGroup === SYSTEM_GROUP"
                 type="button"
                 @click="openContacts"
                 class="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
@@ -375,6 +376,7 @@
                 ></span>
               </button>
               <button
+                v-if="activeGroup === SYSTEM_GROUP"
                 type="button"
                 @click="openSystemNoticePanel"
                 class="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-rose-300 hover:text-rose-700"
@@ -387,19 +389,12 @@
                 ></span>
               </button>
               <button
+                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
                 type="button"
                 @click="copyInviteLink"
                 class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-emerald-300 hover:text-emerald-700"
               >
                 邀请新人
-              </button>
-              <button
-                v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
-                type="button"
-                @click="toggleCurrentGroupContact"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-700"
-              >
-                {{ currentGroupSavedToContacts ? '移出通讯录' : '加入通讯录' }}
               </button>
               <button
                 v-if="activeGroup !== SYSTEM_GROUP && activeGroup !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(activeGroup)"
