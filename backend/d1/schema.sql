@@ -26,3 +26,15 @@ CREATE TABLE IF NOT EXISTS device_nicknames (
 );
 
 CREATE INDEX IF NOT EXISTS idx_device_nicknames_fp ON device_nicknames (device_fp);
+
+-- 离线消息队列（服务端持久化）
+CREATE TABLE IF NOT EXISTS offline_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  target_fp TEXT NOT NULL,
+  msg_id TEXT NOT NULL,
+  payload TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_offline_msgs_target ON offline_messages (target_fp, msg_id);
+CREATE INDEX IF NOT EXISTS idx_offline_msgs_created ON offline_messages (created_at);

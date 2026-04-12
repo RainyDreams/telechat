@@ -391,6 +391,8 @@ export class ChatRoom {
     this.deviceSessions = new Map();
     this.contactRequests = new Map();
     this.contactsSchemaReady = false;
+    this.offlineSchemaReady = false;
+    this.offlineLoaded = false;
     this.groupMetaById = new Map();
     this.groupMetaLoaded = false;
     this.inviteRecordsById = new Map();
@@ -410,6 +412,12 @@ export class ChatRoom {
 
   async fetch(request) {
     const url = new URL(request.url);
+
+    // DO 唤醒时从 D1 加载离线消息（仅首次）
+    if (!this.offlineLoaded) {
+      this.offlineLoaded = true;
+      this.loadOfflineMessagesFromD1().catch(() => {});
+    }
 
     // 短邀请码解析
     if (url.pathname === '/api/invite-resolve') {
@@ -628,7 +636,7 @@ export class ChatRoom {
   }
 
   /**
-   * 将消息加入离线队列
+   * 将消息加入离线队列（内存 + D1 持久化）
    */
   enqueueOfflineMessage(fingerprint, msgEntry) {
     if (!fingerprint) return;
@@ -642,28 +650,68 @@ export class ChatRoom {
     if (queue.length > MAX_OFFLINE_QUEUE_SIZE) {
       queue.splice(0, queue.length - MAX_OFFLINE_QUEUE_SIZE);
     }
+    // D1 持久化（fire-and-forget，不阻塞调用链）
+    this._persistOfflineMessage(fingerprint, msgEntry);
   }
 
   /**
-   * 获取离线队列中 afterMsgId 之后的消息
+   * 将离线消息写入 D1
+   */
+  async _persistOfflineMessage(fingerprint, msgEntry) {
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    try {
+      await this.ensureOfflineSchema();
+      await this.env.DB.prepare(
+        'INSERT INTO offline_messages (target_fp, msg_id, payload, created_at) VALUES (?, ?, ?, ?)'
+      ).bind(fingerprint, msgEntry.id, JSON.stringify(msgEntry.data), Date.now()).run();
+    } catch (e) {
+      console.warn('[OfflineQueue] D1 persist failed:', e.message);
+    }
+  }
+
+  /**
+   * 获取离线队列中 afterMsgId 之后的消息（内存 + D1 清理）
    */
   getQueuedMessages(fingerprint, afterMsgId) {
     if (!fingerprint) return [];
     const queue = this.offlineQueues.get(fingerprint);
     if (!queue || queue.length === 0) return [];
 
+    let msgs;
     if (!afterMsgId) {
-      const msgs = [...queue];
+      msgs = [...queue];
       queue.length = 0;
-      return msgs;
+    } else {
+      const idx = queue.findIndex((m) => m.id > afterMsgId);
+      if (idx === -1) return [];
+      msgs = queue.slice(idx);
+      queue.splice(0, idx + msgs.length);
     }
 
-    const idx = queue.findIndex((m) => m.id > afterMsgId);
-    if (idx === -1) return [];
-
-    const msgs = queue.slice(idx);
-    queue.splice(0, idx + msgs.length);
+    // D1 清理已投递的消息（fire-and-forget）
+    if (msgs.length > 0) {
+      this._deleteDeliveredMessages(fingerprint, msgs);
+    }
     return msgs;
+  }
+
+  /**
+   * 从 D1 删除已投递的离线消息
+   */
+  async _deleteDeliveredMessages(fingerprint, msgs) {
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    try {
+      await this.ensureOfflineSchema();
+      const msgIds = msgs.map(m => m.id);
+      // D1 不支持 IN (?) 数组绑定，逐条删除（批量通常 < 200）
+      for (const msgId of msgIds) {
+        await this.env.DB.prepare(
+          'DELETE FROM offline_messages WHERE target_fp = ? AND msg_id = ?'
+        ).bind(fingerprint, msgId).run();
+      }
+    } catch (e) {
+      console.warn('[OfflineQueue] D1 delete failed:', e.message);
+    }
   }
 
   async handleSession(ws, request) {
@@ -905,6 +953,58 @@ export class ChatRoom {
       this.contactsSchemaReady = true;
     } catch {
       // no-op
+    }
+  }
+
+  /**
+   * 确保离线消息 D1 表存在
+   */
+  async ensureOfflineSchema() {
+    if (this.offlineSchemaReady || !this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    try {
+      await this.env.DB.prepare(
+        'CREATE TABLE IF NOT EXISTS offline_messages (id INTEGER PRIMARY KEY AUTOINCREMENT, target_fp TEXT NOT NULL, msg_id TEXT NOT NULL, payload TEXT NOT NULL, created_at INTEGER NOT NULL)'
+      ).run();
+      await this.env.DB.prepare(
+        'CREATE INDEX IF NOT EXISTS idx_offline_msgs_target ON offline_messages (target_fp, msg_id)'
+      ).run();
+      await this.env.DB.prepare(
+        'CREATE INDEX IF NOT EXISTS idx_offline_msgs_created ON offline_messages (created_at)'
+      ).run();
+      this.offlineSchemaReady = true;
+    } catch {
+      // no-op
+    }
+  }
+
+  /**
+   * 从 D1 加载离线消息到内存队列（DO 唤醒时调用）
+   */
+  async loadOfflineMessagesFromD1() {
+    if (!this.env.DB || typeof this.env.DB.prepare !== 'function') return;
+    await this.ensureOfflineSchema();
+    try {
+      const rows = await this.env.DB.prepare(
+        'SELECT id, target_fp, msg_id, payload FROM offline_messages ORDER BY target_fp, msg_id ASC'
+      ).all();
+      if (!rows.results || rows.results.length === 0) return;
+      for (const row of rows.results) {
+        let data;
+        try { data = JSON.parse(row.payload); } catch { continue; }
+        let queue = this.offlineQueues.get(row.target_fp);
+        if (!queue) { queue = []; this.offlineQueues.set(row.target_fp, queue); }
+        // 避免重复（基于 msg_id）
+        if (!queue.some(m => m.id === row.msg_id)) {
+          queue.push({ id: row.msg_id, data, _d1Id: row.id });
+        }
+      }
+      // 清理 7 天前的过期消息
+      const cutoff = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      await this.env.DB.prepare(
+        'DELETE FROM offline_messages WHERE created_at < ?'
+      ).bind(cutoff).run();
+    } catch (e) {
+      console.warn('[OfflineQueue] Failed to load from D1:', e.message);
     }
   }
 
