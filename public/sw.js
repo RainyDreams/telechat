@@ -8,7 +8,7 @@
  * - 后台消息同步
  */
 
-const CACHE_NAME = 'linkconnect-v1';
+const CACHE_NAME = 'linkconnect-v2';
 const OFFLINE_URL = '/';
 const MAX_NOTIFICATION_BODY_LENGTH = 120;
 
@@ -51,6 +51,9 @@ self.addEventListener('fetch', (event) => {
   // 只处理 GET 请求
   if (request.method !== 'GET') return;
 
+  // 只处理 http/https 请求（忽略 chrome-extension, moz-extension 等）
+  if (!request.url.startsWith('http://') && !request.url.startsWith('https://')) return;
+
   // API 请求不缓存
   if (request.url.includes('/api/') || request.url.includes('/ws')) return;
 
@@ -62,7 +65,7 @@ self.addEventListener('fetch', (event) => {
         if (response.ok) {
           const responseClone = response.clone();
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseClone);
+            try { cache.put(request, responseClone); } catch { /* ignore unsupported schemes */ }
           });
         }
         return response;
