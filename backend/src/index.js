@@ -376,6 +376,9 @@ const decodeInviteCodeParts = (inviteCode) => {
   return { payloadB64, sigB64, payload, normalizedCode: `TCINV-${payloadB64}.${sigB64}` };
 };
 
+const MAX_OFFLINE_QUEUE_SIZE = 200; // 每个设备最大离线消息数
+const LONG_POLL_TIMEOUT_MS = 25000; // 长轮询超时时间
+
 export class ChatRoom {
   constructor(state, env) {
     this.state = state;
@@ -395,10 +398,20 @@ export class ChatRoom {
     this.groupInviteApprovals = new Map();
     this.groupJoinApprovals = new Map();
     this.directRequests = new Map();
+    // 离线消息队列：deviceFingerprint -> [{ id, data, ts }]
+    this.offlineQueues = new Map();
+    // HTTP 长轮询等待队列：sessionId -> { resolve, timer, fingerprint }
+    this.pollWaiters = new Map();
+    // HTTP 会话映射：sessionId -> { fingerprint, uid }
+    this.httpSessions = new Map();
+    // 全局消息序列号
+    this.globalMsgSeq = 0;
   }
 
   async fetch(request) {
     const url = new URL(request.url);
+
+    // 短邀请码解析
     if (url.pathname === '/api/invite-resolve') {
       const shortCode = sanitizeShortInviteCode(url.searchParams.get('code') || url.searchParams.get('s'));
       if (!shortCode) {
@@ -411,6 +424,17 @@ export class ChatRoom {
       return new Response(JSON.stringify({ ok: true, ...resolved }), { status: 200, headers: jsonHeaders });
     }
 
+    // HTTP 长轮询接收端点
+    if (url.pathname === '/api/poll' && request.method === 'GET') {
+      return this.handleLongPoll(request);
+    }
+
+    // HTTP 发送端点（长轮询模式下发送消息）
+    if (url.pathname === '/api/send' && request.method === 'POST') {
+      return this.handleHttpSend(request);
+    }
+
+    // WebSocket 连接
     if (request.headers.get('Upgrade') !== 'websocket') {
       return new Response('Expected websocket', { status: 426 });
     }
@@ -419,6 +443,227 @@ export class ChatRoom {
     const [client, server] = Object.values(pair);
     await this.handleSession(server, request);
     return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /**
+   * HTTP 长轮询接收端点
+   * 客户端发送 GET /api/poll?sid=xxx&after=lastMsgId
+   * 服务端持有连接直到有新消息或超时
+   */
+  async handleLongPoll(request) {
+    const url = new URL(request.url);
+    const sessionId = url.searchParams.get('sid') || '';
+    const afterMsgId = url.searchParams.get('after') || '';
+
+    // 生成或恢复 session
+    let sessionInfo = sessionId ? this.httpSessions.get(sessionId) : null;
+    let sid = sessionId;
+
+    if (!sessionInfo) {
+      // 新的 HTTP 会话，需要创建绑定身份
+      sid = randomHex(16);
+      const uid = crypto.randomUUID().split('-')[0];
+      const powNonce = randomHex(10);
+
+      sessionInfo = {
+        uid,
+        fingerprint: '',
+        verified: false,
+        pow: {
+          uid,
+          nonce: powNonce,
+          difficulty: POW_DIFFICULTY,
+          verified: false,
+        },
+        groups: new Set([SYSTEM_GROUP, SYSTEM_NOTICE_GROUP]),
+        nickname: '',
+        identitySign: '',
+        identityDh: '',
+        identitySig: '',
+        publicKey: null,
+        ip: request.headers.get('cf-connecting-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || '',
+        os: getOsFromUserAgent(request.headers.get('user-agent') || ''),
+        location: formatLocation(request.cf),
+        dmContactsOnly: true,
+        rateBuckets: { chat: [], image: [], join: [], invite: [], invalid: [] },
+        deviceFingerprint: '',
+        deviceBound: false,
+      };
+
+      this.httpSessions.set(sid, sessionInfo);
+
+      // 发送身份信息
+      return new Response(JSON.stringify({
+        sessionId: sid,
+        messages: [{
+          id: String(++this.globalMsgSeq),
+          data: {
+            type: 'identity',
+            uid,
+            powUid: uid,
+            powNonce,
+            powDifficulty: POW_DIFFICULTY,
+            httpMode: true,
+          },
+        }],
+      }), { status: 200, headers: jsonHeaders });
+    }
+
+    // 检查离线队列中是否有待发消息
+    const fingerprint = sessionInfo.fingerprint;
+    const pending = fingerprint ? this.getQueuedMessages(fingerprint, afterMsgId) : [];
+
+    if (pending.length > 0) {
+      return new Response(JSON.stringify({
+        sessionId: sid,
+        messages: pending,
+      }), { status: 200, headers: jsonHeaders });
+    }
+
+    // 没有待发消息，进入长轮询等待
+    return new Promise((resolve) => {
+      const timer = setTimeout(() => {
+        this.pollWaiters.delete(sid);
+        resolve(new Response(JSON.stringify({
+          sessionId: sid,
+          messages: [],
+        }), { status: 200, headers: jsonHeaders }));
+      }, LONG_POLL_TIMEOUT_MS);
+
+      this.pollWaiters.set(sid, {
+        resolve: (messages) => {
+          clearTimeout(timer);
+          this.pollWaiters.delete(sid);
+          resolve(new Response(JSON.stringify({
+            sessionId: sid,
+            messages,
+          }), { status: 200, headers: jsonHeaders }));
+        },
+        timer,
+        fingerprint,
+      });
+    });
+  }
+
+  /**
+   * HTTP 发送端点
+   * 客户端发送 POST /api/send { sessionId, data }
+   */
+  async handleHttpSend(request) {
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return new Response(JSON.stringify({ ok: false, error: 'INVALID_JSON' }), { status: 400, headers: jsonHeaders });
+    }
+
+    const sessionId = body.sessionId;
+    const data = body.data;
+
+    if (!sessionId || !data || typeof data !== 'object') {
+      return new Response(JSON.stringify({ ok: false, error: 'MISSING_FIELDS' }), { status: 400, headers: jsonHeaders });
+    }
+
+    const sessionInfo = this.httpSessions.get(sessionId);
+    if (!sessionInfo) {
+      return new Response(JSON.stringify({ ok: false, error: 'SESSION_EXPIRED' }), { status: 401, headers: jsonHeaders });
+    }
+
+    // 创建一个伪 WebSocket 对象来复用现有的消息处理逻辑
+    const mockWs = {
+      _httpSession: true,
+      _sessionId: sessionId,
+      _messages: [],
+      send: (msg) => {
+        // 将响应消息加入长轮询等待者或离线队列
+        const parsed = typeof msg === 'string' ? JSON.parse(msg) : msg;
+        this.deliverToHttpSession(sessionId, parsed);
+      },
+      close: () => {
+        this.httpSessions.delete(sessionId);
+        const waiter = this.pollWaiters.get(sessionId);
+        if (waiter) {
+          clearTimeout(waiter.timer);
+          waiter.resolve([]);
+        }
+      },
+    };
+
+    // 将 sessionInfo 注册为 "session" 以便 handleMessage 处理
+    const wsKey = `http:${sessionId}`;
+    if (!this.sessions.has(wsKey)) {
+      this.sessions.set(wsKey, sessionInfo);
+    }
+
+    try {
+      await this.handleMessage(wsKey, data);
+    } catch (e) {
+      // no-op
+    }
+
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: jsonHeaders });
+  }
+
+  /**
+   * 将消息投递到 HTTP 会话
+   */
+  deliverToHttpSession(sessionId, message) {
+    const msgEntry = {
+      id: String(++this.globalMsgSeq),
+      data: message,
+    };
+
+    const waiter = this.pollWaiters.get(sessionId);
+    if (waiter) {
+      waiter.resolve([msgEntry]);
+      return;
+    }
+
+    // 没有等待的长轮询，加入离线队列
+    const sessionInfo = this.httpSessions.get(sessionId);
+    if (sessionInfo && sessionInfo.fingerprint) {
+      this.enqueueOfflineMessage(sessionInfo.fingerprint, msgEntry);
+    }
+  }
+
+  /**
+   * 将消息加入离线队列
+   */
+  enqueueOfflineMessage(fingerprint, msgEntry) {
+    if (!fingerprint) return;
+    let queue = this.offlineQueues.get(fingerprint);
+    if (!queue) {
+      queue = [];
+      this.offlineQueues.set(fingerprint, queue);
+    }
+    queue.push(msgEntry);
+    // 限制队列大小
+    if (queue.length > MAX_OFFLINE_QUEUE_SIZE) {
+      queue.splice(0, queue.length - MAX_OFFLINE_QUEUE_SIZE);
+    }
+  }
+
+  /**
+   * 获取离线队列中 afterMsgId 之后的消息
+   */
+  getQueuedMessages(fingerprint, afterMsgId) {
+    if (!fingerprint) return [];
+    const queue = this.offlineQueues.get(fingerprint);
+    if (!queue || queue.length === 0) return [];
+
+    if (!afterMsgId) {
+      const msgs = [...queue];
+      queue.length = 0;
+      return msgs;
+    }
+
+    const idx = queue.findIndex((m) => m.id > afterMsgId);
+    if (idx === -1) return [];
+
+    const msgs = queue.slice(idx);
+    queue.splice(0, idx + msgs.length);
+    return msgs;
   }
 
   async handleSession(ws, request) {
@@ -491,11 +736,54 @@ export class ChatRoom {
   }
 
   sendTo(ws, payload) {
+    // 处理 HTTP 会话的响应
+    if (ws && ws._httpSession) {
+      this.deliverToHttpSession(ws._sessionId, payload);
+      return;
+    }
+    // 处理 HTTP session key 格式 "http:xxx"
+    if (typeof ws === 'string' && ws.startsWith('http:')) {
+      const sessionId = ws.slice(5);
+      this.deliverToHttpSession(sessionId, payload);
+      return;
+    }
     try {
       ws.send(JSON.stringify(payload));
     } catch {
-      // no-op
+      // no-op — 可能连接已断开
     }
+  }
+
+  /**
+   * 发送消息到指定用户，支持离线投递
+   */
+  sendToUser(targetUid, payload, targetFingerprint) {
+    // 先尝试找到在线 WebSocket 连接
+    const targetWs = this.findWsByUid(targetUid);
+    if (targetWs) {
+      this.sendTo(targetWs, payload);
+      return true;
+    }
+
+    // 用户不在线，尝试 HTTP 长轮询投递
+    for (const [sid, info] of this.httpSessions.entries()) {
+      if (info.uid === targetUid || info.fingerprint === targetFingerprint) {
+        this.deliverToHttpSession(sid, {
+          id: String(++this.globalMsgSeq),
+          data: payload,
+        });
+        return true;
+      }
+    }
+
+    // 最后加入离线队列
+    if (targetFingerprint) {
+      this.enqueueOfflineMessage(targetFingerprint, {
+        id: String(++this.globalMsgSeq),
+        data: payload,
+      });
+    }
+    return false;
   }
 
   sendError(ws, code, message, reqId = null) {
