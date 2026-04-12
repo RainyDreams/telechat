@@ -4469,7 +4469,7 @@ export class ChatRoom {
       reqId,
     });
 
-    } else if (isDirectGroupId(groupId)) {
+    if (isDirectGroupId(groupId)) {
       if (dmPairKey && !this.dmUnlocked.has(dmPairKey)) {
         const lastSender = this.dmLastSender.get(dmPairKey);
         if (lastSender && lastSender !== sender.deviceFingerprint) {
