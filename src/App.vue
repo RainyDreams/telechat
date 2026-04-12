@@ -1268,26 +1268,26 @@
                     </div>
                     <div
                       v-else-if="msg.payloadType === 'audio' && msg.audioData"
-                      class="voice-message-card rounded-[22px] px-3 py-3"
+                      class="voice-message-card rounded-2xl px-2.5 py-2"
                       :class="msg.sender === myUid ? 'bg-white/14 text-white' : 'bg-slate-50 text-slate-800'"
                     >
-                      <div class="flex items-center gap-3">
+                      <div class="flex items-center gap-2">
                         <button
                           type="button"
-                          class="voice-play-button inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                          class="voice-play-button inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full"
                           :class="msg.sender === myUid ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'"
                           @click="toggleAudioPlayback(msg)"
                           :aria-label="isAudioMessagePlaying(msg) ? 'Pause voice message' : 'Play voice message'"
                         >
-                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                          <svg v-if="isAudioMessagePlaying(msg)" viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor">
                             <path d="M7 5h3v14H7zM14 5h3v14h-3z"/>
                           </svg>
-                          <svg v-else viewBox="0 0 24 24" class="h-4 w-4" fill="currentColor">
+                          <svg v-else viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor">
                             <path d="M8 6.5v11l9-5.5-9-5.5Z"/>
                           </svg>
                         </button>
                         <div class="min-w-0 flex-1">
-                          <div class="voice-waveform flex h-10 items-end gap-1">
+                          <div class="voice-waveform flex h-8 items-end gap-[2px]">
                             <span
                               v-for="(bar, idx) in audioWaveformForMessage(msg)"
                               :key="`voice-wave-${msg.msgId}-${idx}`"
@@ -1296,8 +1296,8 @@
                               :style="audioWaveformBarStyle(bar)"
                             ></span>
                           </div>
-                          <div class="mt-2 flex items-center justify-between text-[11px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
-                            <span>{{ isAudioMessagePlaying(msg) ? '正在播放' : '语音消息' }}</span>
+                          <div class="mt-1 flex items-center justify-between text-[10px]" :class="msg.sender === myUid ? 'text-white/75' : 'text-slate-500'">
+                            <span>{{ isAudioMessagePlaying(msg) ? '播放中' : '语音' }}</span>
                             <span>{{ audioMessageTimeLabel(msg) }}</span>
                           </div>
                         </div>
@@ -1326,11 +1326,13 @@
                           <path d="M12 3a9 9 0 1 0 9 9"/>
                         </svg>
                       </span>
-                      <span
+                      <button
                         v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
-                        class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white"
-                        :title="msg.clientError || '发送失败'"
-                      >!</span>
+                        type="button"
+                        class="inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white transition hover:bg-rose-500"
+                        :title="msg.clientError || '发送失败，点击重试'"
+                        @click.stop="retryMessage(msg)"
+                      >!</button>
                       <span
                         v-if="msg.burnAfterRead"
                         class="rounded-full border px-1.5 py-0.5"
@@ -12008,11 +12010,11 @@ button:active:not(:disabled) {
 }
 
 .voice-play-button {
-  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.14);
 }
 
 .voice-waveform-bar {
-  width: 4px;
+  width: 3px;
   border-radius: 999px;
   transform-origin: center bottom;
   transition: height 180ms ease, opacity 180ms ease, background-color 180ms ease;
