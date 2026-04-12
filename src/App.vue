@@ -11222,12 +11222,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'USER_OFFLINE') {
-        pushSendBlockedTip(currentGroupId, {
-          title: '对方不在线',
-          text: '目标用户当前不在线，请稍后重试。',
-          dedupeKey: 'error-user-offline',
-        });
-        toast('对方当前不在线，无法发起临时对话。', 'error');
+        // 对方离线不再阻断，消息已由服务端离线队列接管
         return;
       }
 
@@ -11288,13 +11283,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'NO_RECIPIENT') {
-        markFailedByReqId('当前群组暂无在线成员');
-        pushSendBlockedTip(sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP, {
-          title: '发送未完成',
-          text: '当前群组没有可接收消息的在线成员，请稍后再试。',
-          dedupeKey: 'error-no-recipient',
-        });
-        toast('当前群组暂无可接收消息的在线成员。', 'info');
+        // 群组暂无在线成员不再阻断，消息已由服务端离线队列接管
         return;
       }
 
