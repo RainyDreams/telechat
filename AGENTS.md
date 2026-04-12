@@ -247,20 +247,99 @@ npm run deploy
 
 ---
 
-## 7. Git 协作流程
+## 7. Git 协作与冲突预防
+
+### 7.1 分支规范
 
 ```
-main ← feat/your-branch (从 main 切出)
+main ← feat/your-branch (从 main 最新 HEAD 切出)
 ```
 
-1. 从 `main` 切分支：`git checkout -b feat/描述`
-2. 小步提交，commit message 格式：`type: 简短描述`
-   - `feat:` 新功能
-   - `refactor:` 重构
-   - `fix:` 修复
-   - `style:` 样式调整
-3. 推送到远程：`git push origin feat/分支名`
-4. 创建 PR 到 main
+1. **永远从最新 main 切分支**：
+   ```bash
+   git checkout main && git pull origin main
+   git checkout -b feat/描述
+   ```
+2. **commit message 格式**：`type: 简短描述`
+   - `feat:` 新功能 / `fix:` 修复 / `refactor:` 重构 / `style:` 样式调整
+3. **一个分支一件事**：不要在同一个分支里混杂不相关的改动
+
+### 7.2 PR 创建前的检查清单
+
+创建 PR 前**必须**执行以下步骤，否则容易出现合并冲突：
+
+```bash
+# 1. 检查 main 是否有新提交
+git fetch origin main
+git log --oneline HEAD..origin/main
+
+# 2. 如果 main 有新提交，rebase 到最新
+git rebase origin/main
+
+# 3. 检查自己改了哪些文件，确保没有碰别人正在改的区域
+git diff origin/main --stat
+
+# 4. 构建检查
+npm run build
+```
+
+**关键规则：如果 `git fetch` 发现 main 有更新，必须先 rebase 再 push。**
+
+### 7.3 避免区域冲突的机制
+
+`App.vue` 是 12000 行单文件，多人/多分支改同一区域必然冲突。以下是预防机制：
+
+#### 热区标注
+
+以下区域是**高频改动区**，改这些区域时要特别小心：
+
+| 区域 | 行号范围 | 风险 |
+|------|---------|------|
+| Debug Panel（移动端） | ~1094–1120 | 高 — 多分支同时改 |
+| Debug Panel（桌面端） | ~2306–2330 | 高 — 同上 |
+| Debug info computed | ~3560–3610 | 中 — 新增 debug 字段时 |
+| Toast/通知区域 | ~48–65 | 中 |
+| 连接状态处理 | ~3300–3400 | 低 |
+
+**规则：如果要改以上区域，先 `git fetch` 确认 main 没有同时在改。**
+
+#### 分支命名防重
+
+如果两个分支要改同一区域（比如都改 Debug Panel），应该：
+1. 在同一个分支里一起改，改完一个 PR 解决
+2. 或者明确分工：一个改模板，一个改 JS 逻辑
+
+### 7.4 合并后清理
+
+```bash
+# PR 合并后删除远程分支
+git push origin --delete feat/已合并的分支
+
+# 清理本地
+git branch -d feat/已合并的分支
+git remote prune origin
+```
+
+**定期执行**：每周检查一次远程分支列表，删除已合并或废弃的分支：
+```bash
+# 查看所有分支及其最后提交时间
+git for-each-ref --sort=-committerdate --format='%(refname:short) %(committerdate:relative)' refs/remotes/origin
+```
+
+### 7.5 批量创建 PR 的冲突检测
+
+在批量创建 PR 时，用 GitHub API 检查合并状态：
+
+```bash
+# 检查 PR 是否有合并冲突
+curl -s "https://api.github.com/repos/OWNER/REPO/compare/main...BRANCH" | python3 -c "
+import json,sys; d=json.load(sys.stdin)
+print('status:', d['status'])  # 'identical' | 'ahead' | 'behind' | 'diverged'
+print('can merge:', d.get('status') != 'conflicted')
+"
+```
+
+如果 `status` 是 `diverged` 且 behind 数较大（>5），说明分支太旧，先 rebase 再创建 PR。
 
 ---
 
