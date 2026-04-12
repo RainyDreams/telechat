@@ -4409,7 +4409,9 @@ export class ChatRoom {
       return;
     }
 
-    if (!isBase64(data.ciphertext) || !isBase64(data.iv, 256)) {
+    const isEmptyPayload = data.ciphertext === '' && data.iv === '' &&
+      (!data.keys || (typeof data.keys === 'object' && Object.keys(data.keys).length === 0));
+    if (!isEmptyPayload && (!isBase64(data.ciphertext) || !isBase64(data.iv, 256))) {
       this.handleInvalidAction(ws, 'INVALID_CIPHERTEXT', 'ciphertext/iv must be base64', reqId);
       return;
     }
