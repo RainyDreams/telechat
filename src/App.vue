@@ -376,7 +376,7 @@
               </button>
               <button
                 type="button"
-                @click="openSystemNoticePanel"
+                @click="openGroup(SYSTEM_NOTICE_GROUP)"
                 class="relative rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-rose-300 hover:text-rose-700"
               >
                 通知
@@ -559,7 +559,7 @@
                   <!-- 通知 -->
                   <button
                     type="button"
-                    @click="openSystemNoticePanel(); showMobilePanel = false"
+                    @click="openGroup(SYSTEM_NOTICE_GROUP); showMobilePanel = false"
                     class="mobile-panel-action relative flex min-h-[56px] flex-col items-start justify-center rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left text-slate-700"
                   >
                     <div class="flex items-center gap-2">
@@ -8980,10 +8980,6 @@ const openBannerChat = () => {
   const gid = banner.value.groupId;
   if (!gid) return;
   dismissBanner();
-  if (gid === SYSTEM_NOTICE_GROUP) {
-    openSystemNoticePanel();
-    return;
-  }
   openGroup(gid);
   nextTick(() => {
     scrollToBottom();
@@ -9002,11 +8998,7 @@ const showSystemNotification = (groupId, previewText) => {
   });
   notification.onclick = () => {
     window.focus();
-    if (groupId === SYSTEM_NOTICE_GROUP) {
-      openSystemNoticePanel();
-    } else {
-      openGroup(groupId);
-    }
+    openGroup(groupId);
     notification.close();
   };
 };
@@ -9327,7 +9319,7 @@ const handleSystemAction = (msg, actionItem = null) => {
     return;
   }
   if (action === 'open_system_notice') {
-    openSystemNoticePanel();
+    openGroup(SYSTEM_NOTICE_GROUP);
     return;
   }
   if (action === 'open_related_group') {
@@ -9931,7 +9923,10 @@ const openGroup = (groupId) => {
   }
   if (gid === SYSTEM_NOTICE_GROUP) {
     ensureGroupInList(gid, '系统消息');
-    openSystemNoticePanel();
+    systemNoticeOpen.value = false;
+    mobileDrawerMode.value = 'group';
+    selectGroup(gid);
+    clearUnread(gid);
     return;
   }
   systemNoticeOpen.value = false;
