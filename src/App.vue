@@ -889,6 +889,7 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
+                    <p v-if="req.description" class="text-[11px] text-slate-500 mt-0.5">{{ req.description }}</p>
                     <p class="text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
                   </div>
                   <div class="flex shrink-0 gap-1.5">
@@ -2279,6 +2280,7 @@
                 <div v-if="addFriendDialog.mode === 'input'">
                   <p class="text-xs text-slate-500 mb-2">输入对方的设备 ID 或粘贴分享字符串</p>
                   <input v-model="addFriendDialog.deviceIdInput" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400" placeholder="LC:xxxxxxxx 或设备 ID" />
+                  <textarea v-model="addFriendDialog.description" maxlength="100" class="mt-2 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400 resize-none" rows="2" placeholder="验证描述（可选，最多100字）"></textarea>
                   <p v-if="addFriendDialog.error" class="mt-1 text-xs text-rose-500">{{ addFriendDialog.error }}</p>
                   <button type="button" @click="submitAddFriend" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">添加为好友</button>
                 </div>
@@ -2560,6 +2562,9 @@
                     <div class="min-w-0">
                       <p class="truncate text-sm font-semibold text-slate-800">
                         用户 {{ req.uidShort }}
+                      </p>
+                      <p v-if="req.description" class="truncate text-xs text-slate-600 mt-0.5">
+                        「{{ req.description }}」
                       </p>
                       <p class="truncate text-xs text-slate-500">
                         {{ req.os }} · {{ req.location }}
@@ -3241,7 +3246,7 @@ const debugModeEnabled = ref(false);
 const pushStatus = ref({ supported: false, permission: 'default', subscribed: false });
 const pushInitializing = ref(false);
 // 好友系统 — 添加设备好友
-const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: 'input' }); // mode: 'input' | 'qr'
+const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: 'input', description: '' }); // mode: 'input' | 'qr'
 const qrImagePicker = ref(null);
 const showDeviceQR = ref(false); // 在设置中显示设备二维码
 const versionTapState = ref({ count: 0, lastAt: 0 });
@@ -4061,6 +4066,7 @@ const contactRequestCards = computed(() => {
       os: req.fromOs || '未知系统',
       location: req.fromLocation || '未知地区',
       fingerprintShort: req.fromFingerprintShort || '--',
+      description: req.description || '',
     };
   });
 });
@@ -5704,14 +5710,17 @@ const submitAddFriend = () => {
   }
 
   addFriendDialog.value.error = '';
+  const description = addFriendDialog.value.description.trim();
   addFriendDialog.value.open = false;
+  addFriendDialog.value.description = '';
 
-  // 发起私聊
+  // 发起私聊 + 通讯录请求
   const dmGroupId = buildDirectGroupId(myUid.value, deviceId);
   if (!dmGroupId) return;
   if (!ws || ws.readyState !== WS_OPEN) return;
   ws.send(JSON.stringify({ type: 'direct_start', groupId: dmGroupId, targetUid: deviceId }));
-  toast('已发送私聊请求。', 'info');
+  requestContactByUid(deviceId, '', description);
+  toast('已发送私聊和好友请求。', 'info');
 };
 
 const scanFriendQR = async () => {
@@ -5925,7 +5934,7 @@ const upsertContact = (contact) => {
   contacts.value = list;
 };
 
-const requestContactByUid = (targetUid, alias = '') => {
+const requestContactByUid = (targetUid, alias = '', description = '') => {
   const uid = typeof targetUid === 'string' ? targetUid.trim() : '';
   if (!uid) return;
   if (!ws || ws.readyState !== WS_OPEN) {
@@ -5941,12 +5950,16 @@ const requestContactByUid = (targetUid, alias = '') => {
     return false;
   }
   const finalAlias = typeof alias === 'string' ? alias.trim() : '';
+  const finalDesc = typeof description === 'string' ? description.trim().slice(0, 100) : '';
   const payload = {
     type: 'contacts_add',
     targetUid: uid,
   };
   if (finalAlias && !isGeneratedContactAlias(finalAlias, uid)) {
     payload.alias = finalAlias;
+  }
+  if (finalDesc) {
+    payload.description = finalDesc;
   }
   ws.send(JSON.stringify(payload));
   return true;
@@ -10614,6 +10627,7 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
               fromFingerprintShort: typeof data.fromFingerprintShort === 'string' ? data.fromFingerprintShort : '',
               fromOs: typeof data.fromOs === 'string' ? data.fromOs : '',
               fromLocation: typeof data.fromLocation === 'string' ? data.fromLocation : '',
+              description: typeof data.description === 'string' ? data.description : '',
             },
             ...contactRequests.value,
           ];
