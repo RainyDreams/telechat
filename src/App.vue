@@ -2617,9 +2617,39 @@
               <p class="text-sm font-semibold text-slate-800">通讯录</p>
               <button type="button" @click="contactsOpen = false" class="text-xs font-medium text-slate-500">关闭</button>
             </div>
-            <div class="viewport-modal-body px-0 py-0" style="--dialog-offset: 5rem;">
-              <div class="px-4 py-3">
-                <input v-model="contactQuery" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400" placeholder="搜索联系人" />
+            <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
+              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto">
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">联系人</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
+                  </div>
+                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
+                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
+                  </div>
+                </div>
+                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 lg:w-[20rem]">
+                  <input
+                    v-model="contactQuery"
+                    class="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                    placeholder="搜索联系人、指纹、地区"
+                  />
+                  <button
+                    type="button"
+                    @click="requestContacts"
+                    class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
+                  >
+                    刷新
+                  </button>
+                  <button
+                    type="button"
+                    @click="contactsOpen = false; openAddFriendDialog()"
+                    class="shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                  >
+                    添加好友
+                  </button>
+                </div>
               </div>
               <div class="divide-y divide-slate-100">
                 <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
