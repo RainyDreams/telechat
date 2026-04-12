@@ -2266,6 +2266,35 @@
                 </div>
               </div>
 
+              <!-- 我的设备 -->
+              <div class="mt-3 border-y border-slate-100">
+                <div class="border-b border-slate-100 px-4 py-2 bg-slate-50">
+                  <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">我的设备</p>
+                </div>
+                <div class="divide-y divide-slate-100">
+                  <div class="px-4 py-3">
+                    <p class="text-sm text-slate-800">设备 ID</p>
+                    <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ myUid || '加载中...' }}</p>
+                    <div class="mt-2 flex gap-2">
+                      <button type="button" @click="copyMyDeviceId" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                        复制 ID
+                      </button>
+                      <button type="button" @click="showDeviceQR = !showDeviceQR" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                        {{ showDeviceQR ? '隐藏二维码' : '显示二维码' }}
+                      </button>
+                    </div>
+                    <div v-if="showDeviceQR && myUid" class="mt-3 flex justify-center rounded-xl bg-white p-3" v-html="myDeviceQRSvg"></div>
+                  </div>
+                  <button type="button" @click="openAddFriendDialog" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
+                    <div>
+                      <p class="text-sm text-slate-800">添加好友</p>
+                      <p class="text-[11px] text-slate-400">通过设备 ID 添加</p>
+                    </div>
+                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </button>
+                </div>
+              </div>
+
               <!-- 版本 -->
               <div class="mt-3 border-y border-slate-100">
                 <div class="flex items-center justify-between px-4 py-3">
@@ -2279,6 +2308,38 @@
               </div>
 
             </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 添加好友弹窗 -->
+        <div v-if="addFriendDialog.open" class="fixed inset-0 z-[65]">
+          <button type="button" @click="addFriendDialog.open = false" class="absolute inset-0 bg-slate-900/40" aria-label="Close"></button>
+          <div class="viewport-modal-scroll">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 24rem;">
+              <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
+                <p class="text-sm font-semibold text-slate-800">添加好友</p>
+                <button type="button" @click="addFriendDialog.open = false" class="text-xs font-medium text-slate-500">关闭</button>
+              </div>
+              <div class="px-4 py-4">
+                <div class="flex gap-2 mb-4">
+                  <button type="button" @click="addFriendDialog.mode = 'input'" class="rounded-full px-3 py-1 text-xs font-medium transition" :class="addFriendDialog.mode === 'input' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">输入 ID</button>
+                  <button type="button" @click="addFriendDialog.mode = 'qr'" class="rounded-full px-3 py-1 text-xs font-medium transition" :class="addFriendDialog.mode === 'qr' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'">扫码</button>
+                </div>
+                <div v-if="addFriendDialog.mode === 'input'">
+                  <p class="text-xs text-slate-500 mb-2">输入对方的设备 ID 或粘贴分享字符串</p>
+                  <input v-model="addFriendDialog.deviceIdInput" class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-800 outline-none placeholder:text-slate-400" placeholder="LC:xxxxxxxx 或设备 ID" />
+                  <p v-if="addFriendDialog.error" class="mt-1 text-xs text-rose-500">{{ addFriendDialog.error }}</p>
+                  <button type="button" @click="submitAddFriend" class="mt-3 w-full rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">添加为好友</button>
+                </div>
+                <div v-else>
+                  <p class="text-xs text-slate-500 mb-3">将摄像头对准对方的设备二维码</p>
+                  <button type="button" @click="scanFriendQR" class="w-full rounded-xl border-2 border-dashed border-slate-300 py-8 text-sm text-slate-500 hover:border-sky-300 hover:text-sky-600">
+                    点击打开摄像头
+                  </button>
+                  <p class="mt-2 text-[11px] text-slate-400 text-center">需要摄像头权限 · 仅本地处理</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -3177,6 +3238,14 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, onBeforeUnmount, watch } from 'vue';
 import appPackage from '../package.json';
+import { createTransportSocket } from './lib/transport-socket.js';
+import { generateSnowflakeId } from './lib/snowflake.js';
+import { initPush, getPushStatus, registerServiceWorker } from './lib/push.js';
+import { generateDeviceQRSvg, buildDeviceShareString, parseDeviceShareString } from './lib/qrcode.js';
+
+// WebSocket readyState 兼容常量（TransportSocket 也使用这些值）
+const WS_CONNECTING = 0;
+const WS_OPEN = 1;
 
 const SYSTEM_GROUP = 'system';
 const SYSTEM_NOTICE_GROUP = 'system-notice';
@@ -3273,6 +3342,12 @@ const notificationPrompted = ref(false);
 const systemNotifyEnabled = ref(false);
 const settingsOpen = ref(false);
 const debugModeEnabled = ref(false);
+// Web Push 状态
+const pushStatus = ref({ supported: false, permission: 'default', subscribed: false });
+const pushInitializing = ref(false);
+// 好友系统 — 添加设备好友
+const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: 'input' }); // mode: 'input' | 'qr'
+const showDeviceQR = ref(false); // 在设置中显示设备二维码
 const versionTapState = ref({ count: 0, lastAt: 0 });
 const nicknameGuideOpen = ref(false);
 const nicknameGuidePending = ref(false);
@@ -3437,7 +3512,7 @@ const startHeartbeat = () => {
   stopHeartbeat();
   lastPongAt = Date.now();
   heartbeatTimer = window.setInterval(() => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WS_OPEN) {
       stopHeartbeat();
       return;
     }
@@ -3513,7 +3588,7 @@ const finishDmNegotiation = (groupId, peerUid = '') => {
 
 const handleNetworkOnline = () => {
   networkOnline.value = true;
-  if (ws && ws.readyState === WebSocket.OPEN) {
+  if (ws && ws.readyState === WS_OPEN) {
     connectionState.value = powState.value.verified ? 'connected' : 'verifying';
     void flushOutbox();
     return;
@@ -4773,7 +4848,7 @@ const sendVoiceMessage = async ({ dataUrl, mimeType, durationMs, waveform }) => 
     burnAfterMs: burnAfterReadEnabled.value ? buildAudioBurnDurationMs(durationMs) : 0,
   };
 
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     queueOutgoingMessage('audio', payload, gid);
     clearReplyDraft();
     return true;
@@ -5460,7 +5535,7 @@ const closeVerifyModal = () => {
 };
 
 const requestContacts = () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5642,6 +5717,77 @@ const openSettingsPage = () => {
   settingsOpen.value = true;
 };
 
+// ===== 设备 ID + 好友系统 =====
+
+const myDeviceQRSvg = computed(() => {
+  if (!myUid.value) return '';
+  return generateDeviceQRSvg(myUid.value, 180);
+});
+
+const copyMyDeviceId = async () => {
+  if (!myUid.value) return;
+  const shareString = buildDeviceShareString(myUid.value);
+  try {
+    await navigator.clipboard.writeText(shareString);
+    toast('设备 ID 已复制，分享给好友即可添加。', 'info');
+  } catch {
+    toast('复制失败，请手动复制。', 'error');
+  }
+};
+
+const openAddFriendDialog = () => {
+  addFriendDialog.value = { open: true, deviceIdInput: '', error: '', mode: 'input' };
+  settingsOpen.value = false;
+};
+
+const submitAddFriend = () => {
+  const input = addFriendDialog.value.deviceIdInput.trim();
+  if (!input) {
+    addFriendDialog.value.error = '请输入设备 ID';
+    return;
+  }
+
+  const deviceId = parseDeviceShareString(input);
+  if (!deviceId) {
+    addFriendDialog.value.error = '格式不正确，支持 LC:xxx 或纯设备 ID';
+    return;
+  }
+
+  if (deviceId === myUid.value) {
+    addFriendDialog.value.error = '不能添加自己为好友';
+    return;
+  }
+
+  addFriendDialog.value.error = '';
+  addFriendDialog.value.open = false;
+
+  // 发起私聊
+  const dmGroupId = buildDirectGroupId(myUid.value, deviceId);
+  if (!dmGroupId) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
+  ws.send(JSON.stringify({ type: 'direct_start', groupId: dmGroupId, targetUid: deviceId }));
+  toast('已发送私聊请求。', 'info');
+};
+
+const scanFriendQR = async () => {
+  try {
+    const { startQRScanner } = await import('./lib/qrcode.js');
+    const result = await startQRScanner();
+    if (result) {
+      const deviceId = parseDeviceShareString(result);
+      if (deviceId) {
+        addFriendDialog.value.deviceIdInput = result;
+        addFriendDialog.value.mode = 'input';
+        submitAddFriend();
+      } else {
+        addFriendDialog.value.error = '未识别到有效的设备 ID';
+      }
+    }
+  } catch (e) {
+    addFriendDialog.value.error = e.message || '摄像头不可用，请手动输入';
+  }
+};
+
 const openSystemNoticePanel = () => {
   if (mobileViewport.value) {
     scheduleMobileHistoryPush();
@@ -5663,7 +5809,7 @@ const closeSystemNoticePanel = () => {
 };
 
 const toggleDmPreference = () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5676,7 +5822,7 @@ const toggleDmPreference = () => {
 };
 
 const respondDirectRequest = (requestId, approve) => {
-  if (!requestId || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!requestId || !ws || ws.readyState !== WS_OPEN) return;
   ws.send(JSON.stringify({
     type: approve ? 'direct_request_accept' : 'direct_request_decline',
     requestId,
@@ -5689,7 +5835,7 @@ const submitNickname = () => {
     toast('请输入昵称。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5821,7 +5967,7 @@ const syncContactsOnlineStatus = () => {
 const requestContactByUid = (targetUid, alias = '') => {
   const uid = typeof targetUid === 'string' ? targetUid.trim() : '';
   if (!uid) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return false;
   }
@@ -5852,7 +5998,7 @@ const addContact = (user) => {
 
 const removeContact = (contact) => {
   if (!contact || !contact.contactFingerprint) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5870,7 +6016,7 @@ const removeContactRequest = (requestId) => {
 
 const acceptContactRequest = (req) => {
   if (!req || !req.requestId) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5879,7 +6025,7 @@ const acceptContactRequest = (req) => {
 
 const declineContactRequest = (req) => {
   if (!req || !req.requestId) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5904,7 +6050,7 @@ const startContactChat = (contact) => {
 };
 
 const requestMigrationCode = () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5922,7 +6068,7 @@ const approveMigration = () => {
     toast('请输入迁移码。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -5945,7 +6091,7 @@ const confirmMigration = (codeOverride = '') => {
     toast('没有可确认的迁移码。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -6553,7 +6699,7 @@ const joinByInviteCode = async () => {
   const joinStatement = (window.prompt('可选：写一段入群说明（留空可跳过）', '') || '').trim().slice(0, 180);
 
   pendingJoin.value = { groupId: gid, inviteCode: code, select: true, groupName: '', joinStatement };
-  if (powState.value.verified && ws && ws.readyState === WebSocket.OPEN) {
+  if (powState.value.verified && ws && ws.readyState === WS_OPEN) {
     joinGroup(gid, code, { joinStatement });
     pendingJoin.value = { groupId: '', inviteCode: '', select: true, groupName: '', joinStatement: '' };
   } else {
@@ -6604,7 +6750,7 @@ const confirmInvitePicker = () => {
     toast('请选择一个群组。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -6780,7 +6926,7 @@ const buildDirectGroupId = (uidA, uidB) => {
 };
 
 const sendDirectStart = (groupId, targetUid) => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
   ws.send(JSON.stringify({ type: 'direct_start', groupId, targetUid }));
 };
 
@@ -6799,7 +6945,7 @@ const startDirectChat = (user) => {
   ensureGroupInList(groupId, nameForDirectGroup(groupId));
   activeGroup.value = groupId;
 
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -6906,7 +7052,7 @@ const pendingInviteRequest = ref({ reqId: '', groupId: '', mode: 'dialog' });
 
 const requestGroupInviteSettings = (groupId = activeGroup.value) => {
   const gid = sanitizeGroupId(groupId);
-  if (!gid || !ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!gid || !ws || ws.readyState !== WS_OPEN) return;
   groupInviteSettingsLoading.value = true;
   groupInviteEntries.value = [];
   ws.send(JSON.stringify({ type: 'group_invite_settings', groupId: gid }));
@@ -6940,7 +7086,7 @@ const createInviteFromDialog = () => {
     toast('请选择一个非系统群组再邀请。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -6990,7 +7136,7 @@ const copyInviteDialogLink = async (entry = null) => {
 const saveInviteApprovalPolicy = () => {
   const groupId = sanitizeGroupId(activeGroup.value);
   if (!groupId || !isActiveGroupOwner.value) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -7004,7 +7150,7 @@ const saveInviteApprovalPolicy = () => {
 const revokeGroupInvite = (inviteId) => {
   const groupId = sanitizeGroupId(activeGroup.value);
   if (!groupId || !inviteId) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -7044,7 +7190,7 @@ const sendPairGroupCard = (targetOverride = '') => {
     toast('无法找到私聊对象。', 'error');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -7063,7 +7209,7 @@ const sendPairGroupCard = (targetOverride = '') => {
 
 const requestPairInvite = (groupId, targetUid) => {
   if (!groupId || !targetUid) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
   const reqId = createReqId();
   pendingPairInvite.value = { reqId, groupId, targetUid };
   ws.send(JSON.stringify({ type: 'create_invite', groupId, ttlSec: 2 * 24 * 60 * 60, reqId }));
@@ -7091,7 +7237,7 @@ const markPairDeclined = (dmGroupId, pairGroupId) => {
 
 const acceptPairInvite = (msg) => {
   if (!msg || !msg.pairGroupId || !msg.pairInviteCode) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -7108,7 +7254,7 @@ const acceptPairInvite = (msg) => {
 
 const declinePairInvite = (msg) => {
   if (!msg || !msg.pairGroupId || msg.sender === myUid.value || msg.pairStatus !== 'pending') return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -7891,7 +8037,7 @@ const restorePersistedRegularGroups = () => {
 };
 
 const autoRestoreOwnedGroups = () => {
-  if (!powState.value.verified || !ws || ws.readyState !== WebSocket.OPEN || !myUid.value) return;
+  if (!powState.value.verified || !ws || ws.readyState !== WS_OPEN || !myUid.value) return;
   const now = Date.now();
   for (const group of groups.value) {
     const gid = sanitizeGroupId(group?.id);
@@ -7908,7 +8054,7 @@ const autoRestoreOwnedGroups = () => {
 };
 
 const autoRestoreDirectGroups = () => {
-  if (!powState.value.verified || !ws || ws.readyState !== WebSocket.OPEN || !myUid.value) return;
+  if (!powState.value.verified || !ws || ws.readyState !== WS_OPEN || !myUid.value) return;
   const now = Date.now();
   for (const group of groups.value) {
     if (!group || !isDirectGroupId(group.id) || joinedGroups.has(group.id)) continue;
@@ -7994,7 +8140,7 @@ const resetDeviceBinding = ({ keepCredential = false } = {}) => {
 };
 
 const registerDeviceFingerprint = () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
   const deviceSecret = getOrCreateDeviceSecret();
   const deviceToken = getDeviceToken();
   ws.send(
@@ -8162,7 +8308,7 @@ const validateIdentities = async (users) => {
 };
 
 const registerIdentity = async () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
   await ensureIdentitySignKeys();
   await ensureIdentityDhKeys();
   if (!identitySignPublicBase64.value || !identityDhPublicBase64.value) return;
@@ -8180,7 +8326,7 @@ const registerIdentity = async () => {
 };
 
 const registerPublicKey = () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN || !myPublicKeyBase64.value) return;
+  if (!ws || ws.readyState !== WS_OPEN || !myPublicKeyBase64.value) return;
   ws.send(JSON.stringify({ type: 'set_public_key', publicKey: myPublicKeyBase64.value }));
 };
 
@@ -8415,7 +8561,7 @@ const solvePow = async ({ uid, nonce, difficulty }, token) => {
 };
 
 const startPowSolve = async () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
   if (powState.value.verified) return;
   if (!powUid.value || !powState.value.nonce || !powState.value.difficulty) return;
   if (powState.value.solving) return;
@@ -8580,7 +8726,7 @@ const scrollToBottom = () => {
 };
 
 const sendReadReceipt = (toUid, targetMsgId, groupId) => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
   ws.send(
     JSON.stringify({
       type: 'read_receipt',
@@ -9219,7 +9365,7 @@ const handleSystemAction = (msg, actionItem = null) => {
     const requestId =
       (typeof actionItem?.requestId === 'string' && actionItem.requestId) ||
       (typeof msg?.systemMeta?.requestId === 'string' ? msg.systemMeta.requestId : '');
-    if (!requestId || !ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!requestId || !ws || ws.readyState !== WS_OPEN) return;
     ws.send(
       JSON.stringify({
         type: 'group_invite_approve',
@@ -9262,7 +9408,7 @@ const handleSystemAction = (msg, actionItem = null) => {
 };
 
 const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+  if (!ws || ws.readyState !== WS_OPEN) return false;
 
   const groupId = sanitizeGroupId(options.groupId || activeGroup.value) || SYSTEM_GROUP;
   const msgId = typeof options.msgId === 'string' && options.msgId ? options.msgId : createMsgId();
@@ -9436,7 +9582,7 @@ const flushOutbox = async () => {
   if (isFlushingOutbox.value) return;
   pruneOutboxQueue();
   if (!outboxQueue.value.length) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN || !powState.value.verified) return;
+  if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) return;
   isFlushingOutbox.value = true;
   try {
     let idx = 0;
@@ -9466,7 +9612,7 @@ const flushOutbox = async () => {
         continue;
       }
       idx += 1;
-      if (!ws || ws.readyState !== WebSocket.OPEN) break;
+      if (!ws || ws.readyState !== WS_OPEN) break;
     }
   } finally {
     isFlushingOutbox.value = false;
@@ -9474,7 +9620,7 @@ const flushOutbox = async () => {
 };
 
 const retryOutbox = () => {
-  if (!ws || ws.readyState !== WebSocket.OPEN || !powState.value.verified) {
+  if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) {
     manualReconnect();
   }
   void flushOutbox();
@@ -9485,7 +9631,7 @@ const retryMessage = (msg) => {
   const existing = outboxQueue.value.find((item) => item.msgId === msg.msgId);
   if (!existing) return;
   markOutgoingStatus(msg.msgId, 'queued');
-  if (!ws || ws.readyState !== WebSocket.OPEN || !powState.value.verified) {
+  if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) {
     manualReconnect();
   }
   void flushOutbox();
@@ -9499,7 +9645,7 @@ const handleSend = async () => {
     toast('请输入消息内容。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     queueOutgoingMessage('text', {
       kind: 'text',
       text,
@@ -9643,7 +9789,7 @@ const onPickImage = async (event) => {
       return;
     }
 
-    if (!ws || ws.readyState !== WebSocket.OPEN) {
+    if (!ws || ws.readyState !== WS_OPEN) {
       queueOutgoingMessage(
         'image',
         {
@@ -9704,7 +9850,7 @@ const joinGroup = (groupId, inviteCode = '', options = {}) => {
     return;
   }
 
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!ws || ws.readyState !== WS_OPEN) return;
 
   if (!powState.value.verified) {
     if (isDirectGroupId(gid)) {
@@ -9937,7 +10083,7 @@ const requestGroupMembers = () => {
 
 const requestGroupMembersForGroup = (groupId) => {
   const gid = sanitizeGroupId(groupId);
-  if (!gid || !ws || ws.readyState !== WebSocket.OPEN) {
+  if (!gid || !ws || ws.readyState !== WS_OPEN) {
     groupMembersLoading.value = false;
     return;
   }
@@ -9952,7 +10098,7 @@ const renameActiveGroup = () => {
     toast('请输入群名称。', 'info');
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -9962,7 +10108,7 @@ const renameActiveGroup = () => {
 const saveGroupAnnouncement = () => {
   const gid = sanitizeGroupId(activeGroup.value);
   if (!gid) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -9991,7 +10137,7 @@ const setLocalActiveGroupInviteApprovalRequired = (checked) => {
 const kickGroupMember = (targetUid) => {
   const gid = sanitizeGroupId(activeGroup.value);
   if (!gid || !targetUid) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -10010,7 +10156,7 @@ const confirmLeaveGroup = () => {
     closeLeaveGroupDialog();
     return;
   }
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
+  if (!ws || ws.readyState !== WS_OPEN) {
     toast('连接未就绪，稍后重试。', 'error');
     return;
   }
@@ -10032,6 +10178,14 @@ const resolveWsUrl = () => {
   return `${protocol}//${window.location.host}/ws`;
 };
 
+const resolveHttpUrl = () => {
+  const configuredUrl = import.meta.env.VITE_WS_URL;
+  if (typeof configuredUrl === 'string' && configuredUrl.trim()) {
+    return configuredUrl.trim().replace(/^ws/, 'http');
+  }
+  return window.location.origin;
+};
+
 const connectWS = ({ isReconnect = false, force = false } = {}) => {
   const offlineNow = typeof navigator !== 'undefined' && navigator.onLine === false;
   networkOnline.value = !offlineNow;
@@ -10039,10 +10193,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
     connectionState.value = 'offline';
     return;
   }
-  if (!force && ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+  if (!force && ws && (ws.readyState === WS_OPEN || ws.readyState === WS_CONNECTING)) {
     return;
   }
-  if (force && ws && ws.readyState === WebSocket.CONNECTING) {
+  if (force && ws && ws.readyState === WS_CONNECTING) {
     try {
       ws.close(4001, 'Reconnect requested');
     } catch {
@@ -10067,10 +10221,11 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
   importedPublicKeyCache.clear();
   dmSessions.clear();
   powUid.value = '';
-  const socket = new WebSocket(resolveWsUrl());
+  const socket = createTransportSocket(resolveWsUrl(), resolveHttpUrl());
   const connectionSeq = ++wsConnectionSeq;
   ws = socket;
   connectionState.value = 'connecting';
+  socket.connect();
   if (!isReconnect) {
     resetReconnectState();
   }
@@ -11537,6 +11692,12 @@ onMounted(async () => {
   };
   window.addEventListener('pointerdown', tryUnlock, { once: true, passive: true });
   window.addEventListener('keydown', tryUnlock, { once: true });
+
+  // Service Worker 注册 + Push 状态检查
+  void registerServiceWorker();
+  void getPushStatus().then((status) => {
+    pushStatus.value = status;
+  });
 
   const url = new URL(window.location.href);
   const groupFromUrl = sanitizeGroupId(url.searchParams.get('group'));
