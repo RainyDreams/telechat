@@ -228,8 +228,9 @@ export function startQRScanner() {
  * 生成设备分享用的二维码 SVG（带标签）
  */
 export function generateDeviceQRSvg(deviceId, size = 200) {
-  const shareString = buildDeviceShareString(deviceId);
-  const svg = generateQRSvg(shareString, size);
+  const url = new URL(window.location.origin);
+  url.searchParams.set('add', deviceId);
+  const svg = generateQRSvg(url.toString(), size);
 
   // 添加底部标签
   const labelSize = size * 0.08;
@@ -243,4 +244,12 @@ export function generateDeviceQRSvg(deviceId, size = 200) {
     `viewBox="0 0 ${size} ${size}"`,
     `viewBox="0 0 ${size} ${totalHeight}" height="${totalHeight}"`
   );
+}
+
+/**
+ * 生成群邀请二维码 SVG（编码为可跳转 URL）
+ */
+export function generateInviteQRSvg(inviteUrl, size = 200) {
+  if (!inviteUrl) return '';
+  return generateQRSvg(inviteUrl, size);
 }
