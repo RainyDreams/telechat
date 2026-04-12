@@ -11232,12 +11232,6 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
 
       if (code === 'DM_CONTACTS_ONLY') {
-        pushSendBlockedTip(currentGroupId, {
-          title: '私聊被限制',
-          text: '对方仅接受通讯录私聊，你暂时不能向其发起陌生人私聊请求。',
-          actions: [{ action: 'open_contacts', label: '打开通讯录' }],
-          dedupeKey: 'error-dm-contacts-only',
-        });
         toast('对方仅接受通讯录私聊。', 'info');
         return;
       }
