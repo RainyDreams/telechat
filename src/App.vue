@@ -2282,6 +2282,9 @@
                       <button type="button" @click="showDeviceQR = !showDeviceQR" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
                         {{ showDeviceQR ? '隐藏二维码' : '显示二维码' }}
                       </button>
+                      <button type="button" @click="saveDeviceCard" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                        保存名片
+                      </button>
                     </div>
                     <div v-if="showDeviceQR && myUid" class="mt-3 flex justify-center rounded-xl bg-white p-3" v-html="myDeviceQRSvg"></div>
                   </div>
@@ -3590,7 +3593,6 @@ const handleNetworkOnline = () => {
   networkOnline.value = true;
   if (ws && ws.readyState === WS_OPEN) {
     connectionState.value = powState.value.verified ? 'connected' : 'verifying';
-    void flushOutbox();
     return;
   }
   if (!suppressReconnect.value && !isInsecureBrowser.value) {
@@ -5734,6 +5736,84 @@ const copyMyDeviceId = async () => {
     toast('复制失败，请手动复制。', 'error');
   }
 };
+
+const saveDeviceCard = () => {
+  if (!myUid.value) return;
+  const svgStr = generateDeviceQRSvg(myUid.value, 280);
+  const cardW = 360;
+  const cardH = 480;
+  const canvas = document.createElement('canvas');
+  canvas.width = cardW * 2;
+  canvas.height = cardH * 2;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(2, 2);
+
+  // 背景
+  ctx.fillStyle = '#f8fafc';
+  ctx.fillRect(0, 0, cardW, cardH);
+
+  // 顶部色条
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, cardW, 56);
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px -apple-system, "Segoe UI", sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('LINKCONNECT', cardW / 2, 36);
+
+  // QR 码
+  const img = new Image();
+  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  img.onload = () => {
+    const qrSize = 200;
+    const qrX = (cardW - qrSize) / 2;
+    const qrY = 80;
+    // 白色圆角背景
+    ctx.fillStyle = '#fff';
+    roundRect(ctx, qrX - 16, qrY - 16, qrSize + 32, qrSize + 32, 12);
+    ctx.fill();
+    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+    URL.revokeObjectURL(url);
+
+    // 设备 ID 文字
+    ctx.fillStyle = '#334155';
+    ctx.font = '13px "SF Mono", Menlo, monospace';
+    ctx.textAlign = 'center';
+    const shortId = myUid.value.length > 28 ? myUid.value.slice(0, 28) + '…' : myUid.value;
+    ctx.fillText(shortId, cardW / 2, qrY + qrSize + 40);
+
+    // 提示文字
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px -apple-system, "Segoe UI", sans-serif';
+    ctx.fillText('扫码添加好友', cardW / 2, qrY + qrSize + 64);
+
+    // 下载
+    canvas.toBlob((b) => {
+      if (!b) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(b);
+      a.download = 'linkconnect-card.png';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('名片已保存。', 'info');
+    }, 'image/png');
+  };
+  img.src = url;
+};
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
 
 const openAddFriendDialog = () => {
   addFriendDialog.value = { open: true, deviceIdInput: '', error: '', mode: 'input' };
@@ -10812,7 +10892,6 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
       autoRestoreOwnedGroups();
       autoRestoreDirectGroups();
-      void flushOutbox();
       return;
     }
 
@@ -11000,9 +11079,6 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       if (gid && pendingJoin.value.groupId === gid && pendingJoin.value.inviteCode) {
         clearInviteUrlFromAddressBar();
         pendingJoin.value = { groupId: '', inviteCode: '', select: true, groupName: '', joinStatement: '' };
-      }
-      if (outboxQueue.value.some((item) => item?.groupId === gid)) {
-        void flushOutbox();
       }
       if (pendingPairGroup.value.groupId && pendingPairGroup.value.groupId === gid) {
         const targetUid = pendingPairGroup.value.targetUid;
