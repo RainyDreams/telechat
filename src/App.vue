@@ -675,6 +675,7 @@
                     <span>Online</span><span class="text-right font-mono">{{ debugInfo.onlineUserCount }}</span>
                     <span>DM</span><span class="text-right font-mono">{{ debugInfo.dmSessionCount }}</span>
                     <span>Outbox</span><span class="text-right font-mono">{{ debugInfo.outboxCount }}</span>
+                    <span>Build</span><span class="text-right font-mono">{{ debugInfo.buildTime }}</span>
                   </div>
                 </div>
               </div>
@@ -1087,6 +1088,7 @@
                   <p>未读总数</p><p class="text-right font-mono">{{ debugInfo.unreadTotal }}</p>
                   <p>JS 堆内存</p><p class="text-right font-mono">{{ debugInfo.memoryInfo }}</p>
                   <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
+                  <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
                 </div>
               </div>
             </div>
@@ -2259,6 +2261,7 @@
                     <p>未读总数</p><p class="text-right font-mono">{{ debugInfo.unreadTotal }}</p>
                     <p>JS 堆内存</p><p class="text-right font-mono">{{ debugInfo.memoryInfo }}</p>
                     <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
+                    <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
                   </div>
                 </div>
               </div>
@@ -3768,6 +3771,7 @@ const debugInfo = computed(() => {
     connectionState: connectionState.value,
     deviceFingerprint: deviceFingerprint.value ? shortIdentity(deviceFingerprint.value, 12, 8) : '未绑定',
     appVersion: APP_VERSION,
+    buildTime: __BUILD_TIME__,
     mobileViewport: mobileViewport.value,
     soundEnabled: soundEnabled.value,
     systemNotifyEnabled: systemNotifyEnabled.value,

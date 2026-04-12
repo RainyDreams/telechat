@@ -8,6 +8,9 @@ const sanitizeName = (value, fallback = 'asset') => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [vue()],
   build: {
     rollupOptions: {
