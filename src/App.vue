@@ -861,6 +861,13 @@
                 <span v-if="contactRequestCards.length" class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{{ contactRequestCards.length }}</span>
               </button>
               <div class="border-t border-slate-100"></div>
+              <button type="button" @click="openAddFriendDialog" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                </div>
+                <p class="text-sm text-slate-800">添加好友</p>
+              </button>
+              <div class="border-t border-slate-100"></div>
               <button type="button" @click="createGroup" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -2215,13 +2222,6 @@
                     </div>
                     <div v-if="showDeviceQR && myUid" class="mt-3 flex justify-center rounded-xl bg-white p-3" v-html="myDeviceQRSvg"></div>
                   </div>
-                  <button type="button" @click="openAddFriendDialog" class="flex w-full items-center justify-between px-4 py-3 active:bg-slate-50">
-                    <div>
-                      <p class="text-sm text-slate-800">添加好友</p>
-                      <p class="text-[11px] text-slate-400">通过设备 ID 添加</p>
-                    </div>
-                    <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-                  </button>
                 </div>
               </div>
 
@@ -2534,6 +2534,13 @@
                     class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
                   >
                     刷新
+                  </button>
+                  <button
+                    type="button"
+                    @click="contactsOpen = false; openAddFriendDialog()"
+                    class="shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
+                  >
+                    添加好友
                   </button>
                 </div>
               </div>
@@ -3940,6 +3947,48 @@ const contactDisplayName = (contact) => {
   return fingerprint ? `设备 ${fingerprint.slice(0, 6)}` : '未知联系人';
 };
 
+// Compact pinyin initial mapping for common Chinese characters (first letter)
+const PINYIN_MAP = {};
+const _pm = (chars, initial) => { for (const c of chars) PINYIN_MAP[c] = initial; };
+_pm('啊阿哎哀唉埃挨矮爱碍安岸按案暗昂凹熬傲奥', 'a');
+_pm('八巴扒吧疤拔把坝爸罢霸白百柏摆败拜班般颁斑搬版半办扮伴拌帮绑榜膀棒傍包剥薄饱宝保堡抱报暴爆卑杯悲碑北贝备背被倍辈奔本笨逼鼻比彼笔币闭毕毙壁避臂边编鞭扁便变遍辨辩标表别宾滨冰兵丙柄饼并病拨波玻剥菠播伯驳泊博搏薄卜补捕不步怖部', 'b');
+_pm('擦猜才材财裁采彩菜蔡参餐残蚕惨灿仓苍舱藏操曹草册侧测策层叉插查茶察差拆柴产阐长肠尝常偿厂场畅倡唱抄超朝潮车扯彻沉尘陈辰臣晨称趁衬撑成呈诚承城程惩橙吃池驰迟持尺齿斥赤翅充冲虫崇抽仇愁丑臭出初除厨锄础储楚处触穿传船创吹垂春纯词辞慈磁此次刺从匆葱聪丛凑粗促催脆翠村存寸错', 'c');
+_pm('搭达答打大呆代带待怠贷戴丹单担耽胆旦但诞弹淡当挡党荡刀导岛倒到盗悼道稻得德的灯登等凳低堤滴敌迪笛底抵地弟帝递第颠典点电店垫殿雕吊钓调跌叠蝶丁叮盯钉顶订定丢东冬懂动冻栋洞都斗抖陡豆督毒读独堵赌杜肚度渡端短段断锻堆队对吨顿多朵躲惰', 'd');
+_pm('鹅额恶饿恩儿而尔耳二', 'e');
+_pm('发乏伐罚阀法帆番翻凡烦繁反返犯泛饭范贩方坊芳防妨房仿访纺放飞非肥匪废沸肺费分吩纷芬坟粉份奋愤粪丰风封疯峰锋蜂冯逢缝凤奉否夫肤伏扶服浮符幅福辐蝠抚府俯辅腐父付妇负附复赴副傅富腹覆', 'f');
+_pm('该改概钙盖干甘杆肝赶敢感冈刚纲缸港杠高搞稿告哥歌阁革格葛隔个各给根跟更耕工弓公功攻供宫恭躬巩共贡勾沟钩狗构购够姑孤辜古谷股骨鼓固故顾瓜刮挂乖拐怪关观官冠馆管贯惯灌罐光广归龟规轨鬼柜贵桂滚棍锅郭国果裹过', 'g');
+_pm('哈孩海害含寒韩喊汉汗旱杭毫豪好号浩喝合何和河核荷贺黑很狠恨恒横衡轰哄红宏洪虹喉猴吼后厚候乎呼忽胡壶湖葫糊蝴虎互户护花华哗滑化划画话怀淮欢环还缓幻唤换患荒慌皇黄煌晃灰恢辉回悔汇会绘惠慧昏婚浑混活火伙或货获祸惑', 'h');
+_pm('几击饥圾机肌鸡迹积基绩激及吉级即极急疾集籍几己挤脊计记纪忌技际剂季既济继寂寄加佳家嘉夹甲价驾架假嫁稼歼坚间艰监兼煎拣俭茧捡减剪简见件建剑荐贱健舰渐践鉴键箭江姜将浆僵疆讲奖桨酱降交郊浇娇骄胶焦角绞脚搅叫轿较教阶皆接揭街节杰洁结捷截竭姐解介戒届界借巾今斤金津筋仅紧锦尽劲近进晋浸禁京经茎惊睛精鲸井景警净径竞竟敬境静镜纠究揪九久酒旧救就舅居拘鞠局菊橘举矩句巨拒具俱剧据距聚捐卷决诀绝君均菌俊', 'j');
+_pm('卡开凯慨刊堪砍看康抗考烤靠科棵颗壳咳可渴克刻客课肯垦恳空孔恐控口扣枯哭苦库裤酷夸块快宽款狂况矿亏葵愧坤昆捆困扩括阔', 'k');
+_pm('垃拉啦喇腊蜡辣来赖兰拦栏蓝篮览懒烂滥郎狼廊朗浪捞劳牢老乐勒了雷垒泪类累冷厘梨狸离莉璃黎礼李里理力历厉立丽利励例隶栗粒连帘怜莲联廉脸练恋炼链良凉梁粮两亮谅辆量辽疗聊了料列劣烈裂邻林临淋磷灵玲凌铃陵零龄领令另溜刘流留柳六龙笼隆垄拢楼漏露卢芦炉鲁陆录鹿碌路旅律虑率绿氯卵乱掠轮论罗萝逻螺洛络骆落', 'l');
+_pm('妈麻马码蚂骂吗埋买迈麦卖脉蛮满慢忙芒盲茫毛矛茅茂冒贸帽貌么没眉梅煤霉每美妹门闷们蒙盟猛孟眯迷谜米泌秘密蜜眠绵棉免勉面苗描秒妙庙灭民敏名明鸣命谬模膜摩磨抹末莫墨默谋某母亩木目牧募幕慕暮穆', 'm');
+_pm('那纳娜呐乃奶耐男南难囊挠脑闹呢内嫩能尼泥你年念娘鸟尿捏宁凝牛扭纽农浓弄奴怒女暖挪诺', 'n');
+_pm('哦欧偶', 'o');
+_pm('爬怕帕拍排牌派攀盘判盼乓旁胖抛炮跑泡培陪赔佩配喷盆朋棚蓬膨捧碰批披皮疲脾匹僻片偏篇飘票拼贫品乒平评凭瓶萍坡泼迫破剖仆扑铺朴普谱', 'p');
+_pm('七妻柒栖戚期欺漆齐其奇歧祈脐崎棋旗乞企岂启起气弃汽契砌器恰千迁牵铅谦签前钱潜浅遣欠枪腔强墙抢悄敲乔桥瞧巧切茄且窃亲侵芹秦琴禽勤青轻倾清情晴顷请庆穷秋丘求球区曲驱屈趋渠取去趣圈全权泉拳犬劝缺却雀确鹊裙群', 'q');
+_pm('然燃染壤嚷让饶扰绕惹热人仁忍认任扔仍日荣绒容熔融柔肉如儒乳辱入软锐瑞润若弱', 'r');
+_pm('撒洒塞赛三伞散桑嗓丧扫嫂色森杀沙纱刹砂傻厦筛晒山删衫闪陕扇善伤商赏尚烧稍勺芍少绍舌蛇舍设社射涉摄申伸身深神沈审婶肾甚渗慎升生声牲绳省圣盛剩尸失师诗施湿十石时识实拾食蚀史使始驶士氏世市示式事侍势视试饰室是适逝释收手守首寿受兽售授瘦书抒叔殊梳疏舒输蔬熟暑鼠薯术束述树竖数刷耍衰摔甩帅双谁水税睡顺瞬说司丝私思斯撕死四寺似饲松宋送诵搜艘苏俗诉肃素速宿塑酸蒜算虽随岁碎穗孙损笋缩所索锁', 's');
+_pm('他她它塔踏台抬太态泰摊滩坛谈潭坦叹炭探汤堂塘糖躺趟涛逃桃陶淘萄讨套特疼腾踢提题蹄体替天添田甜填挑条跳贴铁厅听廷亭庭停蜓挺艇通同桐铜童统桶筒痛偷头投透突图徒涂途屠土吐兔团推腿退吞托拖脱驼妥拓唾', 't');
+_pm('挖娃瓦袜歪外湾丸完玩顽挽晚碗万汪亡王网往忘旺望危威微为围违唯维伟伪尾委萎卫未位味畏胃谓慰温文纹闻蚊吻稳问翁窝我沃卧握乌污屋无吴五午伍武舞务物误悟雾', 'w');
+_pm('夕西希析息牺悉惜晰稀溪锡熙嘻习席袭洗喜戏系细隙虾瞎峡狭暇辖霞下吓夏仙先纤掀鲜闲弦贤咸衔嫌显险现限线宪陷献腺乡相香箱详祥享响想向巷项象像橡削消宵销小晓孝效校笑些歇协邪胁斜携鞋写泄泻谢心辛欣新薪信兴星腥刑行形型醒杏姓幸性凶兄匈胸雄熊休修羞朽秀绣袖嗅须虚需许序叙畜绪续絮蓄宣悬选旋玄学雪血寻巡询训讯迅', 'x');
+_pm('丫压呀押鸦鸭牙芽崖哑雅亚咽烟淹严延言岩沿炎研盐颜掩眼演厌宴艳验焰雁央扬羊阳杨洋仰养氧样妖腰邀摇遥窑谣咬药要爷也冶野业叶页夜液一伊衣医依仪宜姨移遗疑乙已以矣蚁倚椅义亿忆艺议亦异役译易疫益谊意翼因阴音吟银引饮隐印应英婴鹰迎盈营蝇赢影映硬拥永泳勇涌用优忧悠尤由犹邮油游友有又右幼诱于予余鱼娱渔愉愚榆与宇屿羽雨语玉育郁浴欲喻裕遇誉豫元员园原圆援缘源远怨院愿约月阅越跃粤云匀允孕运晕韵', 'y');
+_pm('杂砸灾栽宰载再在咱暂赞脏葬遭糟早枣澡造噪燥躁则责择泽贼怎增赠渣扎轧闸眨炸榨摘宅窄债沾粘斩展盏崭占战站张章涨掌丈仗帐胀障招找召兆赵照罩遮折哲者这浙针珍真诊枕阵振镇震争征蒸整正证郑政之支汁芝枝知织脂蜘执直值职植殖止只旨址纸指至志制质治致智置中忠终钟种重州舟周洲轴宙皱骤朱株珠诸猪蛛竹烛逐主煮嘱住助注驻柱祝著筑抓专转赚庄装壮状追准捉桌着仔姿资滋子紫自字宗棕踪总纵走奏租足族阻组祖钻最罪醉尊遵作坐座做', 'z');
+
+// Get a sortable key for a display name (pinyin-aware)
+const getPinyinSortKey = (text) => {
+  if (!text) return '\uffff';
+  const result = [];
+  for (const ch of text) {
+    const code = ch.codePointAt(0);
+    if (code >= 0x4e00 && code <= 0x9fff) {
+      result.push(PINYIN_MAP[ch] || 'z');
+    } else {
+      result.push(ch.toLowerCase());
+    }
+  }
+  return result.join('');
+};
+
 const contactCards = computed(() => {
   const cards = contacts.value.map((contact) => {
     const fingerprint = contact.contactFingerprint || '';
@@ -3957,7 +4006,7 @@ const contactCards = computed(() => {
       mutual: Boolean(contact.mutual),
     };
   });
-  cards.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+  cards.sort((a, b) => getPinyinSortKey(a.displayName).localeCompare(getPinyinSortKey(b.displayName)));
   return cards;
 });
 
