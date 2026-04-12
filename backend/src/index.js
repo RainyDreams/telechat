@@ -4605,7 +4605,7 @@ export default {
       );
     }
 
-    if (url.pathname === '/api/invite-resolve') {
+    if (url.pathname.startsWith('/api/')) {
       const id = env.CHAT_ROOM.idFromName('global-room');
       const obj = env.CHAT_ROOM.get(id);
       return obj.fetch(request);
