@@ -2498,237 +2498,59 @@
             aria-label="Close contacts"
           ></button>
           <div class="viewport-modal-scroll">
-          <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 38rem;">
+          <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl" style="--dialog-max: 28rem;">
             <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-              <div>
-                <p class="text-xs uppercase tracking-wide text-slate-400">通讯录</p>
-                <p class="text-sm font-semibold text-slate-800">设备绑定联系人</p>
-              </div>
-              <button
-                type="button"
-                @click="contactsOpen = false"
-                class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-              >
-                关闭
-              </button>
+              <p class="text-sm font-semibold text-slate-800">通讯录</p>
+              <button type="button" @click="contactsOpen = false" class="text-xs font-medium text-slate-500">关闭</button>
             </div>
-            <div class="viewport-modal-body px-4 py-4" style="--dialog-offset: 7rem;">
-              <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:w-auto">
-                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">联系人</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
-                  </div>
-                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
-                  </div>
-                </div>
-                <div class="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 lg:w-[20rem]">
-                  <input
-                    v-model="contactQuery"
-                    class="min-w-0 w-full rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                    placeholder="搜索联系人、指纹、地区"
-                  />
-                  <button
-                    type="button"
-                    @click="requestContacts"
-                    class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700"
-                  >
-                    刷新
-                  </button>
-                  <button
-                    type="button"
-                    @click="contactsOpen = false; openAddFriendDialog()"
-                    class="shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-3 py-2 text-xs font-semibold text-white"
-                  >
-                    添加好友
-                  </button>
-                </div>
+            <div class="viewport-modal-body px-0 py-0" style="--dialog-offset: 5rem;">
+              <div class="px-4 py-3">
+                <input v-model="contactQuery" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400" placeholder="搜索联系人" />
               </div>
-              <div
-                v-if="contactRequestCards.length"
-                class="mt-3 rounded-2xl border border-amber-100 bg-amber-50/60 px-3 py-3"
-              >
-                <p class="text-xs font-semibold uppercase tracking-wide text-amber-600">待处理请求</p>
-                <div class="mt-2 grid gap-2">
-                  <div
-                    v-for="req in contactRequestCards"
-                    :key="`req-${req.requestId}`"
-                    class="flex flex-col gap-3 rounded-xl border border-amber-100 bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-slate-800">
-                        用户 {{ req.uidShort }}
-                      </p>
-                      <p class="truncate text-xs text-slate-500">
-                        {{ req.os }} · {{ req.location }}
-                      </p>
-                      <p class="truncate text-[11px] text-slate-400">
-                        指纹：{{ req.fingerprintShort }}
-                      </p>
+              <div class="divide-y divide-slate-100">
+                <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                  </div>
+                  <p class="text-sm text-slate-800">新的朋友</p>
+                  <span v-if="contactRequestCards.length" class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{{ contactRequestCards.length }}</span>
+                </button>
+                <button type="button" @click="contactsOpen = false; openAddFriendDialog()" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+                  <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
+                    <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                  </div>
+                  <p class="text-sm text-slate-800">添加好友</p>
+                </button>
+              </div>
+              <div v-if="contactRequestCards.length" class="mt-1">
+                <div class="px-4 py-2"><p class="text-[11px] font-medium text-slate-400">待处理请求</p></div>
+                <div class="divide-y divide-slate-100">
+                  <div v-for="req in contactRequestCards" :key="`pc-req-${req.requestId}`" class="flex items-center gap-3 px-4 py-2.5">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">{{ req.uidShort?.slice(0,2) || '?' }}</div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
+                      <p class="text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        @click="acceptContactRequest(req)"
-                        class="shrink-0 whitespace-nowrap rounded-full bg-emerald-500 px-3 py-1 text-[11px] font-semibold text-white"
-                      >
-                        同意
-                      </button>
-                      <button
-                        type="button"
-                        @click="declineContactRequest(req)"
-                        class="shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700"
-                      >
-                        拒绝
-                      </button>
+                    <div class="flex shrink-0 gap-1.5">
+                      <button type="button" @click="acceptContactRequest(req)" class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">同意</button>
+                      <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
                     </div>
                   </div>
                 </div>
               </div>
-              <div v-if="contactsLoading" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                正在加载通讯录…
-              </div>
-              <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}
-              </div>
-              <div v-else class="mt-3 grid gap-4">
-                <div v-if="filteredContactCards.length" class="grid gap-2">
-                  <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-semibold text-slate-600">联系人</p>
-                    <p class="text-[11px] text-slate-400">{{ filteredContactCards.length }} 位</p>
-                  </div>
-                  <div
-                    v-for="contact in filteredContactCards"
-                    :key="`contact-${contact.contactFingerprint}`"
-                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0 flex items-center gap-3">
-                      <div
-                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
-                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                      >
-                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                      </div>
-                      <div class="min-w-0">
-                        <p
-                          class="cursor-pointer text-sm font-semibold text-slate-800"
-                          :class="
-                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
-                        >
-                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                        </p>
-                        <p
-                          class="cursor-pointer text-[11px] font-mono text-slate-500"
-                          :class="
-                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
-                        >
-                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
-                        </p>
-                      </div>
+              <div v-if="contactsLoading" class="px-4 py-3 text-xs text-slate-500">正在加载通讯录…</div>
+              <div v-else-if="!filteredContactCards.length" class="px-4 py-3 text-xs text-slate-500">{{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}</div>
+              <div v-else>
+                <div class="px-4 py-2"><p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p></div>
+                <div class="divide-y divide-slate-100">
+                  <div v-for="contact in filteredContactCards" :key="`pc-contact-${contact.contactFingerprint}`" class="flex items-center gap-3 px-4 py-2.5">
+                    <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">{{ avatarInitial(contact.displayName || 'U') }}</div>
+                    <div class="min-w-0 flex-1">
+                      <p class="truncate text-sm text-slate-800">{{ contact.displayName }}</p>
+                      <p class="truncate text-[11px] text-slate-400">{{ contact.os ? `${contact.os} · ${contact.location}` : '' }}</p>
                     </div>
-                    <div class="flex items-center gap-2">
-                      <button
-                        type="button"
-                        @click="startContactChat(contact)"
-                        class="rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                      >
-                        私聊
-                      </button>
-                      <button
-                        type="button"
-                        @click="removeContact(contact)"
-                        class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                      >
-                        移除
-                      </button>
-                    </div>
+                    <button type="button" @click="startContactChat(contact)" class="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">私聊</button>
                   </div>
-                </div>
-              </div>
-
-              <div class="mt-5 rounded-2xl border border-slate-100 bg-white px-3 py-3">
-                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">设备迁移</p>
-                <p class="mt-1 text-xs text-slate-500">
-                  新旧设备同时打开。新设备生成迁移码，旧设备输入后授权。可迁移通讯录、群组成员，并可选择转让昵称。
-                </p>
-                <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-slate-700">新设备</p>
-                    <button
-                      type="button"
-                      @click="requestMigrationCode"
-                      class="mt-2 rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      生成迁移码
-                    </button>
-                    <p v-if="migrationCode" class="mt-2 font-mono text-sm text-slate-800">
-                      {{ migrationCode }}
-                    </p>
-                    <p v-if="migrationExpireText" class="mt-1 text-[11px] text-slate-500">
-                      有效期至 {{ migrationExpireText }}
-                    </p>
-                    <div
-                      v-if="migrationConfirm.code"
-                      class="mt-3 rounded-lg border border-emerald-100 bg-emerald-50 px-2.5 py-2 text-xs text-emerald-700"
-                    >
-                      <p class="font-semibold">旧设备已授权</p>
-                      <p class="mt-1 text-[11px] text-emerald-600">
-                        {{
-                          migrationConfirm.fromOs || migrationConfirm.fromLocation
-                            ? `${migrationConfirm.fromOs} · ${migrationConfirm.fromLocation}`
-                            : migrationConfirm.fromFingerprintShort
-                              ? `设备指纹 ${migrationConfirm.fromFingerprintShort}`
-                              : '请确认迁移请求'
-                        }}
-                      </p>
-                      <button
-                        type="button"
-                        @click="confirmMigration(migrationConfirm.code)"
-                        class="mt-2 rounded-full bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white"
-                      >
-                        确认迁移
-                      </button>
-                      <p v-if="migrationConfirm.transferNickname" class="mt-2 text-[11px] text-emerald-700">
-                        将同步转让昵称{{ migrationConfirm.oldNickname ? `：${migrationConfirm.oldNickname}` : '' }}，旧设备会恢复默认身份显示。
-                      </p>
-                    </div>
-                  </div>
-                  <div class="rounded-xl border border-slate-100 bg-slate-50 px-3 py-3">
-                    <p class="text-xs font-semibold text-slate-700">旧设备</p>
-                    <input
-                      v-model="migrationInput"
-                      class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs text-slate-700"
-                      placeholder="输入迁移码"
-                    />
-                    <label class="mt-2 flex items-center gap-2 text-[11px] text-slate-600">
-                      <input v-model="transferNicknameOnMigration" type="checkbox" class="h-3.5 w-3.5" />
-                      授权同时转让昵称（旧设备回默认）
-                    </label>
-                    <button
-                      type="button"
-                      @click="approveMigration"
-                      class="mt-2 rounded-full bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white"
-                    >
-                      授权迁移
-                    </button>
-                  </div>
-                </div>
-                <div
-                  v-if="migrationStatus.text"
-                  class="mt-3 rounded-xl border px-3 py-2 text-xs"
-                  :class="migrationStatusClass"
-                >
-                  {{ migrationStatus.text }}
                 </div>
               </div>
             </div>
