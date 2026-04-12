@@ -1326,11 +1326,13 @@
                           <path d="M12 3a9 9 0 1 0 9 9"/>
                         </svg>
                       </span>
-                      <span
+                      <button
                         v-if="msg.sender === myUid && msg.clientStatus === 'failed'"
-                        class="inline-flex h-4 w-4 items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white"
-                        :title="msg.clientError || '发送失败'"
-                      >!</span>
+                        type="button"
+                        class="inline-flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-rose-400 text-[9px] font-bold text-white transition hover:bg-rose-500"
+                        :title="msg.clientError || '发送失败，点击重试'"
+                        @click.stop="retryMessage(msg)"
+                      >!</button>
                       <span
                         v-if="msg.burnAfterRead"
                         class="rounded-full border px-1.5 py-0.5"
