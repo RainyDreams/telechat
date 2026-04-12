@@ -9704,11 +9704,12 @@ const handleSend = async () => {
   };
 
   const msgId = createMsgId();
-  const ok = await sendEncryptedPayload('text', payload, { msgId });
-  if (ok || findLocalOutgoing(msgId)) {
-    inputMsg.value = '';
-    clearReplyDraft();
-  }
+  // 先清空输入框 + 入队列，用户立即看到反馈
+  inputMsg.value = '';
+  clearReplyDraft();
+  scrollToBottom();
+  // 后台发送（不 await，不阻塞 UI）
+  void sendEncryptedPayload('text', payload, { msgId });
 };
 
 const onInputKeydown = (e) => {
@@ -10180,15 +10181,25 @@ const confirmLeaveGroup = () => {
 };
 
 // 获取群组所有成员公钥（含离线成员，用于离线消息加密）
+// 群组公钥缓存（避免每次发送都请求）
+const groupPublicKeysCache = new Map(); // groupId -> { keys, ts }
+const GROUP_PUBKEYS_TTL = 60_000; // 60 秒缓存
+
 const fetchGroupPublicKeys = async (groupId) => {
+  const cached = groupPublicKeysCache.get(groupId);
+  if (cached && (Date.now() - cached.ts) < GROUP_PUBKEYS_TTL) {
+    return cached.keys;
+  }
   try {
     const httpUrl = resolveHttpUrl();
     const resp = await fetch(`${httpUrl}/api/group-public-keys?groupId=${encodeURIComponent(groupId)}`);
-    if (!resp.ok) return {};
+    if (!resp.ok) return cached?.keys || {};
     const result = await resp.json();
-    return result.ok && result.publicKeys ? result.publicKeys : {};
+    const keys = result.ok && result.publicKeys ? result.publicKeys : {};
+    groupPublicKeysCache.set(groupId, { keys, ts: Date.now() });
+    return keys;
   } catch {
-    return {};
+    return cached?.keys || {};
   }
 };
 

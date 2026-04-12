@@ -1,11 +1,11 @@
 {
   "name": "cloudflare-secure-chat",
-  "version": "1.0.0",
+  "version": "2026.4.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "node scripts/bump-version.mjs && vite build",
     "preview": "vite preview",
     "f:dev": "wrangler pages dev --no-local -- npm run dev",
     "deploy": "npm run build && wrangler pages deploy dist",

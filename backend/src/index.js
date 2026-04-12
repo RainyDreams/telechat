@@ -4458,95 +4458,18 @@ export class ChatRoom {
       delivered += 1;
     }
 
-    // 离线成员投递：将消息加入离线队列（含加密密钥）
-    let offlineQueued = 0;
-    if (!isDirectGroupId(groupId)) {
-      try {
-        const memberFps = await this.getPersistedGroupMemberIds(groupId);
-        const onlineFps = new Set();
-        for (const session of this.sessions.values()) {
-          if (session.deviceFingerprint) onlineFps.add(session.deviceFingerprint);
-        }
-        for (const fp of memberFps) {
-          if (fp === sender.deviceFingerprint) continue;
-          if (onlineFps.has(fp)) continue;
-          const encryptedKey = data.keys[fp];
-          if (!isBase64(encryptedKey, MAX_ENCRYPTED_KEY_LENGTH)) continue;
-          this.enqueueOfflineMessage(fp, {
-            id: String(++this.globalMsgSeq),
-            data: {
-              type: 'chat',
-              msgId,
-              groupId,
-              sender: sender.uid,
-              ts,
-              payloadType,
-              iv: data.iv,
-              ciphertext: data.ciphertext,
-              encryptedKey,
-              encType: encType || undefined,
-              mimeType,
-              name,
-              burnAfterRead,
-              burnAfterMs,
-            },
-          });
-          offlineQueued += 1;
-        }
-      } catch {
-        // non-critical
-      }
-    } else if (isDirectGroupId(groupId)) {
-      // DM：尝试投递给离线的对方
-      const participants = parseDirectGroupId(groupId);
-      if (participants) {
-        const peerUid = participants[0] === sender.uid ? participants[1] : participants[0];
-        const peerFp = sanitizeDeviceFingerprint(peerUid);
-        const peerOnline = [...this.sessions.values()].some(s => s.uid === peerUid);
-        if (!peerOnline && peerFp) {
-          const encryptedKey = data.keys[peerUid];
-          if (isBase64(encryptedKey, MAX_ENCRYPTED_KEY_LENGTH)) {
-            this.enqueueOfflineMessage(peerFp, {
-              id: String(++this.globalMsgSeq),
-              data: {
-                type: 'chat',
-                msgId,
-                groupId,
-                sender: sender.uid,
-                senderIdentitySign: sender.identitySign || '',
-                senderIdentityDh: sender.identityDh || '',
-                senderIdentitySig: sender.identitySig || '',
-                ts,
-                payloadType,
-                iv: data.iv,
-                ciphertext: data.ciphertext,
-                encryptedKey,
-                encType: 'dm',
-                mimeType,
-                name,
-                burnAfterRead,
-                burnAfterMs,
-              },
-            });
-            offlineQueued += 1;
-          }
-        }
-      }
-    }
-
-    const totalDelivered = delivered + offlineQueued;
-
+    // 立即回 ack（不等离线队列），客户端秒级响应
     this.sendTo(ws, {
       type: 'sent_ack',
       msgId,
       groupId,
       ts,
-      delivered: totalDelivered,
+      delivered,
       dmRestricted: isDirectGroupId(groupId) ? dmRestricted : undefined,
       reqId,
     });
 
-    if (!totalDelivered) {
+    if (!delivered) {
       this.sendError(ws, 'NO_RECIPIENT', 'No available recipients in this group', reqId);
     } else if (isDirectGroupId(groupId)) {
       if (dmPairKey && !this.dmUnlocked.has(dmPairKey)) {
@@ -4560,10 +4483,67 @@ export class ChatRoom {
       }
     }
 
+    // 离线队列投递：异步执行，D1 持久化失败由服务端内部重试，客户端不感知
+    void this.queueOfflineDeliveries(groupId, sender, data, msgId, ts, payloadType, encType, mimeType, name, burnAfterRead, burnAfterMs);
+
     void this.logAction(
       'CHAT',
-      `uid=${sender.uid},group=${groupId},kind=${payloadType},delivered=${delivered},offline=${offlineQueued}`
+      `uid=${sender.uid},group=${groupId},kind=${payloadType},delivered=${delivered}`
     );
+  }
+
+  /**
+   * 异步为离线成员入队消息（D1 持久化失败由服务端内部重试）
+   */
+  async queueOfflineDeliveries(groupId, sender, data, msgId, ts, payloadType, encType, mimeType, name, burnAfterRead, burnAfterMs) {
+    try {
+      if (!isDirectGroupId(groupId)) {
+        const memberFps = await this.getPersistedGroupMemberIds(groupId);
+        const onlineFps = new Set();
+        for (const session of this.sessions.values()) {
+          if (session.deviceFingerprint) onlineFps.add(session.deviceFingerprint);
+        }
+        for (const fp of memberFps) {
+          if (fp === sender.deviceFingerprint) continue;
+          if (onlineFps.has(fp)) continue;
+          const encryptedKey = data.keys[fp];
+          if (!isBase64(encryptedKey, MAX_ENCRYPTED_KEY_LENGTH)) continue;
+          this.enqueueOfflineMessage(fp, {
+            id: String(++this.globalMsgSeq),
+            data: {
+              type: 'chat', msgId, groupId, sender: sender.uid, ts, payloadType,
+              iv: data.iv, ciphertext: data.ciphertext, encryptedKey,
+              encType: encType || undefined, mimeType, name, burnAfterRead, burnAfterMs,
+            },
+          });
+        }
+      } else {
+        const participants = parseDirectGroupId(groupId);
+        if (participants) {
+          const peerUid = participants[0] === sender.uid ? participants[1] : participants[0];
+          const peerFp = sanitizeDeviceFingerprint(peerUid);
+          const peerOnline = [...this.sessions.values()].some(s => s.uid === peerUid);
+          if (!peerOnline && peerFp) {
+            const encryptedKey = data.keys[peerUid];
+            if (isBase64(encryptedKey, MAX_ENCRYPTED_KEY_LENGTH)) {
+              this.enqueueOfflineMessage(peerFp, {
+                id: String(++this.globalMsgSeq),
+                data: {
+                  type: 'chat', msgId, groupId, sender: sender.uid,
+                  senderIdentitySign: sender.identitySign || '',
+                  senderIdentityDh: sender.identityDh || '',
+                  senderIdentitySig: sender.identitySig || '',
+                  ts, payloadType, iv: data.iv, ciphertext: data.ciphertext,
+                  encryptedKey, encType: 'dm', mimeType, name, burnAfterRead, burnAfterMs,
+                },
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[OfflineQueue] queueOfflineDeliveries failed:', e.message);
+    }
   }
 
   handleReadReceipt(ws, sender, data, reqId) {
