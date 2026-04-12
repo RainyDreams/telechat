@@ -1908,7 +1908,6 @@ export class ChatRoom {
       const payload = JSON.stringify({
         type: 'status',
         users,
-        onlineCount: sessions.length,
         groupCounts,
       });
 

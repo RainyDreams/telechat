@@ -233,12 +233,6 @@
             </p>
           </div>
           <span
-            v-if="group.onlineCount"
-            class="ml-3 inline-flex min-w-6 items-center justify-center rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-700"
-          >
-            {{ group.onlineCount }}
-          </span>
-          <span
             v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
             class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
           ></span>
@@ -364,7 +358,6 @@
                 <p v-else-if="isRootSettingsPage" class="text-xs text-slate-500">身份、通知和隐私偏好统一在这里管理。</p>
                 <template v-else>
                   <p class="text-xs text-emerald-600">端到端加密已启用（客户端本地密钥）</p>
-                  <p class="mt-1 text-[11px] text-slate-500">在线 {{ activeGroupOnlineCount }} 人</p>
                 </template>
               </div>
             </div>
@@ -672,7 +665,6 @@
                     <span>WS</span><span class="text-right font-mono">{{ debugInfo.wsState }}</span>
                     <span>PoW</span><span class="text-right font-mono">{{ debugInfo.powStatus }}</span>
                     <span>Msg</span><span class="text-right font-mono">{{ debugInfo.msgCount }}</span>
-                    <span>Online</span><span class="text-right font-mono">{{ debugInfo.onlineUserCount }}</span>
                     <span>DM</span><span class="text-right font-mono">{{ debugInfo.dmSessionCount }}</span>
                     <span>Outbox</span><span class="text-right font-mono">{{ debugInfo.outboxCount }}</span>
                     <span>Build</span><span class="text-right font-mono">{{ debugInfo.buildTime }}</span>
@@ -809,7 +801,6 @@
                     <p class="shrink-0 text-[11px] text-slate-400">{{ groupPreviewTime(group.id) }}</p>
                   </div>
                   <div class="mt-1 flex items-center gap-2 text-xs leading-5 text-slate-500">
-                    <span v-if="group.onlineCount" class="shrink-0 text-[11px] text-slate-400">{{ group.onlineCount }} 在线</span>
                     <p class="min-w-0 flex-1 truncate">
                       {{ groupPreviewText(group.id) || (group.id === SYSTEM_NOTICE_GROUP ? '系统通知会集中显示在这里' : '还没有消息，点进去开始聊天') }}
                     </p>
@@ -917,7 +908,7 @@
                   </div>
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-sm text-slate-800">{{ contact.displayName }}</p>
-                    <p class="truncate text-[11px] text-slate-400">{{ contact.online ? `${contact.os} · ${contact.location}` : '离线' }}</p>
+                    <p class="truncate text-[11px] text-slate-400">{{ contact.os ? `${contact.os} · ${contact.location}` : '' }}</p>
                   </div>
                   <button
                     type="button"
@@ -1080,7 +1071,6 @@
                   <p>ECDH 密钥</p><p class="text-right font-mono">{{ debugInfo.ecdhStatus }}</p>
                   <p>消息数</p><p class="text-right font-mono">{{ debugInfo.msgCount }}</p>
                   <p>群组数</p><p class="text-right font-mono">{{ debugInfo.groupCount }}</p>
-                  <p>在线用户</p><p class="text-right font-mono">{{ debugInfo.onlineUserCount }}</p>
                   <p>联系人</p><p class="text-right font-mono">{{ debugInfo.contactCount }}</p>
                   <p>DM 会话</p><p class="text-right font-mono">{{ debugInfo.dmSessionCount }}</p>
                   <p>待发队列</p><p class="text-right font-mono">{{ debugInfo.outboxCount }}</p>
@@ -2253,7 +2243,6 @@
                     <p>ECDH 密钥</p><p class="text-right font-mono">{{ debugInfo.ecdhStatus }}</p>
                     <p>消息数</p><p class="text-right font-mono">{{ debugInfo.msgCount }}</p>
                     <p>群组数</p><p class="text-right font-mono">{{ debugInfo.groupCount }}</p>
-                    <p>在线用户</p><p class="text-right font-mono">{{ debugInfo.onlineUserCount }}</p>
                     <p>联系人</p><p class="text-right font-mono">{{ debugInfo.contactCount }}</p>
                     <p>DM 会话</p><p class="text-right font-mono">{{ debugInfo.dmSessionCount }}</p>
                     <p>待发队列</p><p class="text-right font-mono">{{ debugInfo.outboxCount }}</p>
@@ -2529,10 +2518,6 @@
                     <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactCards.length }}</p>
                   </div>
                   <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">在线</p>
-                    <p class="mt-1 text-sm font-semibold text-slate-800">{{ onlineContactCards.length }}</p>
-                  </div>
-                  <div class="min-w-0 rounded-2xl bg-slate-50 px-3 py-2">
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">待处理</p>
                     <p class="mt-1 text-sm font-semibold text-slate-800">{{ contactRequestCards.length }}</p>
                   </div>
@@ -2597,18 +2582,18 @@
                 正在加载通讯录…
               </div>
               <div v-else-if="!filteredContactCards.length" class="mt-3 rounded-xl border border-slate-100 bg-slate-50 px-3 py-3 text-xs text-slate-500">
-                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人，可在"实时在线"列表中添加。' }}
+                {{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}
               </div>
               <div v-else class="mt-3 grid gap-4">
-                <div v-if="onlineContactCards.length" class="grid gap-2">
+                <div v-if="filteredContactCards.length" class="grid gap-2">
                   <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-semibold text-emerald-700">在线联系人</p>
-                    <p class="text-[11px] text-slate-400">{{ onlineContactCards.length }} 位</p>
+                    <p class="text-xs font-semibold text-slate-600">联系人</p>
+                    <p class="text-[11px] text-slate-400">{{ filteredContactCards.length }} 位</p>
                   </div>
                   <div
-                    v-for="contact in onlineContactCards"
-                    :key="`contact-online-${contact.contactFingerprint}`"
-                    class="flex flex-col gap-3 rounded-[22px] border border-emerald-100 bg-emerald-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
+                    v-for="contact in filteredContactCards"
+                    :key="`contact-${contact.contactFingerprint}`"
+                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-white px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div class="min-w-0 flex items-center gap-3">
                       <div
@@ -2640,7 +2625,6 @@
                         >
                           指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
                         </p>
-                        <p class="truncate text-xs text-slate-500">{{ `${contact.os} · ${contact.location}` }}</p>
                       </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -2659,99 +2643,6 @@
                         移除
                       </button>
                     </div>
-                  </div>
-                </div>
-
-                <div v-if="offlineContactCards.length" class="grid gap-2">
-                  <div class="flex items-center justify-between px-1">
-                    <p class="text-xs font-semibold text-slate-600">离线联系人</p>
-                    <p class="text-[11px] text-slate-400">{{ offlineContactCards.length }} 位</p>
-                  </div>
-                  <div
-                    v-for="contact in offlineContactCards"
-                    :key="`contact-offline-${contact.contactFingerprint}`"
-                    class="flex flex-col gap-3 rounded-[22px] border border-slate-100 bg-slate-50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div class="min-w-0 flex items-center gap-3">
-                      <div
-                        class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white"
-                        :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }"
-                      >
-                        {{ avatarInitial(contact.displayName || contact.fingerprintShort || 'U') }}
-                      </div>
-                      <div class="min-w-0">
-                        <p
-                          class="cursor-pointer text-sm font-semibold text-slate-800"
-                          :class="
-                            isIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-alias-${contact.contactFingerprint}`)"
-                        >
-                          {{ formatIdentityDisplay(contact.displayName, `contact-alias-${contact.contactFingerprint}`, 14, 10) }}
-                        </p>
-                        <p
-                          class="cursor-pointer text-[11px] font-mono text-slate-500"
-                          :class="
-                            isIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)
-                              ? 'whitespace-normal break-all'
-                              : 'truncate'
-                          "
-                          @click="toggleIdentityExpanded(`contact-fp-${contact.contactFingerprint}`)"
-                        >
-                          指纹：{{ formatIdentityDisplay(contact.contactFingerprint, `contact-fp-${contact.contactFingerprint}`, 10, 8) }}
-                        </p>
-                        <p class="truncate text-xs text-slate-500">离线 · {{ contact.os }} · {{ contact.location }}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      @click="removeContact(contact)"
-                      class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700"
-                    >
-                      移除
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="onlineUserCards.length" class="mt-4 grid gap-2">
-                <div class="flex items-center justify-between px-1">
-                  <p class="text-xs font-semibold text-emerald-700">实时在线</p>
-                  <p class="text-[11px] text-slate-400">{{ onlineUserCards.length }} 位</p>
-                </div>
-                <div
-                  v-for="user in onlineUserCards"
-                  :key="`online-user-${user.uid}`"
-                  class="online-user-card flex flex-col gap-3 rounded-[22px] border border-emerald-100 bg-emerald-50/50 px-3 py-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div class="min-w-0 flex items-center gap-3">
-                    <div class="avatar h-10 w-10 rounded-full text-[12px] font-semibold text-white" :style="{ background: avatarColor(user.uid) }">
-                      {{ avatarInitial(user.nickname || user.uidShort) }}
-                    </div>
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-slate-800">{{ user.nickname || `用户 ${user.uidShort}` }}</p>
-                      <p class="truncate text-xs text-slate-500">{{ user.os }} · {{ user.location }}</p>
-                    </div>
-                  </div>
-                  <div class="flex items-center gap-2">
-                    <button
-                      v-if="!user.inContacts && user.canDirectRequest"
-                      type="button"
-                      @click="addContact(user)"
-                      class="shrink-0 whitespace-nowrap rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-emerald-700"
-                    >
-                      {{ user.requestPending ? '已申请' : '加通讯录' }}
-                    </button>
-                    <button
-                      v-if="!user.dmContactsOnly || user.inContacts"
-                      type="button"
-                      @click="startDirectChat(user)"
-                      class="shrink-0 whitespace-nowrap rounded-full bg-slate-900 px-3 py-1.5 text-[11px] font-semibold text-white"
-                    >
-                      私聊
-                    </button>
                   </div>
                 </div>
               </div>
@@ -3254,13 +3145,13 @@ const identitySignKeyPair = ref(null);
 const identityDhKeyPair = ref(null);
 const identitySignPublicBase64 = ref('');
 const identityDhPublicBase64 = ref('');
-const onlineUsers = ref([]);
+const peerIdentityMap = ref({});
 const messages = ref([]);
 const inputMsg = ref('');
 const activeGroup = ref(SYSTEM_GROUP);
 const groups = ref([
-  { id: SYSTEM_GROUP, name: '聊天', onlineCount: 0 },
-  { id: SYSTEM_NOTICE_GROUP, name: '系统消息', onlineCount: 0 },
+  { id: SYSTEM_GROUP, name: '聊天' },
+  { id: SYSTEM_NOTICE_GROUP, name: '系统消息' },
 ]);
 const pendingJoin = ref({ groupId: '', inviteCode: '', select: true, groupName: '', joinStatement: '' });
 const joinApprovalPendingGroup = ref('');
@@ -3353,7 +3244,6 @@ const contactsLoading = ref(false);
 const contactRequests = ref([]);
 const outgoingContactRequests = ref([]);
 const contactQuery = ref('');
-const onlineRosterExpanded = ref(false);
 const deviceBound = ref(false);
 const identityExpandMap = ref({});
 const migrationCode = ref('');
@@ -3745,7 +3635,6 @@ const debugInfo = computed(() => {
   const encStatus = myPrivateKey.value ? '✅ RSA-2048' : '❌ 未生成';
   const ecdsaStatus = identitySignKeyPair.value ? '✅ ECDSA-P256' : '❌ 未生成';
   const ecdhStatus = identityDhKeyPair.value ? '✅ ECDH-P256' : '❌ 未生成';
-  const onlineUserCount = onlineUsers.value.length;
   const contactCount = contacts.value.length;
   const trustedKeyCount = Object.keys(trustedKeys.value).length;
   const unreadTotal = Object.values(unreadCounts.value).reduce((sum, n) => sum + (Number(n) || 0), 0);
@@ -3763,7 +3652,6 @@ const debugInfo = computed(() => {
     encStatus,
     ecdsaStatus,
     ecdhStatus,
-    onlineUserCount,
     contactCount,
     trustedKeyCount,
     unreadTotal,
@@ -3981,18 +3869,6 @@ const eligibleInviteGroups = computed(() => {
   );
 });
 
-const activeGroupOnlineCount = computed(() => {
-  const gid = sanitizeGroupId(activeGroup.value) || SYSTEM_GROUP;
-  if (isDirectGroupId(gid)) {
-    const targetUid = getDirectTargetUid(gid);
-    if (!targetUid) return 1;
-    const peerOnline = onlineUsers.value.some((user) => user && typeof user.uid === 'string' && user.uid === targetUid);
-    return peerOnline ? 2 : 1;
-  }
-  const count = groupCounts.value[gid];
-  return typeof count === 'number' ? count : 0;
-});
-
 const getUnreadCount = (groupId) => {
   const gid = sanitizeGroupId(groupId) || SYSTEM_GROUP;
   const count = unreadCounts.value[gid];
@@ -4012,15 +3888,15 @@ const selectedReadMessage = computed(() => {
 const readReceiptList = computed(() => {
   const msg = selectedReadMessage.value;
   if (!msg || !Array.isArray(msg.readBy)) return [];
-  const userMap = new Map(
-    onlineUsers.value
-      .filter((u) => u && typeof u.uid === 'string')
-      .map((u) => [u.uid, u])
+  const contactMap = new Map(
+    contacts.value
+      .filter((c) => c && typeof c.contactFingerprint === 'string' && c.contactFingerprint)
+      .map((c) => [c.onlineUid || c.contactFingerprint, c])
   );
   return msg.readBy.map((entry) => {
-    const user = userMap.get(entry.uid);
-    const os = user && typeof user.os === 'string' ? user.os : '';
-    const location = user && typeof user.location === 'string' ? user.location : '';
+    const contact = contactMap.get(entry.uid);
+    const os = contact && typeof contact.os === 'string' ? contact.os : '';
+    const location = contact && typeof contact.location === 'string' ? contact.location : '';
     const displayName = displayNameForUid(entry.uid);
     return {
       uid: entry.uid,
@@ -4041,102 +3917,6 @@ const isOutgoingContactPending = (uid) => {
   if (!uid) return false;
   return outgoingContactRequests.value.some((req) => req && req.targetUid === uid);
 };
-
-const onlineUserCards = computed(() => {
-  const normalize = (value, fallback) => {
-    return typeof value === 'string' && value && value !== 'Unknown' ? value : fallback;
-  };
-  const contactSet = new Set(
-    contacts.value
-      .filter((c) => c && typeof c.contactFingerprint === 'string')
-      .map((c) => c.contactFingerprint)
-  );
-  const cards = onlineUsers.value.map((user) => {
-    const uid = typeof user.uid === 'string' ? user.uid : '';
-    const nickname = typeof user.nickname === 'string' ? user.nickname : '';
-    const os = normalize(user.os, '未知系统');
-    const location = normalize(user.location, '未知地区');
-    const fp = typeof user.deviceFingerprint === 'string' ? user.deviceFingerprint : '';
-    const fpFull = typeof user.deviceFingerprintFull === 'string' ? user.deviceFingerprintFull : fp;
-    const identitySign = typeof user.identitySign === 'string' ? user.identitySign : '';
-    const identityDh = typeof user.identityDh === 'string' ? user.identityDh : '';
-    const identitySig = typeof user.identitySig === 'string' ? user.identitySig : '';
-    const trustedKey = trustedKeys.value[uid] || '';
-    const identityValid = user.identityValid !== false;
-    const keyChanged = Boolean(trustedKey && identitySign && trustedKey !== identitySign);
-    const verified = Boolean(trustedKey && identitySign && trustedKey === identitySign);
-    const unverified = Boolean(identitySign && !trustedKey);
-    const statusText = !identityValid
-      ? '签名无效'
-      : keyChanged
-        ? '密钥变更'
-        : verified
-          ? '已验证'
-          : unverified
-            ? '未验证'
-            : '未注册';
-    return {
-      uid,
-      nickname,
-      uidShort: uid ? uid.slice(0, 6) : '未知',
-      os,
-      location,
-      fingerprintShort: fp || '--',
-      fingerprintFull: fpFull || '',
-      isSelf: uid && uid === myUid.value,
-      identitySign,
-      identityDh,
-      identitySig,
-      identityValid,
-      keyChanged,
-      verified,
-      unverified,
-      statusText,
-      inContacts: Boolean(user.inContacts) || (fpFull ? contactSet.has(fpFull) : false),
-      canDirectRequest: user.canDirectRequest !== false,
-      dmContactsOnly: user.dmContactsOnly !== false,
-      requestPending: uid ? isOutgoingContactPending(uid) : false,
-    };
-  });
-  cards.sort((a, b) => {
-    if (a.isSelf && !b.isSelf) return -1;
-    if (!a.isSelf && b.isSelf) return 1;
-    if (a.inContacts && !b.inContacts) return -1;
-    if (!a.inContacts && b.inContacts) return 1;
-    return a.uid.localeCompare(b.uid);
-  });
-  return cards;
-});
-
-const onlinePreviewLimit = computed(() => (viewportNarrow.value ? 4 : 6));
-
-const visibleOnlineUserCards = computed(() => {
-  return onlineRosterExpanded.value
-    ? onlineUserCards.value
-    : onlineUserCards.value.slice(0, onlinePreviewLimit.value);
-});
-
-const hiddenOnlineUserCount = computed(() => {
-  return Math.max(0, onlineUserCards.value.length - visibleOnlineUserCards.value.length);
-});
-
-const onlineSnapshotUsers = computed(() => {
-  return onlineUserCards.value.slice(0, Math.min(6, onlineUserCards.value.length));
-});
-
-const onlineUserSummary = computed(() => {
-  let contactsOnline = 0;
-  let verifiedOnline = 0;
-  for (const user of onlineUserCards.value) {
-    if (user.inContacts) contactsOnline += 1;
-    if (user.verified) verifiedOnline += 1;
-  }
-  return {
-    total: onlineUserCards.value.length,
-    contacts: contactsOnline,
-    verified: verifiedOnline,
-  };
-});
 
 const isGeneratedContactAlias = (alias, uid = '') => {
   const text = typeof alias === 'string' ? alias.trim() : '';
@@ -4171,18 +3951,13 @@ const contactCards = computed(() => {
       nickname,
       displayName: contactDisplayName({ ...contact, alias, nickname, contactFingerprint: fingerprint }),
       fingerprintShort: fingerprint ? fingerprint.slice(0, 10) : '--',
-      online: Boolean(contact.onlineUid),
       onlineUid: contact.onlineUid || '',
-      os: contact.os || '未知系统',
-      location: contact.location || '未知地区',
+      os: contact.os || '',
+      location: contact.location || '',
       mutual: Boolean(contact.mutual),
     };
   });
-  cards.sort((a, b) => {
-    if (a.online && !b.online) return -1;
-    if (!a.online && b.online) return 1;
-    return (a.displayName || '').localeCompare(b.displayName || '');
-  });
+  cards.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
   return cards;
 });
 
@@ -4194,14 +3969,6 @@ const filteredContactCards = computed(() => {
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(query))
   );
-});
-
-const onlineContactCards = computed(() => {
-  return filteredContactCards.value.filter((contact) => contact.online);
-});
-
-const offlineContactCards = computed(() => {
-  return filteredContactCards.value.filter((contact) => !contact.online);
 });
 
 const contactRequestCards = computed(() => {
@@ -4289,9 +4056,6 @@ const connectionDotClass = computed(() => {
 
 const mobileConnectionHint = computed(() => {
   if (connectionState.value === 'connected') {
-    if (activeGroup.value !== SYSTEM_GROUP && activeGroup.value !== SYSTEM_NOTICE_GROUP) {
-      return activeGroupOnlineCount.value ? `连接正常 · ${activeGroupOnlineCount.value} 在线` : '连接正常';
-    }
     return '连接正常';
   }
   if (connectionState.value === 'verifying') return '正在重新验证安全状态';
@@ -4453,8 +4217,6 @@ const displayNameForUid = (uid) => {
   const id = typeof uid === 'string' ? uid : '';
   if (!id) return '未知用户';
   if (id === myUid.value) return myNickname.value || '你';
-  const user = onlineUsers.value.find((u) => u && u.uid === id);
-  if (user?.nickname) return user.nickname;
   const contact = contacts.value.find((c) => c && c.onlineUid === id);
   if (contact) return contactDisplayName(contact);
   return `用户 ${id.slice(0, 6)}`;
@@ -6083,26 +5845,6 @@ const upsertContact = (contact) => {
   contacts.value = list;
 };
 
-const syncContactsOnlineStatus = () => {
-  const onlineMap = new Map(
-    onlineUsers.value
-      .filter((u) => u && typeof u.deviceFingerprintFull === 'string' && u.deviceFingerprintFull)
-      .map((u) => [u.deviceFingerprintFull, u])
-  );
-  contacts.value = contacts.value.map((contact) => {
-    const user = onlineMap.get(contact.contactFingerprint);
-    const onlineUid = user ? user.uid : '';
-    return {
-      ...contact,
-      onlineUid,
-      os: user ? user.os : '',
-      location: user ? user.location : '',
-      nickname: user && typeof user.nickname === 'string' ? user.nickname : (typeof contact.nickname === 'string' ? contact.nickname : ''),
-    };
-  });
-  refreshDirectGroupNames();
-};
-
 const requestContactByUid = (targetUid, alias = '') => {
   const uid = typeof targetUid === 'string' ? targetUid.trim() : '';
   if (!uid) return;
@@ -6172,20 +5914,22 @@ const declineContactRequest = (req) => {
 };
 
 const startContactChat = (contact) => {
-  if (!contact || !contact.onlineUid) {
-    toast('联系人不在线。', 'info');
+  if (!contact) return;
+  const targetUid = contact.onlineUid || '';
+  if (!targetUid) {
+    toast('无法确定联系人身份。', 'info');
     return;
   }
-  const user = onlineUsers.value.find((u) => u.uid === contact.onlineUid);
-  if (!user) {
-    toast('联系人不在线。', 'info');
+  const peerKeys = peerIdentityMap.value[targetUid];
+  if (!peerKeys || !peerKeys.identityDh || !peerKeys.identitySign) {
+    toast('对方身份信息未就绪，请稍后再试。', 'info');
     return;
   }
   if (!contact.mutual) {
     toast('你不在对方通讯录，只能发起临时私聊。', 'info');
   }
   contactsOpen.value = false;
-  startDirectChat(user);
+  startDirectChat({ uid: targetUid, identityDh: peerKeys.identityDh, identitySign: peerKeys.identitySign, canDirectRequest: true });
 };
 
 const requestMigrationCode = () => {
@@ -6921,7 +6665,7 @@ const ensureGroupInList = (groupId, name = '') => {
     ? (name || nameForDirectGroup(groupId))
     : (metaName || name || groupId);
   if (!existing) {
-    groups.value.push({ id: groupId, name: nextName, onlineCount: 0 });
+    groups.value.push({ id: groupId, name: nextName });
     return;
   }
   if (nextName && nextName !== existing.name) {
@@ -8255,7 +7999,7 @@ const autoRestoreDirectGroups = () => {
   for (const group of groups.value) {
     if (!group || !isDirectGroupId(group.id) || joinedGroups.has(group.id)) continue;
     const targetUid = getDirectTargetUid(group.id);
-    if (!targetUid || !onlineUsers.value.some((user) => user && user.uid === targetUid)) continue;
+    if (!targetUid) continue;
     const lastAttempt = directRestoreAttempts.get(group.id) || 0;
     if (now - lastAttempt < 4000) continue;
     directRestoreAttempts.set(group.id, now);
@@ -8487,9 +8231,11 @@ const validateIdentities = async (users) => {
       return { ...u, identityValid: ok };
     })
   );
+  const updatedPeerMap = { ...peerIdentityMap.value };
   for (const user of validated) {
     const uid = typeof user?.uid === 'string' ? user.uid : '';
     const identityDh = typeof user?.identityDh === 'string' ? user.identityDh : '';
+    const identitySign = typeof user?.identitySign === 'string' ? user.identitySign : '';
     if (!uid) continue;
     const previousDh = knownRemoteIdentityDh.get(uid) || '';
     if (previousDh && identityDh && previousDh !== identityDh) {
@@ -8499,8 +8245,13 @@ const validateIdentities = async (users) => {
     if (identityDh) {
       knownRemoteIdentityDh.set(uid, identityDh);
     }
+    updatedPeerMap[uid] = {
+      identityDh,
+      identitySign,
+      identityValid: user.identityValid !== false,
+    };
   }
-  onlineUsers.value = validated;
+  peerIdentityMap.value = updatedPeerMap;
 };
 
 const registerIdentity = async () => {
@@ -8813,15 +8564,14 @@ const encryptPayloadForRecipients = async (payload, recipients) => {
 
 const decryptIncomingPayload = async (data) => {
   if (data.encType === 'dm') {
-    const sender = onlineUsers.value.find((u) => u.uid === data.sender);
+    const peerKeys = peerIdentityMap.value[data.sender] || null;
     const senderIdentityDh =
-      (sender && typeof sender.identityDh === 'string' && sender.identityDh) ||
+      (peerKeys && peerKeys.identityDh) ||
       (typeof data.senderIdentityDh === 'string' ? data.senderIdentityDh : '');
     const senderIdentitySign =
-      (sender && typeof sender.identitySign === 'string' && sender.identitySign) ||
+      (peerKeys && peerKeys.identitySign) ||
       (typeof data.senderIdentitySign === 'string' ? data.senderIdentitySign : '');
     const senderIdentitySig =
-      (sender && typeof sender.identitySig === 'string' && sender.identitySig) ||
       (typeof data.senderIdentitySig === 'string' ? data.senderIdentitySig : '');
     if (!senderIdentityDh || !senderIdentitySign || !senderIdentitySig) return null;
     const signatureOk = await verifySignature(senderIdentitySign, base64ToUint8(senderIdentityDh), senderIdentitySig);
@@ -9628,26 +9378,16 @@ const sendEncryptedPayload = async (payloadType, payload, options = {}) => {
   }
   const serverPayloadType = payloadType === 'image' ? 'image' : payloadType === 'audio' ? 'audio' : 'text';
 
-  // 收集所有可用的公钥（在线 + 离线）
-  const onlineRecipients = onlineUsers.value.filter(
-    (u) =>
-      typeof u.uid === 'string' &&
-      u.uid &&
-      u.uid !== myUid.value &&
-      typeof u.publicKey === 'string' &&
-      u.publicKey.length > 0
-  );
-
-  // 尝试获取离线成员公钥（尽力而为，失败不影响发送）
-  let offlinePubKeys = {};
-  try { offlinePubKeys = await fetchGroupPublicKeys(groupId); } catch { /* best effort */ }
-  const onlineUids = new Set(onlineRecipients.map(u => u.uid));
-  const allRecipients = [...onlineRecipients];
-  for (const [uid, pubKey] of Object.entries(offlinePubKeys)) {
-    if (!onlineUids.has(uid) && uid !== myUid.value && typeof pubKey === 'string' && pubKey.length > 0) {
-      allRecipients.push({ uid, publicKey: pubKey });
+  // 获取群组所有成员公钥
+  let allRecipients = [];
+  try {
+    const pubKeys = await fetchGroupPublicKeys(groupId);
+    for (const [uid, pubKey] of Object.entries(pubKeys)) {
+      if (uid !== myUid.value && typeof pubKey === 'string' && pubKey.length > 0) {
+        allRecipients.push({ uid, publicKey: pubKey });
+      }
     }
-  }
+  } catch { /* best effort */ }
 
   // 没有可投递对象也直接发，服务端会存离线队列
   if (!allRecipients.length) {
@@ -9731,18 +9471,18 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
     return false;
   }
 
-  const target = onlineUsers.value.find((u) => u.uid === targetUid);
-  if (!target || !target.identityDh || !target.identitySign) {
+  const peerKeys = peerIdentityMap.value[targetUid] || null;
+  if (!peerKeys || !peerKeys.identityDh || !peerKeys.identitySign) {
     ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '对方身份未就绪，请稍候再试');
     pushSendBlockedTip(groupId, {
       title: '发送未完成：对方身份未就绪',
-      text: '对方可能刚上线，身份信息尚未同步完成，请稍后重试。',
+      text: '对方可能尚未加入同一群组，身份信息不可用，请稍后重试。',
       dedupeKey: `dm-target-identity-not-ready-${targetUid}`,
     });
     toast('对方身份信息未就绪。', 'error');
     return false;
   }
-  if (target.identityValid === false) {
+  if (peerKeys.identityValid === false) {
     ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '对方身份校验失败，无法发送');
     pushSendBlockedTip(groupId, {
       title: '发送已拦截：身份校验失败',
@@ -9754,7 +9494,7 @@ const sendDirectEncryptedPayload = async (payloadType, payload, groupId, options
     return false;
   }
 
-  const encrypted = await dmEncryptPayload(targetUid, target.identityDh, payload);
+  const encrypted = await dmEncryptPayload(targetUid, peerKeys.identityDh, payload);
   if (!encrypted) {
     ensureFailedOutgoingMessage(msgId, payloadType, groupId, payload, '本地加密失败，请稍候再试');
     pushSendBlockedTip(groupId, {
@@ -10610,7 +10350,6 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
     if (data.type === 'contacts_list') {
       contactsLoading.value = false;
       contacts.value = Array.isArray(data.contacts) ? data.contacts : [];
-      syncContactsOnlineStatus();
       refreshDirectGroupNames();
       return;
     }
@@ -10878,7 +10617,6 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       if (data.contact) {
         data.contact.mutual = true;
         upsertContact(data.contact);
-        syncContactsOnlineStatus();
         refreshDirectGroupNames();
         const contactUid =
           (typeof data.contact.onlineUid === 'string' && data.contact.onlineUid) ||
@@ -11042,7 +10780,6 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
 
     if (data.type === 'status') {
       const rawUsers = Array.isArray(data.users) ? data.users : [];
-      onlineUsers.value = rawUsers;
       const self = rawUsers.find((u) => u && typeof u.uid === 'string' && u.uid === myUid.value);
       if (self && typeof self.nickname === 'string') {
         myNickname.value = self.nickname;
@@ -11052,13 +10789,17 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
       void validateIdentities(rawUsers);
       importedPublicKeyCache.clear();
-      groups.value[0].onlineCount = typeof data.onlineCount === 'number' ? data.onlineCount : onlineUsers.value.length;
-      groupCounts.value = data.groupCounts && typeof data.groupCounts === 'object' ? data.groupCounts : {};
-      for (const group of groups.value) {
-        const count = groupCounts.value[group.id];
-        group.onlineCount = typeof count === 'number' ? count : 0;
+      // Cache peer identity keys from status broadcast for DM encryption
+      const nextPeerMap = {};
+      for (const u of rawUsers) {
+        if (!u || typeof u.uid !== 'string' || !u.uid) continue;
+        const identityDh = typeof u.identityDh === 'string' ? u.identityDh : '';
+        const identitySign = typeof u.identitySign === 'string' ? u.identitySign : '';
+        if (identityDh || identitySign) {
+          nextPeerMap[u.uid] = { identityDh, identitySign, identityValid: u.identityValid !== false };
+        }
       }
-      syncContactsOnlineStatus();
+      peerIdentityMap.value = nextPeerMap;
       autoRestoreOwnedGroups();
       refreshDirectGroupNames();
       autoRestoreDirectGroups();
@@ -12324,10 +12065,6 @@ button:active:not(:disabled) {
 
 .voice-start-button {
   box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
-}
-
-.online-user-card {
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
 }
 
 .group-quick-trigger {
