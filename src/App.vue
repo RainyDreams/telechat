@@ -47,17 +47,20 @@
     </div>
 
     <div v-else class="flex h-full w-full">
-      <div
-        v-if="lastToast.text"
-        class="fixed left-1/2 top-4 z-[70] w-[min(92vw,560px)] -translate-x-1/2 rounded-2xl border px-4 py-3 text-sm shadow-2xl transition"
-        :class="
-          lastToast.kind === 'error'
-            ? 'border-rose-200 bg-rose-50/90 text-rose-700'
-            : 'border-slate-200 bg-white/85 text-slate-700'
-        "
-      >
-        {{ lastToast.text }}
-      </div>
+      <Transition name="apple-toast">
+        <div
+          v-if="lastToast.text"
+          class="apple-toast fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[70] w-[min(90vw,420px)] -translate-x-1/2 cursor-pointer select-none rounded-2xl px-4 py-2.5 text-[13px] font-medium text-center shadow-xl backdrop-blur-xl active:scale-95"
+          :class="
+            lastToast.kind === 'error'
+              ? 'bg-rose-500/90 text-white'
+              : 'bg-slate-800/85 text-white'
+          "
+          @click="lastToast = { kind: 'info', text: '' }"
+        >
+          {{ lastToast.text }}
+        </div>
+      </Transition>
       <Transition name="banner-pop">
         <div
           v-if="banner.open"
@@ -1111,6 +1114,26 @@
                     <p>JS 堆内存</p><p class="text-right font-mono">{{ debugInfo.memoryInfo }}</p>
                     <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
                     <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
+                  </div>
+                  <!-- 待发队列 -->
+                  <div class="mt-3 border-t border-sky-100 pt-2">
+                    <div class="flex items-center justify-between">
+                      <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">待发队列</p>
+                      <div class="flex gap-2">
+                        <button type="button" @click="debugRefreshKeys" class="text-[10px] font-medium text-sky-600">刷新密钥</button>
+                        <button v-if="outboxQueue.length" type="button" @click="debugClearAllOutbox" class="text-[10px] font-medium text-rose-500">清空</button>
+                      </div>
+                    </div>
+                    <div v-if="outboxQueue.length" class="mt-1.5 space-y-1">
+                      <div v-for="item in outboxQueue" :key="item.msgId" class="flex items-center justify-between rounded-lg bg-sky-50/60 px-2.5 py-1.5">
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate font-mono text-[10px] text-slate-500">{{ item.msgId }}</p>
+                          <p class="text-[11px] text-slate-700">{{ debugOutboxPreview(item.payload) }}</p>
+                        </div>
+                        <button type="button" @click="debugRemoveOutboxItem(item.msgId)" class="ml-2 shrink-0 text-[10px] font-medium text-rose-500">删除</button>
+                      </div>
+                    </div>
+                    <p v-else class="mt-1 text-[11px] text-slate-400">空</p>
                   </div>
                 </div>
               </div>
@@ -2323,6 +2346,26 @@
                     <p>JS 堆内存</p><p class="text-right font-mono">{{ debugInfo.memoryInfo }}</p>
                     <p>设备指纹</p><p class="text-right font-mono">{{ debugInfo.deviceFingerprint }}</p>
                     <p>构建时间</p><p class="text-right font-mono">{{ debugInfo.buildTime }}</p>
+                  </div>
+                  <!-- 待发队列 -->
+                  <div class="mt-3 border-t border-sky-100 pt-2">
+                    <div class="flex items-center justify-between">
+                      <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">待发队列</p>
+                      <div class="flex gap-2">
+                        <button type="button" @click="debugRefreshKeys" class="text-[10px] font-medium text-sky-600">刷新密钥</button>
+                        <button v-if="outboxQueue.length" type="button" @click="debugClearAllOutbox" class="text-[10px] font-medium text-rose-500">清空</button>
+                      </div>
+                    </div>
+                    <div v-if="outboxQueue.length" class="mt-1.5 space-y-1">
+                      <div v-for="item in outboxQueue" :key="item.msgId" class="flex items-center justify-between rounded-lg bg-sky-50/60 px-2.5 py-1.5">
+                        <div class="min-w-0 flex-1">
+                          <p class="truncate font-mono text-[10px] text-slate-500">{{ item.msgId }}</p>
+                          <p class="text-[11px] text-slate-700">{{ debugOutboxPreview(item.payload) }}</p>
+                        </div>
+                        <button type="button" @click="debugRemoveOutboxItem(item.msgId)" class="ml-2 shrink-0 text-[10px] font-medium text-rose-500">删除</button>
+                      </div>
+                    </div>
+                    <p v-else class="mt-1 text-[11px] text-slate-400">空</p>
                   </div>
                 </div>
               </div>
@@ -3601,6 +3644,45 @@ const debugInfo = computed(() => {
     debugModeEnabled: debugModeEnabled.value,
   };
 });
+
+const debugOutboxPreview = (payload) => {
+  if (!payload || typeof payload !== 'object') return '';
+  const kind = payload.kind || '';
+  if (kind === 'text') return payload.text?.slice(0, 40) || '(空)';
+  if (kind === 'image') return '🖼 图片';
+  if (kind === 'audio') return '🎤 语音';
+  return kind || '(未知)';
+};
+
+const debugRemoveOutboxItem = (msgId) => {
+  if (!msgId) return;
+  removeOutboxEntry(msgId);
+  const local = findLocalOutgoing(msgId);
+  if (local) {
+    local.clientStatus = 'failed';
+    local.clientError = '已从队列移除';
+  }
+  toast('已移除', 'info');
+};
+
+const debugClearAllOutbox = () => {
+  const ids = outboxQueue.value.map((item) => item.msgId);
+  outboxQueue.value = [];
+  persistOutboxQueue();
+  for (const msgId of ids) {
+    const local = findLocalOutgoing(msgId);
+    if (local) {
+      local.clientStatus = 'failed';
+      local.clientError = '已清空队列';
+    }
+  }
+  toast('待发队列已清空', 'info');
+};
+
+const debugRefreshKeys = () => {
+  groupPublicKeysCache.clear();
+  toast('密钥缓存已清除', 'info');
+};
 
 const leaveGroupDialogIsOwner = computed(() => {
   return isOwnedGroupByMe(leaveGroupDialog.value.groupId);
@@ -9527,13 +9609,29 @@ const queueOutgoingMessage = (payloadType, payload, groupId) => {
   return msgId;
 };
 
-const flushOutbox = async () => {
+const flushOutbox = async (onlyMsgId = '') => {
   if (isFlushingOutbox.value) return;
   pruneOutboxQueue();
   if (!outboxQueue.value.length) return;
   if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) return;
   isFlushingOutbox.value = true;
   try {
+    if (onlyMsgId) {
+      // 精准重试：只发指定这一条
+      const item = outboxQueue.value.find((entry) => entry.msgId === onlyMsgId);
+      if (item) {
+        const local = findLocalOutgoing(item.msgId);
+        if (local?.clientStatus !== 'sending') {
+          markOutgoingStatus(item.msgId, 'sending');
+          await sendEncryptedPayload(item.payloadType, item.payload, {
+            groupId: item.groupId,
+            msgId: item.msgId,
+            skipLocalPush: Boolean(findLocalOutgoing(item.msgId)),
+          });
+        }
+      }
+      return;
+    }
     let idx = 0;
     while (idx < outboxQueue.value.length) {
       const item = outboxQueue.value[idx];
@@ -9577,13 +9675,19 @@ const retryOutbox = () => {
 
 const retryMessage = (msg) => {
   if (!msg || !msg.msgId) return;
-  const existing = outboxQueue.value.find((item) => item.msgId === msg.msgId);
-  if (!existing) return;
+  const idx = outboxQueue.value.findIndex((item) => item.msgId === msg.msgId);
+  if (idx < 0) return;
+  // 移到队尾，让其他消息先发
+  const entry = outboxQueue.value.splice(idx, 1)[0];
+  entry.retries = Number(entry.retries || 0) + 1;
+  entry.createdAt = Date.now();
+  outboxQueue.value.push(entry);
+  persistOutboxQueue();
   markOutgoingStatus(msg.msgId, 'queued');
   if (!ws || ws.readyState !== WS_OPEN || !powState.value.verified) {
     manualReconnect();
   }
-  void flushOutbox();
+  void flushOutbox(msg.msgId);
 };
 
 const handleSend = async () => {
@@ -11566,15 +11670,10 @@ const connectWS = ({ isReconnect = false, force = false } = {}) => {
       }
       clearOutgoingAckTimeout(data.msgId);
       if (local) {
-        if (Number(data.delivered) > 0) {
-          local.clientStatus = 'delivered';
-          local.clientError = '';
-          removeOutboxEntry(data.msgId);
-          pruneOutboxQueue();
-        } else {
-          local.clientStatus = 'failed';
-          local.clientError = '暂无接收者，请稍候再试';
-        }
+        local.clientStatus = 'delivered';
+        local.clientError = '';
+        removeOutboxEntry(data.msgId);
+        pruneOutboxQueue();
       }
       if (local && isDirectGroupId(local.groupId) && !isDmUnlocked(local.groupId)) {
         const delivered = Number(data.delivered) || 0;
@@ -12084,6 +12183,17 @@ button:active:not(:disabled) {
 .banner-pop-enter-to,
 .banner-pop-leave-from {
   opacity: 1;
+}
+
+.apple-toast-enter-active {
+  transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.apple-toast-leave-active {
+  transition: opacity 180ms ease;
+}
+.apple-toast-enter-from,
+.apple-toast-leave-to {
+  opacity: 0;
 }
 
 .status-strip-enter-active,
