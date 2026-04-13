@@ -249,48 +249,9 @@
           </button>
           </div>
 
-          <div class="mt-3 flex justify-end">
-            <div class="relative">
-              <button
-                type="button"
-                @click="groupRestoreHintOpen = !groupRestoreHintOpen"
-                class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-500 shadow-sm transition hover:border-sky-300 hover:text-sky-600"
-                aria-label="为什么我的群聊消失了"
-              >
-                ?
-              </button>
-              <div
-                v-if="groupRestoreHintOpen"
-                class="absolute right-0 top-9 z-10 w-[min(78vw,18rem)] rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600 shadow-xl"
-              >
-                <div class="flex items-start justify-between gap-3">
-                  <div>
-                    <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
-                    <p class="mt-1 leading-5 text-slate-500">
-                      现在普通群会优先自动恢复，自己创建的群也会随设备身份一起找回。
-                      如果这是修复前加入的旧群，而服务端还没有你的成员记录，仍可能需要用邀请链接重新加入一次。
-                      之后这类群关系会被持续保存。
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    @click="groupRestoreHintOpen = false"
-                    class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
-                  >
-                    关
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          <button
-            type="button"
-            @click="createGroup"
-            class="mt-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-600"
-          >
-            + 按时间创建群组
-          </button>
+
+
         </template>
 
         <!-- 通讯录 -->
@@ -318,6 +279,12 @@
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                 </div>
                 <p class="text-sm text-slate-800">添加好友</p>
+              </button>
+              <button type="button" @click="saveDeviceCard" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><circle cx="9" cy="15" r="2"/><path d="M13 15h4"/></svg>
+                </div>
+                <p class="text-sm text-slate-800">我的名片</p>
               </button>
               <button type="button" @click="createGroup" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500 text-white">
@@ -395,6 +362,9 @@
                   <div class="mt-2 flex gap-2">
                     <button type="button" @click="copyMyDeviceId" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
                       复制 ID
+                    </button>
+                    <button type="button" @click="saveDeviceCard" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                      我的名片
                     </button>
                   </div>
                 </div>
@@ -1192,6 +1162,13 @@
                 <p class="text-sm text-slate-800">添加好友</p>
               </button>
               <div class="border-t border-slate-100"></div>
+              <button type="button" @click="saveDeviceCard" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><circle cx="9" cy="15" r="2"/><path d="M13 15h4"/></svg>
+                </div>
+                <p class="text-sm text-slate-800">我的名片</p>
+              </button>
+              <div class="border-t border-slate-100"></div>
               <button type="button" @click="createGroup" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -1284,6 +1261,9 @@
                     <div class="mt-2 flex gap-2">
                       <button type="button" @click="copyMyDeviceId" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
                         复制 ID
+                      </button>
+                      <button type="button" @click="saveDeviceCard" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                        我的名片
                       </button>
                     </div>
                   </div>
@@ -4162,6 +4142,7 @@ const sortGroupEntries = (items = []) => {
 const visibleGroups = computed(() => {
   const q = groupQuery.value.trim().toLowerCase();
   const filtered = groups.value.filter((g) => {
+    if (g.id === SYSTEM_GROUP) return false;
     const name = String(groupDisplayName(g, g?.name || '') || '').toLowerCase();
     const id = String(g.id || '').toLowerCase();
     return name.includes(q) || id.includes(q);
@@ -6067,13 +6048,24 @@ const submitAddFriend = () => {
   addFriendDialog.value.open = false;
   addFriendDialog.value.description = '';
 
+  // 检查连接状态和设备绑定
+  if (!ws || ws.readyState !== WS_OPEN) {
+    toast('连接未就绪，稍后重试。', 'error');
+    return;
+  }
+  if (!deviceBound.value) {
+    toast('请先完成设备绑定。', 'info');
+    return;
+  }
+
   // 发起私聊 + 通讯录请求
   const dmGroupId = buildDirectGroupId(myUid.value, deviceId);
   if (!dmGroupId) return;
-  if (!ws || ws.readyState !== WS_OPEN) return;
   ws.send(JSON.stringify({ type: 'direct_start', groupId: dmGroupId, targetUid: deviceId }));
-  requestContactByUid(deviceId, '', description);
-  toast('已发送私聊和好友请求。', 'info');
+  const success = requestContactByUid(deviceId, '', description);
+  if (success) {
+    toast('已发送私聊和好友请求。', 'info');
+  }
 };
 
 const scanFriendQR = async () => {
