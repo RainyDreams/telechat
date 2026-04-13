@@ -10668,7 +10668,9 @@ const promptEditGroupNote = (groupId) => {
   const newNote = prompt('设置备注（仅自己可见）', note) || '';
   if (newNote === note) return;
   groupNoteMap.value = { ...groupNoteMap.value, [gid]: newNote };
-  persistGroupNoteMap();
+  try {
+    localStorage.setItem('telechat_group_notes', JSON.stringify(groupNoteMap.value));
+  } catch {}
   closeGroupQuickMenu();
   toast(newNote ? '备注已设置' : '备注已清除', 'info');
 };
