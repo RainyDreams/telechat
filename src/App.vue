@@ -1682,7 +1682,9 @@
                   >
                     {{ displayNameForUid(msg.sender) }}
                   </p>
-                  <div class="message-bubble shadow-sm ring-1" :class="messageBubbleClass(msg)">
+                  <div class="message-bubble shadow-sm ring-1" :class="messageBubbleClass(msg)"
+                     @contextmenu.prevent="openMessageActionMenu($event, msg)"
+>
                     <button
                       v-if="msg.replyTo"
                       type="button"
@@ -2597,6 +2599,58 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        <!-- 消息右键菜单 -->
+        <div v-if="messageActionMenu.open" class="fixed inset-0 z-[62]">
+          <button
+            type="button"
+            @click="closeMessageActionMenu"
+            class="absolute inset-0 bg-slate-900/10"
+            aria-label="Close message menu"
+          ></button>
+          <div
+            class="absolute w-40 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xl"
+            :style="{ left: `${messageActionMenu.x}px`, top: `${messageActionMenu.y}px` }"
+          >
+            <button
+              type="button"
+              @click="copyMessageText(messageActionMenu.msg)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              复制
+            </button>
+            <button
+              type="button"
+              @click="forwardMessage(messageActionMenu.msg)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              转发
+            </button>
+            <button
+              type="button"
+              @click="quoteMessage(messageActionMenu.msg)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              引用
+            </button>
+            <div class="my-1 border-t border-slate-100"></div>
+            <button
+              v-if="canRecallMessage(messageActionMenu.msg)"
+              type="button"
+              @click="recallMessage(messageActionMenu.msg)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 hover:bg-slate-100"
+            >
+              撤回
+            </button>
+            <button
+              type="button"
+              @click="deleteLocalMessage(messageActionMenu.msg)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-rose-700 hover:bg-rose-50"
+            >
+              删除
+            </button>
           </div>
         </div>
 
@@ -3721,6 +3775,7 @@ const burnNow = ref(Date.now());
 const reconnectNow = ref(Date.now());
 const groupQuickMenu = ref({ open: false, groupId: '', x: 0, y: 0, mobile: false });
 const leaveGroupDialog = ref({ open: false, groupId: '', name: '', ownerAction: 'inherit', successorUid: '', successorName: '' });
+const messageActionMenu = ref({ open: false, msg: null, x: 0, y: 0 });
 const voiceComposer = ref({
   state: 'idle',
   startedAt: 0,
@@ -10116,6 +10171,64 @@ const retryMessage = (msg) => {
     manualReconnect();
   }
   void flushOutbox(msg.msgId);
+};
+
+const canRecallMessage = (msg) => {
+  if (!msg || msg.sender !== myUid.value) return false;
+  const twoMinutesAgo = Date.now() - 2 * 60 * 1000;
+  return msg.createdAt > twoMinutesAgo;
+};
+
+const canDeleteMessage = (msg) => {
+  return !!msg && !!msg.msgId;
+};
+
+const copyMessageText = (msg) => {
+  if (!msg?.text) return;
+  copyToClipboard(msg.text);
+  toast('已复制', 'info');
+  closeMessageActionMenu();
+};
+
+const forwardMessage = (msg) => {
+  toast('转发功能开发中', 'info');
+  closeMessageActionMenu();
+};
+
+const quoteMessage = (msg) => {
+  setReplyTarget(msg);
+  closeMessageActionMenu();
+};
+
+const recallMessage = (msg) => {
+  if (!canRecallMessage(msg)) return;
+  deleteMessage(msg.msgId, true);
+  toast('已撤回', 'info');
+  closeMessageActionMenu();
+};
+
+const deleteLocalMessage = (msg) => {
+  if (!canDeleteMessage(msg)) return;
+  deleteMessage(msg.msgId, false);
+  toast('已删除', 'info');
+  closeMessageActionMenu();
+};
+
+const openMessageActionMenu = (event, msg) => {
+  if (!msg || !msg.msgId) return;
+  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0;
+  const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0;
+  const menuWidth = 160;
+  const menuHeight = 180;
+  const rawX = Number(event?.clientX) || 0;
+  const rawY = Number(event?.clientY) || 0;
+  const x = Math.min(Math.max(12, rawX), Math.max(12, viewportWidth - menuWidth - 12));
+  const y = Math.min(Math.max(12, rawY), Math.max(12, viewportHeight - menuHeight - 12));
+  messageActionMenu.value = { open: true, msg, x, y };
+};
+
+const closeMessageActionMenu = () => {
+  messageActionMenu.value = { open: false, msg: null, x: 0, y: 0 };
 };
 
 const handleSend = async () => {
