@@ -604,9 +604,10 @@ export function generateQRSvg(text, size = 200) {
 // ===== 导出的生成函数 =====
 
 export function generateDeviceQRSvg(deviceId, size = 200) {
-  const url = new URL(window.location.origin);
-  url.searchParams.set('add', deviceId);
-  const svg = generateQRSvg(url.toString(), size);
+  if (!deviceId || deviceId.length < 8) return '';
+  
+  const shareString = buildDeviceShareString(deviceId);
+  const svg = generateQRSvg(shareString, size);
 
   const labelSize = size * 0.08;
   const labelY = size + labelSize + 4;
