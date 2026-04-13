@@ -581,8 +581,10 @@ export function generateQRSvg(text, size = 200) {
 
   const modules = generateQRMatrix(text);
   const moduleCount = modules.length;
-  const cellSize = size / (moduleCount + 8);
-  const offset = cellSize * 4;
+  const quietZone = 4;
+  const viewSize = moduleCount + quietZone * 2;
+  const cellSize = size / viewSize;
+  const offset = quietZone * cellSize;
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">`;
   svg += `<rect width="${size}" height="${size}" fill="white"/>`;
@@ -592,7 +594,7 @@ export function generateQRSvg(text, size = 200) {
       if (modules[row][col]) {
         const x = offset + col * cellSize;
         const y = offset + row * cellSize;
-        svg += `<rect x="${x}" y="${y}" width="${cellSize + 0.5}" height="${cellSize + 0.5}" fill="black"/>`;
+        svg += `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" fill="black"/>`;
       }
     }
   }
@@ -606,7 +608,10 @@ export function generateQRSvg(text, size = 200) {
 export function generateDeviceQRSvg(deviceId, size = 200) {
   if (!deviceId || deviceId.length < 8) return '';
   
-  const shareString = buildDeviceShareString(deviceId);
+  // 使用URL格式，方便浏览器直接打开
+  const url = new URL(window.location.origin);
+  url.searchParams.set('add', deviceId);
+  const shareString = url.toString();
   const svg = generateQRSvg(shareString, size);
 
   const labelSize = size * 0.08;
