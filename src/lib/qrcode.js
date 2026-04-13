@@ -608,30 +608,39 @@ export function generateQRSvg(text, size = 200) {
 export function generateDeviceQRSvg(deviceId, size = 200) {
   if (!deviceId || deviceId.length < 8) return '';
   
-  // 使用URL格式，方便浏览器直接打开
   const url = new URL(window.location.origin);
   url.searchParams.set('add', deviceId);
-  const shareString = url.toString();
-  const svg = generateQRSvg(shareString, size);
+  const text = url.toString();
 
-  const labelSize = size * 0.08;
-  const labelY = size + labelSize + 4;
-  const totalHeight = labelY + 4;
-
-  return svg.replace(
-    '</svg>',
-    `<text x="${size / 2}" y="${labelY}" text-anchor="middle" font-family="monospace" font-size="${labelSize}" fill="#64748b">${deviceId.slice(0, 12)}…</text></svg>`
-  ).replace(
-    `viewBox="0 0 ${size} ${size}"`,
-    `viewBox="0 0 ${size} ${totalHeight}" height="${totalHeight}"`
-  );
+  // 使用 CDN 的 QRCode 库生成 SVG
+  if (typeof QRCode !== 'undefined') {
+    return QRCode.toString(text, { 
+      type: 'svg',
+      width: size, 
+      margin: 2,
+      errorCorrectionLevel: 'H'
+    });
+  }
+  
+  // 备用：使用我们自己的实现
+  return generateQRSvg(text, size);
 }
 
 export function generateInviteQRSvg(inviteUrl, size = 200) {
   if (!inviteUrl) return '';
+  
+  if (typeof QRCode !== 'undefined') {
+    return QRCode.toString(inviteUrl, {
+      type: 'svg',
+      width: size,
+      margin: 2,
+      errorCorrectionLevel: 'H'
+    });
+  }
+  
   return generateQRSvg(inviteUrl, size);
 }
-
+ 
 // ===== 摄像头扫描 =====
 
 export function startQRScanner() {
