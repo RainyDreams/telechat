@@ -4,6 +4,67 @@
 
 ---
 
+## 0. 铁律：一次性完成 + 防冲突
+
+### 0.1 完整需求原则
+
+**每次 PR 必须完整实现一个用户需求，不拆分、不遗漏。**
+
+```
+❌ 错误做法：用户说"改PC端布局"，你只改了模板没改样式，分两次提PR
+✅ 正确做法：模板 + 样式 + 状态 + 逻辑全部完成，一次提PR
+```
+
+**检查清单（提交前必须过）：**
+- [ ] 需求的每个子项都已完成
+- [ ] 移动端和PC端都测试过（如果涉及）
+- [ ] `npm run build` 通过
+- [ ] 控制台无报错
+- [ ] 没有引入新的 TypeScript/ESLint 警告
+
+### 0.2 防冲突铁律
+
+**创建 PR 前必须执行：**
+
+```bash
+# 1. 检查 main 有没有新提交
+git fetch origin main
+git log --oneline HEAD..origin/main
+
+# 2. 如果有新提交，必须 rebase
+git rebase origin/main
+
+# 3. 解决冲突后，构建检查
+npm run build
+
+# 4. 确认无冲突后再 push
+git push origin feat/你的描述
+```
+
+**热区冲突预防：**
+- 改 `App.vue` 前，先 `git fetch origin main` 确认 main 没有同时在改
+- 如果发现 main 有新提交且涉及同一热区 → 先 rebase 再继续
+- 改完立刻提 PR 合入，不要让分支悬着超过 1 天
+
+### 0.3 问题自动 Issue 原则
+
+**发现问题时：**
+1. 如果是当前需求的一部分 → 直接修复
+2. 如果是不相关的 bug → 记录到 Issue，不混入当前 PR
+3. 如果是改进项 → 记录到 Issue，不混入当前 PR
+
+**Issue 记录格式：**
+```
+标题：[问题类型] 简短描述
+内容：
+- 发现位置：src/App.vue:1234
+- 问题描述：xxx
+- 影响范围：xxx
+- 建议方案：xxx
+```
+
+---
+
 ## 1. 项目概况
 
 - **技术栈**: Vue 3 (Composition API) + Tailwind CSS + Vite + Cloudflare Pages
@@ -27,6 +88,8 @@ Template 内按功能分区：
 - **Message list**: 消息列表 (~1268–1500)
 - **Dialogs**: 各种弹窗 (~1448–2147)
 - **Footer**: 输入框 + 语音录制 (~2893–3168)
+- **PC 侧边栏**: PC端布局 (~156–293)
+- **移动端底部Tab**: 消息/通讯录/设置 (~2752–2785)
 
 ---
 
@@ -197,6 +260,30 @@ const leaveGroupDialog = ref({ open: false, groupId: '', name: '', ownerAction: 
 </div>
 ```
 
+### 3.6 PC 端三栏布局（微信风格）
+
+```html
+<!-- 最左侧窄图标栏 -->
+<aside class="w-[60px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col items-center py-3 gap-2">
+  <button class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
+          :class="pcActiveTab === 'messages' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'">
+    <svg class="h-5 w-5">...</svg>
+    <span class="text-[10px]">消息</span>
+  </button>
+  <!-- 更多图标 -->
+</aside>
+
+<!-- 中间二级内容列表 -->
+<aside class="w-72 shrink-0 border-r border-slate-200 bg-white flex flex-col">
+  <!-- 根据 pcActiveTab 显示不同内容 -->
+</aside>
+
+<!-- 右侧聊天区 -->
+<main class="flex-1 min-w-0 flex flex-col">
+  <!-- 聊天内容 -->
+</main>
+```
+
 ---
 
 ## 4. 移动端 vs 桌面端
@@ -205,9 +292,9 @@ const leaveGroupDialog = ref({ open: false, groupId: '', name: '', ownerAction: 
 
 | 功能 | 移动端 | 桌面端 |
 |------|--------|--------|
-| 侧边栏 | 抽屉式（Transition 动画） | 固定左侧面板 |
+| 侧边栏 | 抽屉式（Transition 动画） | 三栏固定布局 |
 | Header | 紧凑单行 | 多按钮横排 |
-| 底部导航 | 消息/通讯录/设置 Tab | 无 |
+| 底部导航 | 消息/通讯录/设置 Tab | 左侧图标栏 |
 | 弹窗 | 底部弹出或全屏 | 居中模态框 |
 
 **改动 UI 时，必须同时检查移动端和桌面端表现。** 用浏览器 DevTools 切换设备模式测试。
@@ -222,6 +309,7 @@ const leaveGroupDialog = ref({ open: false, groupId: '', name: '', ownerAction: 
 4. **`SYSTEM_GROUP` = 首页** — 不是普通群组，`activeGroup === 'system'` 意味着在首页
 5. **`isDirectGroupId()` 判断私聊** — 私聊和群聊的侧边栏逻辑不同
 6. **mobileViewport 是 ref** — 在 template 中自动解包，在 script 中用 `.value`
+7. **Windows PowerShell 不支持 `&&`** — 用分号 `;` 或分开执行命令
 
 ---
 
@@ -294,6 +382,8 @@ git remote prune origin
 | 热区 | 行号范围 | 内容 | 冲突风险 |
 |------|---------|------|---------|
 | Toast/Banner | ~48–70 | 浮层提示 | 🔴 高 |
+| PC 侧边栏 | ~156–293 | PC端布局 | 🔴 高 |
+| 移动端底部Tab | ~2752–2785 | 消息/通讯录/设置 | 🔴 高 |
 | 移动端 Debug Panel | ~1094–1160 | 调试信息 + 待发队列 | 🔴 高 |
 | 桌面端 Debug Panel | ~2306–2370 | 同上 | 🔴 高 |
 | Debug info computed | ~3560–3610 | debugInfo 计算属性 | 🟡 中 |
@@ -404,3 +494,76 @@ check_branch() {
 - **每次只改一件事** — 多个不相关的改动混在一起会让 revert 变成噩梦
 - **Template 改动是安全的** — JS 逻辑改动需要更谨慎
 - **当你不确定时，grep** — 这个文件里几乎什么都能用 grep 找到
+- **完整实现再提交** — 不要拆分需求，一次 PR 完成整个功能
+- **发现问题先记录** — 不相关的 bug 记录到 Issue，不混入当前 PR
+
+---
+
+## 9. 实战踩坑经验（持续更新）
+
+### 9.1 Windows PowerShell 踩坑
+
+**编码问题**：处理中文时必须先设置编码：
+```powershell
+chcp 65001
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+**语法限制**：
+- PowerShell **不支持 `&&`**：用分号 `;` 分隔命令，或分开执行
+- **`head`/`tail` 不可用**：用 `powershell -Command "Get-Content file | Select-Object -First N"`
+- **`rg` (ripgrep) 未安装**：用 `findstr /n "pattern" file` 替代
+
+**推荐做法**：尽量使用 Bash 工具执行命令，避免 PowerShell 语法问题。
+
+### 9.2 大型文件编辑策略
+
+**先定位再修改**：
+```bash
+# 第一步：用 grep/findstr 定位
+findstr /n "关键词" src\App.vue
+
+# 第二步：用 read 读取上下文（至少 50 行）
+# 第三步：用 edit 进行精确替换
+```
+
+**避免的坑**：
+- ❌ 不要一次读取整个文件（12000 行会超时）
+- ❌ 不要在不确定位置时直接编辑
+- ✅ 先用 `offset` 和 `limit` 定位到具体区域
+
+### 9.3 UI 重构模式（三栏布局）
+
+**标准流程**：
+1. 添加 `ref` 状态（如 `pcActiveTab`）
+2. 修改模板条件渲染（`v-if="pcActiveTab === 'xxx'"`）
+3. 添加子页面内容（复用移动端模板）
+4. 修改触发函数（`openXxxPage` 改为切换 tab）
+
+**检查清单**：
+- [ ] 状态已定义在 `<script setup>` 中
+- [ ] 模板中使用了正确的条件渲染
+- [ ] 触发函数已更新
+- [ ] 移动端和 PC 端功能一致
+
+### 9.4 一次性完成的陷阱
+
+**常见遗漏**：
+1. 只改了模板，忘了修改触发函数
+2. 只改了 PC 端，忘了移动端
+3. 只改了主页面，忘了子页面
+4. 添加了状态但没有在模板中使用
+
+**自检方法**：改完后搜索新添加的变量名，确保在模板和逻辑中都有使用。
+
+### 9.5 构建检查最佳实践
+
+**时机**：
+- 每次重大修改后立即运行 `npm run build`
+- 提交 PR 前必须运行
+- 解决冲突后必须运行
+
+**常见错误**：
+- `Unexpected token`：通常是模板语法错误
+- `Cannot find module`：缺少 import 或路径错误
+- `Variable is declared but not used`：添加了未使用的变量
