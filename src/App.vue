@@ -50,7 +50,7 @@
       <Transition name="apple-toast">
         <div
           v-if="lastToast.text"
-          class="apple-toast fixed bottom-[max(1.5rem,env(safe-area-inset-bottom))] left-1/2 z-[70] w-[min(90vw,420px)] -translate-x-1/2 cursor-pointer select-none rounded-2xl px-4 py-2.5 text-[13px] font-medium text-center shadow-xl backdrop-blur-xl active:scale-95"
+          class="apple-toast fixed bottom-20 left-1/2 z-[70] w-[min(90vw,420px)] -translate-x-1/2 cursor-pointer select-none rounded-2xl px-4 py-2.5 text-[13px] font-medium text-center shadow-xl backdrop-blur-xl active:scale-95"
           :class="
             lastToast.kind === 'error'
               ? 'bg-rose-500/90 text-white'
@@ -155,141 +155,467 @@
       </div>
       <aside
         v-if="!mobileViewport"
-        class="w-72 shrink-0 border-r border-slate-200/80 bg-white/85 p-3 backdrop-blur flex flex-col"
+        class="w-[60px] shrink-0 border-r border-slate-200 bg-slate-50 flex flex-col items-center py-3 gap-2"
       >
-        <div class="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
-          <div class="flex items-center justify-between gap-2">
-            <div class="flex min-w-0 items-center gap-2">
-              <div class="relative">
-                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-sky-500 to-emerald-500"></div>
-                <span class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-500"></span>
-              </div>
-              <div class="min-w-0">
-                <p class="text-xs uppercase tracking-wide text-slate-400">My ID</p>
-                <p class="truncate text-xs font-semibold text-slate-700">
-                  {{ myNickname || '未设置昵称' }}
-                </p>
-                <p
-                  class="cursor-pointer text-sm font-medium text-slate-800"
-                  :class="isIdentityExpanded('self-id-desktop') ? 'whitespace-normal break-all' : 'truncate'"
-                  @click="toggleIdentityExpanded('self-id-desktop')"
-                >
-                  {{ formatIdentityDisplay(myUid || 'Connecting...', 'self-id-desktop', 10, 10) }}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              @click="openSettingsPage"
-              class="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 transition hover:border-sky-300 hover:text-sky-700"
-              aria-label="Settings"
-            >
-              <svg viewBox="0 0 48 48" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
-                <path d="M18.2838 43.1713C14.9327 42.1736 11.9498 40.3213 9.58787 37.867C10.469 36.8227 11 35.4734 11 34.0001C11 30.6864 8.31371 28.0001 5 28.0001C4.79955 28.0001 4.60139 28.01 4.40599 28.0292C4.13979 26.7277 4 25.3803 4 24.0001C4 21.9095 4.32077 19.8938 4.91579 17.9995C4.94381 17.9999 4.97188 18.0001 5 18.0001C8.31371 18.0001 11 15.3138 11 12.0001C11 11.0488 10.7786 10.1493 10.3846 9.35011C12.6975 7.1995 15.5205 5.59002 18.6521 4.72314C19.6444 6.66819 21.6667 8.00013 24 8.00013C26.3333 8.00013 28.3556 6.66819 29.3479 4.72314C32.4795 5.59002 35.3025 7.1995 37.6154 9.35011C37.2214 10.1493 37 11.0488 37 12.0001C37 15.3138 39.6863 18.0001 43 18.0001C43.0281 18.0001 43.0562 17.9999 43.0842 17.9995C43.6792 19.8938 44 21.9095 44 24.0001C44 25.3803 43.8602 26.7277 43.594 28.0292C43.3986 28.01 43.2005 28.0001 43 28.0001C39.6863 28.0001 37 30.6864 37 34.0001C37 35.4734 37.531 36.8227 38.4121 37.867C36.0502 40.3213 33.0673 42.1736 29.7162 43.1713C28.9428 40.752 26.676 39.0001 24 39.0001C21.324 39.0001 19.0572 40.752 18.2838 43.1713Z" fill="none" stroke="#3c3e55" stroke-width="3" stroke-linejoin="round"/><path d="M24 31C27.866 31 31 27.866 31 24C31 20.134 27.866 17 24 17C20.134 17 17 20.134 17 24C17 27.866 20.134 31 24 31Z" fill="none" stroke="#3c3e55" stroke-width="3" stroke-linejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-2 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
-          <input
-            v-model="groupQuery"
-            class="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
-            placeholder="搜索群组"
-            inputmode="search"
-          />
-        </div>
-
-        <div class="mt-2 flex-1 overflow-y-auto pr-1">
-          <p class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Groups</p>
-          <button
-            v-for="group in visibleGroups"
-            :key="group.id"
-            type="button"
-            @click="handleGroupListPrimaryAction(group.id)"
-            @contextmenu="handleGroupContextMenu($event, group.id)"
-            @pointerdown="startGroupLongPress($event, group.id)"
-            @pointerup="cancelGroupLongPress"
-            @pointermove="cancelGroupLongPress"
-            @pointercancel="cancelGroupLongPress"
-            @pointerleave="cancelGroupLongPress"
-            class="group-quick-trigger mb-1 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-left transition"
-            :class="
-              isGroupSelected(group.id)
-                ? 'border-sky-200 bg-sky-50 text-sky-700 shadow-sm'
-                : 'border-transparent bg-slate-100/70 text-slate-700 hover:border-slate-200 hover:bg-white'
-            "
-          >
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex min-w-0 items-center gap-2">
-                <span v-if="isGroupPinned(group.id)" class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">置顶</span>
-                <span class="truncate text-sm font-medium">{{ groupDisplayName(group, group.name) }}</span>
-              </div>
-              <span class="shrink-0 text-[11px] font-medium text-slate-400">{{ groupPreviewTime(group.id) }}</span>
-            </div>
-            <p class="mt-0.5 truncate text-xs text-slate-500">
-              {{
-                groupPreviewText(group.id) ||
-                  (group.id === SYSTEM_GROUP ? '欢迎来到 LINKCONNECT' : '暂无消息')
-              }}
-            </p>
-          </div>
-          <span
-            v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
-            class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
-          ></span>
-          <span
-            v-else-if="getUnreadCount(group.id)"
-            class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white"
-          >
-            {{ formatUnreadCount(getUnreadCount(group.id)) }}
-          </span>
-        </button>
-        </div>
-
-        <div class="mt-3 flex justify-end">
-          <div class="relative">
-            <button
-              type="button"
-              @click="groupRestoreHintOpen = !groupRestoreHintOpen"
-              class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-500 shadow-sm transition hover:border-sky-300 hover:text-sky-600"
-              aria-label="为什么我的群聊消失了"
-            >
-              ?
-            </button>
-            <div
-              v-if="groupRestoreHintOpen"
-              class="absolute right-0 top-9 z-10 w-[min(78vw,18rem)] rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600 shadow-xl"
-            >
-              <div class="flex items-start justify-between gap-3">
-                <div>
-                  <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
-                  <p class="mt-1 leading-5 text-slate-500">
-                    现在普通群会优先自动恢复，自己创建的群也会随设备身份一起找回。
-                    如果这是修复前加入的旧群，而服务端还没有你的成员记录，仍可能需要用邀请链接重新加入一次。
-                    之后这类群关系会被持续保存。
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  @click="groupRestoreHintOpen = false"
-                  class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
-                >
-                  关
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <button
           type="button"
-          @click="createGroup"
-          class="mt-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-600"
+          @click="pcActiveTab = 'messages'"
+          class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
+          :class="pcActiveTab === 'messages' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
         >
-          + 按时间创建群组
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span class="text-[10px]">消息</span>
         </button>
+        <button
+          type="button"
+          @click="pcActiveTab = 'contacts'"
+          class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
+          :class="pcActiveTab === 'contacts' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
+        >
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="text-[10px]">通讯录</span>
+        </button>
+        <button
+          type="button"
+          @click="pcActiveTab = 'settings'"
+          class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
+          :class="pcActiveTab === 'settings' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
+        >
+          <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span class="text-[10px]">设置</span>
+        </button>
+      </aside>
+
+      <aside
+        v-if="!mobileViewport"
+        class="w-72 shrink-0 border-r border-slate-200/80 bg-white/85 p-3 backdrop-blur flex flex-col"
+      >
+        <!-- 消息列表 -->
+        <template v-if="pcActiveTab === 'messages'">
+          <div class="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
+            <input
+              v-model="groupQuery"
+              class="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              placeholder="搜索群组"
+              inputmode="search"
+            />
+          </div>
+
+          <div class="mt-2 flex-1 overflow-y-auto pr-1">
+            <p class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Groups</p>
+            <button
+              v-for="group in visibleGroups"
+              :key="group.id"
+              type="button"
+              @click="handleGroupListPrimaryAction(group.id)"
+              @contextmenu="handleGroupContextMenu($event, group.id)"
+              @pointerdown="startGroupLongPress($event, group.id)"
+              @pointerup="cancelGroupLongPress"
+              @pointermove="cancelGroupLongPress"
+              @pointercancel="cancelGroupLongPress"
+              @pointerleave="cancelGroupLongPress"
+              class="group-quick-trigger mb-1 flex w-full items-center justify-between rounded-lg border px-2.5 py-2 text-left transition"
+              :class="
+                isGroupSelected(group.id)
+                  ? 'border-sky-200 bg-sky-50 text-sky-700 shadow-sm'
+                  : 'border-transparent bg-slate-100/70 text-slate-700 hover:border-slate-200 hover:bg-white'
+              "
+            >
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex min-w-0 items-center gap-2">
+                  <span v-if="isGroupPinned(group.id)" class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">置顶</span>
+                  <span class="truncate text-sm font-medium">{{ groupDisplayName(group, group.name) }}</span>
+                </div>
+                <span class="shrink-0 text-[11px] font-medium text-slate-400">{{ groupPreviewTime(group.id) }}</span>
+              </div>
+              <p class="mt-0.5 truncate text-xs text-slate-500">
+                {{
+                  groupPreviewText(group.id) ||
+                    (group.id === SYSTEM_GROUP ? '欢迎来到 LINKCONNECT' : '暂无消息')
+                }}
+              </p>
+            </div>
+            <span
+              v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
+              class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
+            ></span>
+            <span
+              v-else-if="getUnreadCount(group.id)"
+              class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white"
+            >
+              {{ formatUnreadCount(getUnreadCount(group.id)) }}
+            </span>
+          </button>
+          </div>
+
+          <div class="mt-3 flex justify-end">
+            <div class="relative">
+              <button
+                type="button"
+                @click="groupRestoreHintOpen = !groupRestoreHintOpen"
+                class="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-white text-sm font-semibold text-slate-500 shadow-sm transition hover:border-sky-300 hover:text-sky-600"
+                aria-label="为什么我的群聊消失了"
+              >
+                ?
+              </button>
+              <div
+                v-if="groupRestoreHintOpen"
+                class="absolute right-0 top-9 z-10 w-[min(78vw,18rem)] rounded-2xl border border-slate-200 bg-white px-3 py-3 text-xs text-slate-600 shadow-xl"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div>
+                    <p class="text-sm font-semibold text-slate-800">为什么我的群聊消失了？</p>
+                    <p class="mt-1 leading-5 text-slate-500">
+                      现在普通群会优先自动恢复，自己创建的群也会随设备身份一起找回。
+                      如果这是修复前加入的旧群，而服务端还没有你的成员记录，仍可能需要用邀请链接重新加入一次。
+                      之后这类群关系会被持续保存。
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    @click="groupRestoreHintOpen = false"
+                    class="rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-500"
+                  >
+                    关
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            @click="createGroup"
+            class="mt-3 rounded-xl border border-dashed border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 transition hover:border-sky-300 hover:text-sky-600"
+          >
+            + 按时间创建群组
+          </button>
+        </template>
+
+        <!-- 通讯录 -->
+        <template v-if="pcActiveTab === 'contacts'">
+          <div class="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
+            <input
+              v-model="contactQuery"
+              class="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              placeholder="搜索联系人"
+              inputmode="search"
+            />
+          </div>
+
+          <div class="mt-2 flex-1 overflow-y-auto">
+            <div class="divide-y divide-slate-100">
+              <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                </div>
+                <p class="text-sm text-slate-800">新的朋友</p>
+                <span v-if="contactRequestCards.length" class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{{ contactRequestCards.length }}</span>
+              </button>
+              <button type="button" @click="openAddFriendDialog" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+                </div>
+                <p class="text-sm text-slate-800">添加好友</p>
+              </button>
+              <button type="button" @click="createGroup" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500 text-white">
+                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+                <p class="text-sm text-slate-800">新建群聊</p>
+              </button>
+            </div>
+
+            <div v-if="contactRequestCards.length" class="mt-2">
+              <div class="px-3 py-2"><p class="text-[11px] font-medium text-slate-400">待处理请求</p></div>
+              <div class="divide-y divide-slate-100">
+                <div v-for="req in contactRequestCards" :key="`pc-sidebar-req-${req.requestId}`" class="flex items-center gap-3 px-3 py-2.5">
+                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">{{ req.uidShort?.slice(0,2) || '?' }}</div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
+                    <p v-if="req.description" class="text-[11px] text-slate-500 mt-0.5">{{ req.description }}</p>
+                    <p class="text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
+                  </div>
+                  <div class="flex shrink-0 gap-1.5">
+                    <button type="button" @click="acceptContactRequest(req)" class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">同意</button>
+                    <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="contactsLoading" class="px-3 py-3 text-xs text-slate-500">正在加载通讯录…</div>
+            <div v-else-if="!filteredContactCards.length" class="px-3 py-3 text-xs text-slate-500">{{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}</div>
+            <div v-else>
+              <div class="px-3 py-2"><p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p></div>
+              <div class="divide-y divide-slate-100">
+                <div v-for="contact in filteredContactCards" :key="`pc-sidebar-contact-${contact.contactFingerprint}`" class="flex items-center gap-3 px-3 py-2.5">
+                  <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">{{ avatarInitial(contact.displayName || 'U') }}</div>
+                  <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm text-slate-800">{{ contact.displayName }}</p>
+                    <p class="truncate text-[11px] text-slate-400">{{ contact.os ? `${contact.os} · ${contact.location}` : '' }}</p>
+                  </div>
+                  <button type="button" @click="startContactChat(contact)" class="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">私聊</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <!-- 设置 -->
+        <template v-if="pcActiveTab === 'settings'">
+          <div class="flex-1 overflow-y-auto">
+            <!-- 设置子页面：账号与昵称 -->
+            <template v-if="pcSettingsSubPage === 'account'">
+              <div class="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+                <button type="button" @click="pcSettingsSubPage = ''" class="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <p class="text-sm font-semibold text-slate-800">账号与昵称</p>
+              </div>
+              <div class="divide-y divide-slate-100">
+                <div class="px-3 py-3">
+                  <p class="text-sm text-slate-800">昵称</p>
+                  <div class="mt-2 flex items-center gap-2">
+                    <input
+                      v-model="nicknameInput"
+                      maxlength="24"
+                      class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 outline-none placeholder:text-slate-400"
+                      placeholder="未设置"
+                    />
+                    <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="shrink-0 text-xs font-medium text-sky-600 disabled:opacity-60">
+                      {{ nicknameSaving ? '…' : '保存' }}
+                    </button>
+                  </div>
+                </div>
+                <div class="px-3 py-3">
+                  <p class="text-sm text-slate-800">我的 ID</p>
+                  <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ myUid || '加载中...' }}</p>
+                  <div class="mt-2 flex gap-2">
+                    <button type="button" @click="copyMyDeviceId" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                      复制 ID
+                    </button>
+                  </div>
+                </div>
+                <div v-if="deviceFingerprint" class="px-3 py-3">
+                  <p class="text-sm text-slate-800">设备指纹</p>
+                  <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ deviceFingerprint }}</p>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置子页面：身份与安全 -->
+            <template v-else-if="pcSettingsSubPage === 'security'">
+              <div class="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+                <button type="button" @click="pcSettingsSubPage = ''" class="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <p class="text-sm font-semibold text-slate-800">身份与安全</p>
+              </div>
+              <div class="divide-y divide-slate-100">
+                <div class="flex items-center justify-between px-3 py-3">
+                  <div>
+                    <p class="text-sm text-slate-800">助记词语言</p>
+                  </div>
+                  <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                    <button
+                      type="button"
+                      @click="identityMnemonicLanguage = 'zh'"
+                      class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                      :class="identityMnemonicLanguage === 'zh' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    >
+                      中文
+                    </button>
+                    <button
+                      type="button"
+                      @click="identityMnemonicLanguage = 'en'"
+                      class="rounded-md px-2.5 py-1 text-xs font-medium transition"
+                      :class="identityMnemonicLanguage === 'en' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    >
+                      EN
+                    </button>
+                  </div>
+                </div>
+                <button type="button" @click="exportCurrentIdentityCredential" class="flex w-full items-center justify-between px-3 py-3 hover:bg-slate-50">
+                  <p class="text-sm text-slate-800">查看助记词</p>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+                <button type="button" @click="triggerIdentityCredentialFilePicker" class="flex w-full items-center justify-between px-3 py-3 hover:bg-slate-50">
+                  <p class="text-sm text-slate-800">导入 TXT 凭证</p>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+              </div>
+              <input
+                ref="identityCredentialFilePicker"
+                type="file"
+                accept=".txt,text/plain"
+                class="hidden"
+                @change="onPickIdentityCredentialFile"
+              />
+              <div class="border-t border-slate-100 px-3 py-3">
+                <textarea
+                  v-model="identityCredentialImport"
+                  rows="3"
+                  class="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none placeholder:text-slate-400"
+                  placeholder="粘贴助记词或 recovery_code 以恢复身份"
+                ></textarea>
+                <div class="mt-2 flex justify-end">
+                  <button type="button" @click="restoreIdentityCredential" class="rounded-full bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white">恢复身份</button>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置子页面：通用设置 -->
+            <template v-else-if="pcSettingsSubPage === 'general'">
+              <div class="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+                <button type="button" @click="pcSettingsSubPage = ''" class="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <p class="text-sm font-semibold text-slate-800">通用设置</p>
+              </div>
+              <div class="divide-y divide-slate-100">
+                <div class="flex items-center justify-between px-3 py-3">
+                  <p class="text-sm text-slate-800">界面大小</p>
+                  <div class="flex items-center rounded-lg bg-slate-100 p-0.5">
+                    <button
+                      v-for="item in sizeSettingOptions"
+                      :key="`pc-scale-${item.value}`"
+                      type="button"
+                      @click="setUiScaleLevel(item.value)"
+                      class="rounded-md px-2 py-1 text-xs font-medium transition"
+                      :class="uiScale === item.value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'"
+                    >
+                      {{ item.label }}
+                    </button>
+                  </div>
+                </div>
+                <div class="flex items-center justify-between px-3 py-3">
+                  <div>
+                    <p class="text-sm text-slate-800">系统通知</p>
+                    <p class="text-[11px] text-slate-400">需浏览器授权</p>
+                  </div>
+                  <button type="button" @click="toggleSystemNotify" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="systemNotifyEnabled ? 'bg-emerald-500' : 'bg-slate-200'">
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="systemNotifyEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between px-3 py-3">
+                  <p class="text-sm text-slate-800">提示音</p>
+                  <button type="button" @click="toggleSound" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors" :class="soundEnabled ? 'bg-sky-500' : 'bg-slate-200'">
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="soundEnabled ? 'translate-x-5' : 'translate-x-1'"></span>
+                  </button>
+                </div>
+                <div class="flex items-center justify-between px-3 py-3">
+                  <div>
+                    <p class="text-sm text-slate-800">陌生人私聊</p>
+                    <p class="text-[11px] text-slate-400">{{ dmContactsOnly ? '仅通讯录可私聊' : '允许陌生人请求' }}</p>
+                  </div>
+                  <button type="button" @click="toggleDmPreference" :disabled="dmPreferenceSaving" class="relative inline-flex h-6 w-10 items-center rounded-full transition-colors disabled:opacity-60" :class="!dmContactsOnly ? 'bg-emerald-500' : 'bg-slate-200'">
+                    <span class="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform" :class="!dmContactsOnly ? 'translate-x-5' : 'translate-x-1'"></span>
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置子页面：关于 -->
+            <template v-else-if="pcSettingsSubPage === 'about'">
+              <div class="flex items-center gap-2 border-b border-slate-100 px-3 py-2">
+                <button type="button" @click="pcSettingsSubPage = ''" class="inline-flex h-7 w-7 items-center justify-center rounded-lg hover:bg-slate-100">
+                  <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                </button>
+                <p class="text-sm font-semibold text-slate-800">关于</p>
+              </div>
+              <div class="flex items-center justify-between px-3 py-3">
+                <p class="text-sm text-slate-800">版本</p>
+                <button
+                  type="button"
+                  @click="handleVersionTap"
+                  class="text-xs text-slate-400"
+                >
+                  v{{ APP_VERSION }}
+                </button>
+              </div>
+              <div v-if="debugModeEnabled" class="border-t border-slate-100 px-3 py-2.5">
+                <p class="text-[10px] font-semibold uppercase tracking-wide text-sky-600">Debug Panel</p>
+                <div class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-slate-600">
+                  <p>设备类型</p><p class="text-right font-mono">{{ debugDeviceKindLabel }}</p>
+                  <p>连接状态</p><p class="text-right font-mono">{{ debugInfo.connectionState }}</p>
+                  <p>WebSocket</p><p class="text-right font-mono">{{ debugInfo.wsState }}</p>
+                  <p>PoW 验证</p><p class="text-right font-mono">{{ debugInfo.powStatus }}</p>
+                  <p>RSA 加密</p><p class="text-right font-mono">{{ debugInfo.encStatus }}</p>
+                  <p>ECDSA 签名</p><p class="text-right font-mono">{{ debugInfo.ecdsaStatus }}</p>
+                  <p>ECDH 密钥</p><p class="text-right font-mono">{{ debugInfo.ecdhStatus }}</p>
+                  <p>消息数</p><p class="text-right font-mono">{{ debugInfo.msgCount }}</p>
+                  <p>群组数</p><p class="text-right font-mono">{{ debugInfo.groupCount }}</p>
+                  <p>联系人</p><p class="text-right font-mono">{{ debugInfo.contactCount }}</p>
+                  <p>DM 会话</p><p class="text-right font-mono">{{ debugInfo.dmSessionCount }}</p>
+                  <p>待发队列</p><p class="text-right font-mono">{{ debugInfo.outboxCount }}</p>
+                </div>
+              </div>
+            </template>
+
+            <!-- 设置根页面：分类入口 -->
+            <template v-else>
+              <div class="divide-y divide-slate-100">
+                <!-- 个人信息 -->
+                <div class="px-3 py-4">
+                  <div class="flex items-center gap-3">
+                    <div class="avatar h-12 w-12 shrink-0 rounded-full text-[13px] font-semibold text-white" :style="{ background: avatarColor(myUid) }">{{ avatarInitial(myNickname || 'U') }}</div>
+                    <div class="min-w-0 flex-1">
+                      <p class="text-sm font-semibold text-slate-800">{{ myNickname || '未设置昵称' }}</p>
+                      <p class="mt-0.5 text-[11px] text-slate-400">ID: {{ myUid || '加载中...' }}</p>
+                      <p v-if="deviceFingerprint" class="mt-0.5 text-[11px] text-slate-400">设备: {{ deviceFingerprint.slice(0, 10) }}...</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 账号与昵称 -->
+                <button type="button" @click="pcSettingsSubPage = 'account'" class="flex w-full items-center justify-between px-3 py-3.5 hover:bg-slate-50">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-sky-50 text-sky-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    </span>
+                    <p class="text-sm font-medium text-slate-800">账号与昵称</p>
+                  </div>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+
+                <!-- 身份与安全 -->
+                <button type="button" @click="pcSettingsSubPage = 'security'" class="flex w-full items-center justify-between px-3 py-3.5 hover:bg-slate-50">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    </span>
+                    <p class="text-sm font-medium text-slate-800">身份与安全</p>
+                  </div>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+
+                <!-- 通用设置 -->
+                <button type="button" @click="pcSettingsSubPage = 'general'" class="flex w-full items-center justify-between px-3 py-3.5 hover:bg-slate-50">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-violet-50 text-violet-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+                    </span>
+                    <p class="text-sm font-medium text-slate-800">通用设置</p>
+                  </div>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+
+                <!-- 关于 -->
+                <button type="button" @click="pcSettingsSubPage = 'about'" class="flex w-full items-center justify-between px-3 py-3.5 hover:bg-slate-50">
+                  <div class="flex items-center gap-3">
+                    <span class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-amber-50 text-amber-600">
+                      <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                    </span>
+                    <p class="text-sm font-medium text-slate-800">关于</p>
+                  </div>
+                  <svg viewBox="0 0 24 24" class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </button>
+              </div>
+            </template>
+          </div>
+        </template>
       </aside>
 
       <main class="relative flex min-w-0 flex-1 flex-col bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100">
@@ -937,20 +1263,33 @@
                 <div class="border-b border-slate-100 px-4 py-2.5">
                   <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">账号与昵称</p>
                 </div>
-                <div class="px-4 py-3">
-                  <div class="flex items-center justify-between gap-3">
+                <div class="divide-y divide-slate-100">
+                  <div class="px-4 py-3">
                     <p class="text-sm text-slate-800">昵称</p>
-                    <div class="flex items-center gap-2">
+                    <div class="mt-2 flex items-center gap-2">
                       <input
                         v-model="nicknameInput"
                         maxlength="24"
-                        class="w-32 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 text-right outline-none placeholder:text-slate-400"
+                        class="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-sm text-slate-800 outline-none placeholder:text-slate-400"
                         placeholder="未设置"
                       />
-                      <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="text-xs font-medium text-sky-600 disabled:opacity-60">
+                      <button type="button" @click="submitNickname" :disabled="nicknameSaving" class="shrink-0 text-xs font-medium text-sky-600 disabled:opacity-60">
                         {{ nicknameSaving ? '…' : '保存' }}
                       </button>
                     </div>
+                  </div>
+                  <div class="px-4 py-3">
+                    <p class="text-sm text-slate-800">我的 ID</p>
+                    <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ myUid || '加载中...' }}</p>
+                    <div class="mt-2 flex gap-2">
+                      <button type="button" @click="copyMyDeviceId" class="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-sky-300">
+                        复制 ID
+                      </button>
+                    </div>
+                  </div>
+                  <div v-if="deviceFingerprint" class="px-4 py-3">
+                    <p class="text-sm text-slate-800">设备指纹</p>
+                    <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ deviceFingerprint }}</p>
                   </div>
                 </div>
               </div>
@@ -1141,6 +1480,16 @@
 
             <!-- 设置根页面：分类入口 -->
             <template v-else>
+              <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+                <div class="flex items-center gap-3 px-4 py-3">
+                  <div class="avatar h-10 w-10 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(myUid) }">{{ avatarInitial(myNickname || 'U') }}</div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm font-medium text-slate-800">{{ myNickname || '未设置昵称' }}</p>
+                    <p class="mt-0.5 truncate text-[11px] text-slate-400">ID: {{ myUid || '加载中...' }}</p>
+                    <p v-if="deviceFingerprint" class="mt-0.5 text-[11px] text-slate-400">设备: {{ deviceFingerprint.slice(0, 10) }}...</p>
+                  </div>
+                </div>
+              </div>
               <div class="mobile-root-card rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
                 <div class="divide-y divide-slate-100">
                   <button type="button" @click="settingsSubPage = 'account'" class="flex w-full items-center justify-between px-4 py-3.5 active:bg-slate-50">
@@ -3216,6 +3565,8 @@ const versionTapState = ref({ count: 0, lastAt: 0 });
 const nicknameGuideOpen = ref(false);
 const nicknameGuidePending = ref(false);
 const mobilePrimaryTab = ref('messages');
+const pcActiveTab = ref('messages');
+const pcSettingsSubPage = ref('');
 const mobileHistoryInternal = ref(false);
 const identityMnemonicLanguage = ref('zh');
 const identityCredentialModal = ref({
@@ -5577,7 +5928,7 @@ const openContacts = () => {
     return;
   }
   systemNoticeOpen.value = false;
-  contactsOpen.value = true;
+  pcActiveTab.value = 'contacts';
   if (!powState.value.verified) {
     toast('正在验证连接，通讯录稍后加载。', 'info');
   }
@@ -5589,7 +5940,7 @@ const openSettingsPage = () => {
     switchMobilePrimaryTab('settings');
     return;
   }
-  settingsOpen.value = true;
+  pcActiveTab.value = 'settings';
 };
 
 // ===== 设备 ID + 好友系统 =====
