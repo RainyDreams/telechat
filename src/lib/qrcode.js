@@ -197,9 +197,9 @@ function bitsToBytes(bits, totalDataCodewords) {
 
 // 获取纠错参数
 function getECCParams(version) {
-  // 使用 M 级别纠错（较好的平衡）
+  // 使用 H 级别纠错（最高30%冗余，用于提高扫描可靠性）
   const idx = version - 1;
-  const row = ECC_TABLE.M[idx];
+  const row = ECC_TABLE.H[idx];
   if (!row) return null;
   const [totalCodewords, ecPerBlock, blocksG1, dataG1, blocksG2, dataG2] = row;
   return { totalCodewords, ecPerBlock, blocksG1, dataG1, blocksG2, dataG2 };
@@ -547,7 +547,7 @@ function generateQRMatrix(text) {
     const testMatrix = matrix.map(row => [...row]);
     placeData(testMatrix, codewords);
     applyMask(testMatrix, mask, size);
-    placeFormatInfo(testMatrix, 'M', mask);
+    placeFormatInfo(testMatrix, 'H', mask);
 
     // 清除非功能模块以进行评分
     for (let r = 0; r < size; r++) {
@@ -569,7 +569,7 @@ function generateQRMatrix(text) {
   bestMatrix = matrix.map(row => [...row]);
   placeData(bestMatrix, codewords);
   applyMask(bestMatrix, bestMask, size);
-  placeFormatInfo(bestMatrix, 'M', bestMask);
+  placeFormatInfo(bestMatrix, 'H', bestMask);
 
   return bestMatrix;
 }
