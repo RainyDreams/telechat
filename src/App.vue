@@ -159,27 +159,27 @@
       >
         <button
           type="button"
-          @click="pcActiveTab = 'messages'"
+          @click="activeTab = 'messages'"
           class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
-          :class="pcActiveTab === 'messages' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
+          :class="activeTab === 'messages' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
         >
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
           <span class="text-[10px]">消息</span>
         </button>
         <button
           type="button"
-          @click="pcActiveTab = 'contacts'"
+          @click="activeTab = 'contacts'"
           class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
-          :class="pcActiveTab === 'contacts' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
+          :class="activeTab === 'contacts' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
         >
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           <span class="text-[10px]">通讯录</span>
         </button>
         <button
           type="button"
-          @click="pcActiveTab = 'settings'"
+          @click="activeTab = 'settings'"
           class="flex flex-col items-center gap-1 rounded-lg p-2 transition"
-          :class="pcActiveTab === 'settings' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
+          :class="activeTab === 'settings' ? 'text-slate-900 bg-slate-200' : 'text-slate-400 hover:text-slate-600'"
         >
           <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
           <span class="text-[10px]">设置</span>
@@ -191,7 +191,7 @@
         class="w-72 shrink-0 border-r border-slate-200/80 bg-white/85 p-3 backdrop-blur flex flex-col"
       >
         <!-- 消息列表 -->
-        <template v-if="pcActiveTab === 'messages'">
+        <template v-if="activeTab === 'messages'">
           <div class="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
             <input
               v-model="groupQuery"
@@ -282,7 +282,7 @@
 
         <!-- 通讯录 -->
         <!-- 响应式通讯录组件 -->
-        <template v-if="pcActiveTab === 'contacts' || isRootContactsPage">
+        <template v-if="activeTab === 'contacts' || isRootContactsPage">
           <div :class="mobileViewport ? 'px-1' : 'rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm'">
             <input
               v-model="contactQuery"
@@ -368,7 +368,7 @@
         </template>
 
         <!-- 设置 -->
-        <template v-if="pcActiveTab === 'settings'">
+        <template v-if="activeTab === 'settings'">
           <div class="flex-1 overflow-y-auto">
             <!-- 设置子页面：账号与昵称 -->
             <template v-if="pcSettingsSubPage === 'account'">
@@ -3183,27 +3183,27 @@
           <div class="grid grid-cols-3 gap-0">
             <button
               type="button"
-              @click="switchMobilePrimaryTab('messages')"
+              @click="switchTab('messages')"
               class="mobile-bottom-tab flex flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-medium transition"
-              :class="mobilePrimaryTab === 'messages' ? 'text-slate-900' : 'text-slate-400'"
+              :class="activeTab === 'messages' ? 'text-slate-900' : 'text-slate-400'"
             >
               <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               消息
             </button>
             <button
               type="button"
-              @click="switchMobilePrimaryTab('contacts')"
+              @click="switchTab('contacts')"
               class="mobile-bottom-tab flex flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-medium transition"
-              :class="mobilePrimaryTab === 'contacts' ? 'text-slate-900' : 'text-slate-400'"
+              :class="activeTab === 'contacts' ? 'text-slate-900' : 'text-slate-400'"
             >
               <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
               通讯录
             </button>
             <button
               type="button"
-              @click="switchMobilePrimaryTab('settings')"
+              @click="switchTab('settings')"
               class="mobile-bottom-tab flex flex-col items-center gap-0.5 rounded-lg py-1 text-[11px] font-medium transition"
-              :class="mobilePrimaryTab === 'settings' ? 'text-slate-900' : 'text-slate-400'"
+              :class="activeTab === 'settings' ? 'text-slate-900' : 'text-slate-400'"
             >
               <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
               设置
@@ -3643,8 +3643,7 @@ const showDeviceCardModal = ref(false); // 名片弹窗
 const versionTapState = ref({ count: 0, lastAt: 0 });
 const nicknameGuideOpen = ref(false);
 const nicknameGuidePending = ref(false);
-const mobilePrimaryTab = ref('messages');
-const pcActiveTab = ref('messages');
+const activeTab = ref('messages');
 const pcSettingsSubPage = ref('');
 const mobileHistoryInternal = ref(false);
 const identityMnemonicLanguage = ref('zh');
@@ -3906,9 +3905,9 @@ const composerPlaceholder = computed(() => {
 });
 
 const isChatListView = computed(() => activeGroup.value === SYSTEM_GROUP);
-const isRootMessagesPage = computed(() => activeGroup.value === SYSTEM_GROUP && (!mobileViewport.value || mobilePrimaryTab.value === 'messages'));
-const isRootContactsPage = computed(() => mobileViewport.value && activeGroup.value === SYSTEM_GROUP && mobilePrimaryTab.value === 'contacts');
-const isRootSettingsPage = computed(() => mobileViewport.value && activeGroup.value === SYSTEM_GROUP && mobilePrimaryTab.value === 'settings');
+const isRootMessagesPage = computed(() => activeGroup.value === SYSTEM_GROUP && (!mobileViewport.value || activeTab.value === 'messages'));
+const isRootContactsPage = computed(() => mobileViewport.value && activeGroup.value === SYSTEM_GROUP && activeTab.value === 'contacts');
+const isRootSettingsPage = computed(() => mobileViewport.value && activeGroup.value === SYSTEM_GROUP && activeTab.value === 'settings');
 const mobileHeaderEyebrow = computed(() => {
   if (systemNoticeOpen.value) return '系统通知';
   if (isRootContactsPage.value) return '通讯录';
@@ -3920,8 +3919,8 @@ const pageHeaderTitle = computed(() => {
   if (systemNoticeOpen.value) return '系统通知';
   if (activeGroup.value !== SYSTEM_GROUP) return activeGroupName.value;
   if (!mobileViewport.value) return activeGroupName.value;
-  if (mobilePrimaryTab.value === 'contacts') return '通讯录';
-  if (mobilePrimaryTab.value === 'settings') return '设置';
+  if (activeTab.value === 'contacts') return '通讯录';
+  if (activeTab.value === 'settings') return '设置';
   return '聊天';
 });
 const activeIdentityMnemonic = computed(() => {
@@ -5885,10 +5884,10 @@ const currentMobileRoute = () => {
   if (activeGroup.value !== SYSTEM_GROUP && activeGroup.value !== SYSTEM_NOTICE_GROUP) {
     return normalizeMobileRoute({ view: 'chat', groupId: activeGroup.value });
   }
-  if (mobilePrimaryTab.value === 'contacts') {
+  if (activeTab.value === 'contacts') {
     return normalizeMobileRoute({ view: 'contacts' });
   }
-  if (mobilePrimaryTab.value === 'settings') {
+  if (activeTab.value === 'settings') {
     return normalizeMobileRoute({ view: 'settings' });
   }
   return normalizeMobileRoute({ view: 'messages' });
@@ -5936,13 +5935,13 @@ const applyMobileRoute = (route, options = {}) => {
   groupManageOpen.value = false;
   if (normalized.view === 'messages' || normalized.view === 'contacts' || normalized.view === 'settings' || normalized.view === 'system_notice') {
     activeGroup.value = SYSTEM_GROUP;
-    mobilePrimaryTab.value =
+    activeTab.value =
       normalized.view === 'contacts' ? 'contacts' : normalized.view === 'settings' ? 'settings' : 'messages';
     if (normalized.view === 'system_notice') {
       clearUnread(SYSTEM_NOTICE_GROUP);
     }
   } else if (normalized.groupId) {
-    mobilePrimaryTab.value = 'messages';
+    activeTab.value = 'messages';
     ensureGroupInList(normalized.groupId);
     activeGroup.value = normalized.groupId;
     if (normalized.view === 'group_manage' && !isDirectGroupId(normalized.groupId) && normalized.groupId !== SYSTEM_NOTICE_GROUP) {
@@ -6000,22 +5999,24 @@ const handleMobilePopState = (event) => {
   applyMobileRoute(route);
 };
 
-const switchMobilePrimaryTab = (tab) => {
-  if (!mobileViewport.value) return;
-  scheduleMobileHistoryPush();
-  applyMobileRoute({ view: tab === 'contacts' ? 'contacts' : tab === 'settings' ? 'settings' : 'messages' }, { historyMode: 'push' });
+const switchTab = (tab) => {
+  activeTab.value = tab;
+  if (mobileViewport.value) {
+    scheduleMobileHistoryPush();
+    applyMobileRoute({ view: tab === 'contacts' ? 'contacts' : tab === 'settings' ? 'settings' : 'messages' }, { historyMode: 'push' });
+  }
 };
 
 const openContacts = () => {
   if (mobileViewport.value) {
-    switchMobilePrimaryTab('contacts');
+    switchTab('contacts');
     if (powState.value.verified && deviceBound.value) {
       requestContacts();
     }
     return;
   }
   systemNoticeOpen.value = false;
-  pcActiveTab.value = 'contacts';
+  activeTab.value = 'contacts';
   if (!powState.value.verified) {
     toast('正在验证连接，通讯录稍后加载。', 'info');
   }
@@ -6024,10 +6025,10 @@ const openContacts = () => {
 
 const openSettingsPage = () => {
   if (mobileViewport.value) {
-    switchMobilePrimaryTab('settings');
+    switchTab('settings');
     return;
   }
-  pcActiveTab.value = 'settings';
+  activeTab.value = 'settings';
 };
 
 // ===== 设备 ID + 好友系统 =====
@@ -7220,7 +7221,7 @@ watch(
 );
 
 watch(
-  () => [mobileViewport.value, activeGroup.value, mobilePrimaryTab.value, systemNoticeOpen.value, groupManageOpen.value],
+  () => [mobileViewport.value, activeGroup.value, activeTab.value, systemNoticeOpen.value, groupManageOpen.value],
   () => {
     syncMobileHistory();
   },
@@ -10389,7 +10390,7 @@ const openGroup = (groupId) => {
     systemNoticeOpen.value = false;
     mobileDrawerMode.value = 'home';
     if (mobileViewport.value) {
-      mobilePrimaryTab.value = 'messages';
+      activeTab.value = 'messages';
     }
     selectGroup(gid);
     return;
