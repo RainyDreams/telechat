@@ -2524,6 +2524,20 @@
               {{ groupQuickMenuPinned ? '取消置顶' : '置顶' }}
             </button>
             <button
+              type="button"
+              @click="promptEditGroupNote(groupQuickMenu.groupId)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              更改备注
+            </button>
+            <button
+              type="button"
+              @click="promptRemoveFromList(groupQuickMenu.groupId)"
+              class="flex w-full items-center rounded-xl px-3 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            >
+              在列表中删除
+            </button>
+            <button
               v-if="groupQuickMenuCanLeave"
               type="button"
               @click="promptLeaveGroup(groupQuickMenu.groupId)"
@@ -3719,6 +3733,8 @@ const groupMembersLoading = ref(false);
 const groupRenameInput = ref('');
 const groupAnnouncementInput = ref('');
 const groupMetaMap = ref({});
+const groupNoteMap = ref({});
+const recentGroupList = ref([]);
 const groupInviteSettingsLoading = ref(false);
 const groupInviteEntries = ref([]);
 const pendingInviteApprovals = ref([]);
@@ -10643,6 +10659,27 @@ const promptLeaveGroup = (groupId) => {
     requestGroupMembersForGroup(gid);
   }
   closeGroupQuickMenu();
+};
+
+const promptEditGroupNote = (groupId) => {
+  const gid = sanitizeGroupId(groupId);
+  if (!gid) return;
+  const note = groupNoteMap.value[gid] || '';
+  const newNote = prompt('设置备注（仅自己可见）', note) || '';
+  if (newNote === note) return;
+  groupNoteMap.value = { ...groupNoteMap.value, [gid]: newNote };
+  persistGroupNoteMap();
+  closeGroupQuickMenu();
+  toast(newNote ? '备注已设置' : '备注已清除', 'info');
+};
+
+const promptRemoveFromList = (groupId) => {
+  const gid = sanitizeGroupId(groupId);
+  if (!gid) return;
+  groupList.value = groupList.value.filter(g => g.id !== gid);
+  persistGroupList();
+  closeGroupQuickMenu();
+  toast('已从列表中删除', 'info');
 };
 
 const closeLeaveGroupDialog = () => {
