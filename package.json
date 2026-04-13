@@ -1,6 +1,6 @@
 {
   "name": "cloudflare-secure-chat",
-  "version": "2026.4.39.0",
+  "version": "2026.4.40.0",
   "private": true,
   "type": "module",
   "scripts": {
