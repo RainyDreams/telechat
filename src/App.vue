@@ -202,9 +202,36 @@
           </div>
 
           <div class="mt-2 flex-1 overflow-y-auto pr-1">
-            <p class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">Groups</p>
+            <!-- 置顶消息分组 -->
+            <template v-if="visibleGroups.some(g => isGroupPinned(g.id))">
+              <p class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-amber-600">置顶消息</p>
+              <button
+                v-for="group in visibleGroups.filter(g => isGroupPinned(g.id))"
+                :key="`pinned-${group.id}`"
+                type="button"
+                @click="handleGroupListPrimaryAction(group.id)"
+                @contextmenu="handleGroupContextMenu($event, group.id)"
+                class="group-quick-trigger mb-1 flex w-full items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-left transition"
+                :class="isGroupSelected(group.id) ? 'border-sky-200 bg-sky-50 text-sky-700 shadow-sm' : 'hover:border-slate-200 hover:bg-white'"
+              >
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex min-w-0 items-center gap-2">
+                      <span class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">置顶</span>
+                      <span class="truncate text-sm font-medium">{{ groupDisplayName(group, group.name) }}</span>
+                    </div>
+                    <span class="shrink-0 text-[11px] font-medium text-slate-400">{{ groupPreviewTime(group.id) }}</span>
+                  </div>
+                  <p class="mt-0.5 truncate text-xs text-slate-500">{{ groupPreviewText(group.id) || '暂无消息' }}</p>
+                </div>
+                <span v-if="getUnreadCount(group.id)" class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white">{{ formatUnreadCount(getUnreadCount(group.id)) }}</span>
+              </button>
+            </template>
+
+            <!-- 普通消息列表 -->
+            <p class="mb-1 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">消息</p>
             <button
-              v-for="group in visibleGroups"
+              v-for="group in visibleGroups.filter(g => !isGroupPinned(g.id))"
               :key="group.id"
               type="button"
               @click="handleGroupListPrimaryAction(group.id)"
@@ -221,32 +248,31 @@
                   : 'border-transparent bg-slate-100/70 text-slate-700 hover:border-slate-200 hover:bg-white'
               "
             >
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex min-w-0 items-center gap-2">
-                  <span v-if="isGroupPinned(group.id)" class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">置顶</span>
-                  <span class="truncate text-sm font-medium">{{ groupDisplayName(group, group.name) }}</span>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="flex min-w-0 items-center gap-2">
+                    <span class="truncate text-sm font-medium">{{ groupDisplayName(group, group.name) }}</span>
+                  </div>
+                  <span class="shrink-0 text-[11px] font-medium text-slate-400">{{ groupPreviewTime(group.id) }}</span>
                 </div>
-                <span class="shrink-0 text-[11px] font-medium text-slate-400">{{ groupPreviewTime(group.id) }}</span>
+                <p class="mt-0.5 truncate text-xs text-slate-500">
+                  {{
+                    groupPreviewText(group.id) ||
+                      (group.id === SYSTEM_GROUP ? '欢迎来到 LINKCONNECT' : '暂无消息')
+                  }}
+                </p>
               </div>
-              <p class="mt-0.5 truncate text-xs text-slate-500">
-                {{
-                  groupPreviewText(group.id) ||
-                    (group.id === SYSTEM_GROUP ? '欢迎来到 LINKCONNECT' : '暂无消息')
-                }}
-              </p>
-            </div>
-            <span
-              v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
-              class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
-            ></span>
-            <span
-              v-else-if="getUnreadCount(group.id)"
-              class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white"
-            >
-              {{ formatUnreadCount(getUnreadCount(group.id)) }}
-            </span>
-          </button>
+              <span
+                v-if="group.id === SYSTEM_NOTICE_GROUP && getUnreadCount(group.id)"
+                class="ml-2 h-2.5 w-2.5 shrink-0 rounded-full bg-rose-500"
+              ></span>
+              <span
+                v-else-if="getUnreadCount(group.id)"
+                class="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-rose-500 px-2 py-0.5 text-xs font-semibold text-white"
+              >
+                {{ formatUnreadCount(getUnreadCount(group.id)) }}
+              </span>
+            </button>
           </div>
 
 
@@ -1232,7 +1258,20 @@
               <div v-else class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
                 <div class="border-b border-slate-100 px-4 py-2"><p class="text-[11px] font-medium text-slate-400">群聊 · {{ chatListSummary.roomCount }}</p></div>
                 <div class="divide-y divide-slate-100">
-                  <div v-for="group in chatListGroups.filter(g => g.id !== SYSTEM_GROUP && g.id !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(g.id))" :key="`mobile-group-${group.id}`" class="flex items-center gap-3 px-4 py-2.5">
+                  <!-- 置顶消息 -->
+            <template v-if="chatListGroups.some(g => isGroupPinned(g.id))">
+              <div v-for="group in chatListGroups.filter(g => isGroupPinned(g.id))" :key="`mobile-pinned-${group.id}`" class="flex items-center gap-3 px-4 py-2.5 bg-amber-50">
+                <span class="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">置顶</span>
+                <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(group.id || group.name) }">{{ avatarInitial(group.name || group.id) }}</div>
+                <div class="min-w-0 flex-1">
+                  <p class="truncate text-sm text-slate-800">{{ groupDisplayName(group, group.name) }}</p>
+                </div>
+                <button type="button" @click="handleGroupListPrimaryAction(group.id)" class="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white">进入</button>
+              </div>
+            </template>
+
+            <!-- 普通消息 -->
+            <div v-for="group in chatListGroups.filter(g => g.id !== SYSTEM_GROUP && g.id !== SYSTEM_NOTICE_GROUP && !isDirectGroupId(g.id) && !isGroupPinned(g.id))" :key="`mobile-group-${group.id}`" class="flex items-center gap-3 px-4 py-2.5">
                     <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(group.id || group.name) }">{{ avatarInitial(group.name || group.id) }}</div>
                     <div class="min-w-0 flex-1">
                       <p class="truncate text-sm text-slate-800">{{ groupDisplayName(group, group.name) }}</p>
