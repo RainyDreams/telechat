@@ -5942,6 +5942,20 @@ const copyMyDeviceId = async () => {
   }
 };
 
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
 const saveDeviceCard = () => {
   if (!myUid.value) return;
   const svgStr = generateDeviceQRSvg(myUid.value, 280);
@@ -6006,22 +6020,8 @@ const saveDeviceCard = () => {
   img.src = url;
 };
 
-function roundRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
 const openAddFriendDialog = () => {
-  addFriendDialog.value = { open: true, deviceIdInput: '', error: '', mode: 'input' };
+  addFriendDialog.value = { open: true, deviceIdInput: '', error: '', mode: 'input', description: '' };
   settingsOpen.value = false;
 };
 
@@ -12176,7 +12176,7 @@ onMounted(async () => {
     window.history.replaceState({}, '', url.toString());
     // 延迟打开，等连接建立
     setTimeout(() => {
-      addFriendDialog.value = { open: true, deviceIdInput: parseDeviceShareString(addDeviceId) || addDeviceId, error: '', mode: 'input' };
+      addFriendDialog.value = { open: true, deviceIdInput: parseDeviceShareString(addDeviceId) || addDeviceId, error: '', mode: 'input', description: '' };
     }, 1500);
   }
 
