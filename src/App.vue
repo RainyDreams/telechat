@@ -315,7 +315,7 @@
                   </div>
                   <div class="flex shrink-0 gap-1.5">
                     <button type="button" @click="acceptContactRequest(req)" class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">同意</button>
-                    <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
+                      <button type="button" @click="declineContactRequest(req)" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50">拒绝</button>
                   </div>
                 </div>
               </div>
@@ -2908,7 +2908,7 @@
                     </div>
                     <div class="flex shrink-0 gap-1.5">
                       <button type="button" @click="acceptContactRequest(req)" class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">同意</button>
-                      <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
+                    <button type="button" @click="declineContactRequest(req)" class="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-50">拒绝</button>
                     </div>
                   </div>
                 </div>
