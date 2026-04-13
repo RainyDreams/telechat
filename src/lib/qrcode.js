@@ -605,25 +605,35 @@ export function generateQRSvg(text, size = 200) {
 
 // ===== 导出的生成函数 =====
 
-export function generateDeviceQRSvg(deviceId, size = 200) {
+let qrCodeCache = {};
+
+export async function generateDeviceQRSvg(deviceId, size = 200) {
   if (!deviceId || deviceId.length < 8) return '';
   
   const url = new URL(window.location.origin);
   url.searchParams.set('add', deviceId);
   const text = url.toString();
 
-  // 使用 CDN 的 QRCode 库生成 SVG
+  // 检查缓存
+  if (qrCodeCache[text]) return qrCodeCache[text];
+
+  // 使用 CDN 的 QRCode 库生成
   if (typeof QRCode !== 'undefined') {
-    return QRCode.toString(text, { 
-      type: 'svg',
-      width: size, 
-      margin: 2,
-      errorCorrectionLevel: 'H'
-    });
+    try {
+      const svg = await QRCode.toString(text, { 
+        type: 'svg',
+        width: size, 
+        margin: 2,
+        errorCorrectionLevel: 'H'
+      });
+      qrCodeCache[text] = svg;
+      return svg;
+    } catch (err) {
+      console.error('QRCode error:', err);
+    }
   }
   
-  // 备用：使用我们自己的实现
-  return generateQRSvg(text, size);
+  return '';
 }
 
 export function generateInviteQRSvg(inviteUrl, size = 200) {

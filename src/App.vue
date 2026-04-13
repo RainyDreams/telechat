@@ -3640,24 +3640,9 @@ const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: '
 const qrImagePicker = ref(null);
 const showDeviceQR = ref(false); // 在设置中显示设备二维码
 const showDeviceCardModal = ref(false); // 名片弹窗
-const versionTapState = ref({ count: 0, lastAt: 0 });
-const nicknameGuideOpen = ref(false);
-const nicknameGuidePending = ref(false);
-const mobilePrimaryTab = ref('messages');
-const pcActiveTab = ref('messages');
-const pcSettingsSubPage = ref('');
-const mobileHistoryInternal = ref(false);
-const identityMnemonicLanguage = ref('zh');
-const identityCredentialModal = ref({
-  open: false,
-  fingerprint: '',
-  mnemonicZh: '',
-  mnemonicEn: '',
-  fileTextZh: '',
-  fileTextEn: '',
-  language: 'zh',
-  firstBind: false,
-});
+const myDeviceQRSvgValue = ref('');
+
+const myDeviceQRSvg = computed(() => myDeviceQRSvgValue.value);
 const identityCredentialImport = ref('');
 const createGroupModal = ref({ open: false, name: '' });
 const groupManageOpen = ref(false);
@@ -6027,11 +6012,6 @@ const openSettingsPage = () => {
 
 // ===== 设备 ID + 好友系统 =====
 
-const myDeviceQRSvg = computed(() => {
-  if (!myUid.value) return '';
-  return generateDeviceQRSvg(myUid.value, 180);
-});
-
 const copyMyDeviceId = async () => {
   if (!myUid.value) return;
   const shareString = buildDeviceShareString(myUid.value);
@@ -7193,6 +7173,16 @@ const refreshDirectGroupNames = () => {
     return nextName && nextName !== group.name ? { ...group, name: nextName } : group;
   });
 };
+
+watch(
+  () => myUid.value,
+  async (newUid) => {
+    if (newUid) {
+      myDeviceQRSvgValue.value = await generateDeviceQRSvg(newUid, 180);
+    }
+  },
+  { immediate: true }
+);
 
 watch(
   () =>
