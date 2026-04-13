@@ -3,7 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+
+    <!-- SEO -->
+    <meta name="description" content="LINKCONNECT — 隐私优先的实时聊天应用，基于设备绑定身份，无需手机号或邮箱注册。端到端加密，支持私聊、群聊和邀请链接。" />
+    <meta name="keywords" content="LINKCONNECT, 隐私聊天, 端到端加密, 实时通讯, 加密聊天" />
+    <meta name="author" content="RainyDreams" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="LINKCONNECT Chat" />
+    <meta property="og:description" content="隐私优先的实时聊天 — 设备绑定身份，端到端加密，无需手机号注册。" />
+    <meta property="og:site_name" content="LINKCONNECT" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="LINKCONNECT Chat" />
+    <meta name="twitter:description" content="隐私优先的实时聊天 — 设备绑定身份，端到端加密。" />
 
     <!-- PWA 配置 -->
     <link rel="manifest" href="/manifest.json" />
@@ -13,20 +29,25 @@
     <meta name="apple-mobile-web-app-title" content="LINKCONNECT" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
 
-    <!-- 如需远程字体，可在这里引入 -->
+    <!-- Fonts -->
+    <link href="https://fonts.cdnfonts.com/css/arial" rel="stylesheet" />
 
-    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"> -->
     <title>LINKCONNECT Chat</title>
   </head>
   <body>
+    <noscript>
+      <div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;padding:2rem;text-align:center;">
+        <div>
+          <h1>LINKCONNECT</h1>
+          <p>本应用需要 JavaScript 才能运行。请在浏览器设置中启用 JavaScript。</p>
+        </div>
+      </div>
+    </noscript>
+
     <!-- Vue 挂载点 -->
     <div id="app"></div>
 
     <!-- 入口脚本 -->
     <script type="module" src="/src/main.js"></script>
-
-    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap"> -->
-    <!-- <link href="https://cdn.jsdelivr.net/npm/twemoji-colr-font@14.0.2/twemoji-colr.css" rel="stylesheet"> -->
-    <link href="https://fonts.cdnfonts.com/css/arial" rel="stylesheet">
   </body>
 </html>
