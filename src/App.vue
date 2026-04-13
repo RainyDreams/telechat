@@ -2297,6 +2297,27 @@
           </div>
         </div>
 
+        <!-- 名片弹窗 -->
+        <div v-if="showDeviceCardModal" class="fixed inset-0 z-[60]">
+          <button type="button" @click="showDeviceCardModal = false" class="absolute inset-0 bg-slate-900/40"></button>
+          <div class="viewport-modal-scroll">
+            <div class="viewport-modal-panel rounded-2xl border border-slate-200 bg-white shadow-2xl p-6" style="--dialog-max: 24rem;">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <p class="text-sm font-semibold text-slate-800">我的名片</p>
+                <button type="button" @click="showDeviceCardModal = false" class="text-xs font-medium text-slate-500">完成</button>
+              </div>
+              <div class="flex flex-col items-center">
+                <div class="mb-4 rounded-xl bg-white p-2" v-html="myDeviceQRSvg"></div>
+                <p class="text-xs text-slate-500 mb-4">扫码添加好友</p>
+                <div class="flex gap-2 w-full">
+                  <button type="button" @click="copyMyDeviceId" class="flex-1 rounded-lg bg-slate-900 py-2 text-sm font-semibold text-white">复制ID</button>
+                  <button type="button" @click="showDeviceCardModal = false" class="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600">关闭</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div v-if="groupManageOpen" class="fixed inset-0 z-[60]">
           <button
             type="button"
@@ -3618,6 +3639,7 @@ const pushInitializing = ref(false);
 const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: 'input', description: '' }); // mode: 'input' | 'qr'
 const qrImagePicker = ref(null);
 const showDeviceQR = ref(false); // 在设置中显示设备二维码
+const showDeviceCardModal = ref(false); // 名片弹窗
 const versionTapState = ref({ count: 0, lastAt: 0 });
 const nicknameGuideOpen = ref(false);
 const nicknameGuidePending = ref(false);
@@ -6037,66 +6059,7 @@ function roundRect(ctx, x, y, w, h, r) {
 
 const saveDeviceCard = () => {
   if (!myUid.value) return;
-  const svgStr = generateDeviceQRSvg(myUid.value, 280);
-  const cardW = 360;
-  const cardH = 480;
-  const canvas = document.createElement('canvas');
-  canvas.width = cardW * 2;
-  canvas.height = cardH * 2;
-  const ctx = canvas.getContext('2d');
-  ctx.scale(2, 2);
-
-  // 背景
-  ctx.fillStyle = '#f8fafc';
-  ctx.fillRect(0, 0, cardW, cardH);
-
-  // 顶部色条
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, cardW, 56);
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold 16px -apple-system, "Segoe UI", sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('LINKCONNECT', cardW / 2, 36);
-
-  // QR 码
-  const img = new Image();
-  const blob = new Blob([svgStr], { type: 'image/svg+xml' });
-  const url = URL.createObjectURL(blob);
-  img.onload = () => {
-    const qrSize = 200;
-    const qrX = (cardW - qrSize) / 2;
-    const qrY = 80;
-    // 白色圆角背景
-    ctx.fillStyle = '#fff';
-    roundRect(ctx, qrX - 16, qrY - 16, qrSize + 32, qrSize + 32, 12);
-    ctx.fill();
-    ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
-    URL.revokeObjectURL(url);
-
-    // 设备 ID 文字
-    ctx.fillStyle = '#334155';
-    ctx.font = '13px "SF Mono", Menlo, monospace';
-    ctx.textAlign = 'center';
-    const shortId = myUid.value.length > 28 ? myUid.value.slice(0, 28) + '…' : myUid.value;
-    ctx.fillText(shortId, cardW / 2, qrY + qrSize + 40);
-
-    // 提示文字
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '12px -apple-system, "Segoe UI", sans-serif';
-    ctx.fillText('扫码添加好友', cardW / 2, qrY + qrSize + 64);
-
-    // 下载
-    canvas.toBlob((b) => {
-      if (!b) return;
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(b);
-      a.download = 'linkconnect-card.png';
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast('名片已保存。', 'info');
-    }, 'image/png');
-  };
-  img.src = url;
+  showDeviceCardModal.value = true;
 };
 
 const openAddFriendDialog = () => {
