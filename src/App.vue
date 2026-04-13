@@ -255,38 +255,46 @@
         </template>
 
         <!-- 通讯录 -->
-        <template v-if="pcActiveTab === 'contacts'">
-          <div class="rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm">
+        <!-- 响应式通讯录组件 -->
+        <template v-if="pcActiveTab === 'contacts' || isRootContactsPage">
+          <div :class="mobileViewport ? 'px-1' : 'rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 shadow-sm'">
             <input
               v-model="contactQuery"
-              class="w-full bg-transparent text-sm text-slate-800 outline-none placeholder:text-slate-400"
+              :class="[
+                'w-full text-sm text-slate-800 outline-none placeholder:text-slate-400',
+                mobileViewport ? 'rounded-lg border border-slate-200 bg-white px-3 py-2' : 'bg-transparent'
+              ]"
               placeholder="搜索联系人"
               inputmode="search"
             />
           </div>
 
-          <div class="mt-2 flex-1 overflow-y-auto">
-            <div class="divide-y divide-slate-100">
-              <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+          <div :class="mobileViewport ? 'mt-2' : 'mt-2 flex-1 overflow-y-auto'">
+            <!-- 快捷入口 -->
+            <div :class="mobileViewport ? 'mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm' : 'divide-y divide-slate-100'">
+              <button type="button" @click="requestContacts" :class="['flex w-full items-center gap-3', mobileViewport ? 'px-4 py-3 active:bg-slate-50' : 'px-3 py-3 hover:bg-slate-50']">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
                 </div>
                 <p class="text-sm text-slate-800">新的朋友</p>
                 <span v-if="contactRequestCards.length" class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{{ contactRequestCards.length }}</span>
               </button>
-              <button type="button" @click="openAddFriendDialog" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+              <div v-if="mobileViewport" class="border-t border-slate-100"></div>
+              <button type="button" @click="openAddFriendDialog" :class="['flex w-full items-center gap-3', mobileViewport ? 'px-4 py-3 active:bg-slate-50' : 'px-3 py-3 hover:bg-slate-50']">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
                 </div>
                 <p class="text-sm text-slate-800">添加好友</p>
               </button>
-              <button type="button" @click="saveDeviceCard" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+              <div v-if="mobileViewport" class="border-t border-slate-100"></div>
+              <button type="button" @click="saveDeviceCard" :class="['flex w-full items-center gap-3', mobileViewport ? 'px-4 py-3 active:bg-slate-50' : 'px-3 py-3 hover:bg-slate-50']">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><circle cx="9" cy="15" r="2"/><path d="M13 15h4"/></svg>
                 </div>
                 <p class="text-sm text-slate-800">我的名片</p>
               </button>
-              <button type="button" @click="createGroup" class="flex w-full items-center gap-3 px-3 py-3 hover:bg-slate-50">
+              <div v-if="mobileViewport" class="border-t border-slate-100"></div>
+              <button type="button" @click="createGroup" :class="['flex w-full items-center gap-3', mobileViewport ? 'px-4 py-3 active:bg-slate-50' : 'px-3 py-3 hover:bg-slate-50']">
                 <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500 text-white">
                   <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
@@ -294,10 +302,11 @@
               </button>
             </div>
 
-            <div v-if="contactRequestCards.length" class="mt-2">
-              <div class="px-3 py-2"><p class="text-[11px] font-medium text-slate-400">待处理请求</p></div>
-              <div class="divide-y divide-slate-100">
-                <div v-for="req in contactRequestCards" :key="`pc-sidebar-req-${req.requestId}`" class="flex items-center gap-3 px-3 py-2.5">
+            <!-- 待处理请求 -->
+            <div v-if="contactRequestCards.length" :class="mobileViewport ? 'mt-2 mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm' : 'mt-2'">
+              <div v-if="!mobileViewport" class="px-3 py-2"><p class="text-[11px] font-medium text-slate-400">待处理请求</p></div>
+              <div :class="mobileViewport ? 'divide-y divide-slate-100' : 'divide-y divide-slate-100'">
+                <div v-for="req in contactRequestCards" :key="`contact-req-${req.requestId}`" :class="['flex items-center gap-3', mobileViewport ? 'px-4 py-2.5' : 'px-3 py-2.5']">
                   <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">{{ req.uidShort?.slice(0,2) || '?' }}</div>
                   <div class="min-w-0 flex-1">
                     <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
@@ -312,12 +321,14 @@
               </div>
             </div>
 
-            <div v-if="contactsLoading" class="px-3 py-3 text-xs text-slate-500">正在加载通讯录…</div>
-            <div v-else-if="!filteredContactCards.length" class="px-3 py-3 text-xs text-slate-500">{{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}</div>
-            <div v-else>
-              <div class="px-3 py-2"><p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p></div>
+            <!-- 联系人列表 -->
+            <div v-if="contactsLoading" :class="mobileViewport ? 'px-4 py-3 text-xs text-slate-500' : 'px-3 py-3 text-xs text-slate-500'">正在加载通讯录…</div>
+            <div v-else-if="!filteredContactCards.length" :class="mobileViewport ? 'px-4 py-3 text-xs text-slate-500' : 'px-3 py-3 text-xs text-slate-500'">{{ contactCards.length ? '没有匹配到联系人。' : '暂无联系人。' }}</div>
+            <div v-else :class="mobileViewport ? 'mt-2 mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm' : ''">
+              <div v-if="mobileViewport" class="border-b border-slate-100 px-4 py-2"><p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p></div>
+              <div v-else class="px-3 py-2"><p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p></div>
               <div class="divide-y divide-slate-100">
-                <div v-for="contact in filteredContactCards" :key="`pc-sidebar-contact-${contact.contactFingerprint}`" class="flex items-center gap-3 px-3 py-2.5">
+                <div v-for="contact in filteredContactCards" :key="`contact-${contact.contactFingerprint}`" :class="['flex items-center gap-3', mobileViewport ? 'px-4 py-2.5' : 'px-3 py-2.5']">
                   <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">{{ avatarInitial(contact.displayName || 'U') }}</div>
                   <div class="min-w-0 flex-1">
                     <p class="truncate text-sm text-slate-800">{{ contact.displayName }}</p>
@@ -1115,101 +1126,6 @@
                 >
                   创建群聊
                 </button>
-              </div>
-            </div>
-          </div>
-
-          <div v-else-if="isRootContactsPage" class="mobile-root-stack mx-auto flex w-full max-w-4xl flex-col gap-2 pb-4">
-            <!-- 搜索 -->
-            <div class="px-1">
-              <input
-                v-model="contactQuery"
-                class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none placeholder:text-slate-400"
-                placeholder="搜索联系人"
-                inputmode="search"
-              />
-            </div>
-
-            <!-- 快捷入口 -->
-            <div class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-              <button type="button" @click="requestContacts" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-                </div>
-                <p class="text-sm text-slate-800">新的朋友</p>
-                <span v-if="contactRequestCards.length" class="ml-auto flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-semibold text-white">{{ contactRequestCards.length }}</span>
-              </button>
-              <div class="border-t border-slate-100"></div>
-              <button type="button" @click="openAddFriendDialog" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white">
-                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                </div>
-                <p class="text-sm text-slate-800">添加好友</p>
-              </button>
-              <div class="border-t border-slate-100"></div>
-              <button type="button" @click="saveDeviceCard" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white">
-                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><circle cx="9" cy="15" r="2"/><path d="M13 15h4"/></svg>
-                </div>
-                <p class="text-sm text-slate-800">我的名片</p>
-              </button>
-              <div class="border-t border-slate-100"></div>
-              <button type="button" @click="createGroup" class="flex w-full items-center gap-3 px-4 py-3 active:bg-slate-50">
-                <div class="flex h-9 w-9 items-center justify-center rounded-lg bg-sky-500 text-white">
-                  <svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                </div>
-                <p class="text-sm text-slate-800">新建群聊</p>
-              </button>
-            </div>
-
-            <!-- 待处理 -->
-            <div v-if="contactRequestCards.length" class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-              <div class="divide-y divide-slate-100">
-                <div
-                  v-for="req in contactRequestCards"
-                  :key="`root-contact-req-${req.requestId}`"
-                  class="flex items-center gap-3 px-4 py-2.5"
-                >
-                  <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-700">
-                    {{ req.uidShort?.slice(0,2) || '?' }}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="text-sm text-slate-800">用户 {{ req.uidShort }}</p>
-                    <p v-if="req.description" class="text-[11px] text-slate-500 mt-0.5">{{ req.description }}</p>
-                    <p class="text-[11px] text-slate-400">{{ req.os }} · {{ req.location }}</p>
-                  </div>
-                  <div class="flex shrink-0 gap-1.5">
-                    <button type="button" @click="acceptContactRequest(req)" class="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-semibold text-white">同意</button>
-                    <button type="button" @click="declineContactRequest(req)" class="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">拒绝</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 联系人 -->
-            <div v-if="filteredContactCards.length" class="mobile-root-card rounded-2xl border border-slate-100 bg-white overflow-hidden shadow-sm">
-              <div class="border-b border-slate-100 px-4 py-2">
-                <p class="text-[11px] font-medium text-slate-400">联系人 · {{ filteredContactCards.length }}</p>
-              </div>
-              <div class="divide-y divide-slate-100">
-                <div
-                  v-for="contact in filteredContactCards"
-                  :key="`root-contact-${contact.contactFingerprint}`"
-                  class="flex items-center gap-3 px-4 py-2.5"
-                >
-                  <div class="avatar h-9 w-9 shrink-0 rounded-full text-[11px] font-semibold text-white" :style="{ background: avatarColor(contact.contactFingerprint || contact.displayName) }">
-                    {{ avatarInitial(contact.displayName || 'U') }}
-                  </div>
-                  <div class="min-w-0 flex-1">
-                    <p class="truncate text-sm text-slate-800">{{ contact.displayName }}</p>
-                    <p class="truncate text-[11px] text-slate-400">{{ contact.os ? `${contact.os} · ${contact.location}` : '' }}</p>
-                  </div>
-                  <button
-                    type="button"
-                    @click="startContactChat(contact)"
-                    class="shrink-0 rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold text-white"
-                  >私聊</button>
-                </div>
               </div>
             </div>
           </div>
