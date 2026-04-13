@@ -3640,9 +3640,24 @@ const addFriendDialog = ref({ open: false, deviceIdInput: '', error: '', mode: '
 const qrImagePicker = ref(null);
 const showDeviceQR = ref(false); // 在设置中显示设备二维码
 const showDeviceCardModal = ref(false); // 名片弹窗
-const myDeviceQRSvgValue = ref('');
-
-const myDeviceQRSvg = computed(() => myDeviceQRSvgValue.value);
+const versionTapState = ref({ count: 0, lastAt: 0 });
+const nicknameGuideOpen = ref(false);
+const nicknameGuidePending = ref(false);
+const mobilePrimaryTab = ref('messages');
+const pcActiveTab = ref('messages');
+const pcSettingsSubPage = ref('');
+const mobileHistoryInternal = ref(false);
+const identityMnemonicLanguage = ref('zh');
+const identityCredentialModal = ref({
+  open: false,
+  fingerprint: '',
+  mnemonicZh: '',
+  mnemonicEn: '',
+  fileTextZh: '',
+  fileTextEn: '',
+  language: 'zh',
+  firstBind: false,
+});
 const identityCredentialImport = ref('');
 const createGroupModal = ref({ open: false, name: '' });
 const groupManageOpen = ref(false);
@@ -3983,17 +3998,22 @@ const myActiveGroupInvite = computed(() => {
 });
 
 // 邀请弹窗中的二维码（刚生成的链接）
-const inviteDialogQR = computed(() => {
+const inviteDialogQR = ref('');
+watch(() => inviteDialog.value.generatedInviteCode, async () => {
   const link = inviteLinkForEntry({ inviteCode: inviteDialog.value.generatedInviteCode, shortCode: inviteDialog.value.generatedShortCode });
-  return link ? generateInviteQRSvg(link, 160) : '';
-});
+  inviteDialogQR.value = link ? await generateInviteQRSvg(link, 160) : '';
+}, { immediate: true });
 
 // 已有邀请链接的二维码
-const activeInviteQR = computed(() => {
-  if (!myActiveGroupInvite.value) return '';
+const activeInviteQR = ref('');
+watch(() => myActiveGroupInvite.value, async () => {
+  if (!myActiveGroupInvite.value) {
+    activeInviteQR.value = '';
+    return;
+  }
   const link = inviteLinkForEntry(myActiveGroupInvite.value);
-  return link ? generateInviteQRSvg(link, 140) : '';
-});
+  activeInviteQR.value = link ? await generateInviteQRSvg(link, 140) : '';
+}, { immediate: true });
 
 const otherMembersGroupInvites = computed(() => {
   if (!isActiveGroupOwner.value) return [];
@@ -6012,6 +6032,11 @@ const openSettingsPage = () => {
 
 // ===== 设备 ID + 好友系统 =====
 
+const myDeviceQRSvg = ref('');
+watch(() => myUid.value, async (newUid) => {
+  myDeviceQRSvg.value = newUid ? await generateDeviceQRSvg(newUid, 180) : '';
+}, { immediate: true });
+
 const copyMyDeviceId = async () => {
   if (!myUid.value) return;
   const shareString = buildDeviceShareString(myUid.value);
@@ -7175,16 +7200,6 @@ const refreshDirectGroupNames = () => {
 };
 
 watch(
-  () => myUid.value,
-  async (newUid) => {
-    if (newUid) {
-      myDeviceQRSvgValue.value = await generateDeviceQRSvg(newUid, 180);
-    }
-  },
-  { immediate: true }
-);
-
-watch(
   () =>
     groups.value
       .filter((group) => group && isDirectGroupId(group.id))
@@ -7501,10 +7516,10 @@ const copyInviteDialogLink = async (entry = null) => {
   }
 };
 
-const saveGroupInviteCard = (inviteUrl) => {
+const saveGroupInviteCard = async (inviteUrl) => {
   if (!inviteUrl) return;
   const groupName = groupMetaMap.value[inviteDialog.value.groupId]?.groupName || activeGroupName.value || '群聊';
-  const svgStr = generateInviteQRSvg(inviteUrl, 280);
+  const svgStr = await generateInviteQRSvg(inviteUrl, 280);
   const cardW = 360;
   const cardH = 480;
   const canvas = document.createElement('canvas');
