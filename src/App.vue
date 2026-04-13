@@ -608,22 +608,7 @@
                   <path d="M15 18l-6-6 6-6"/>
                 </svg>
               </button>
-              <button
-                v-else
-                type="button"
-                @click="showMobilePanel = true; mobileDrawerMode = 'home'"
-                class="relative inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700"
-                aria-label="Open mobile panel"
-              >
-                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8">
-                  <path d="M4 7h16M4 12h16M4 17h16"/>
-                </svg>
-                <span
-                  v-if="getUnreadCount(SYSTEM_NOTICE_GROUP) || hasPendingContactRequests"
-                  class="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-rose-500 ring-2 ring-white"
-                  aria-hidden="true"
-                ></span>
-              </button>
+              <!-- 移动端首页时隐藏侧边栏按钮，底部Tab已提供导航 -->
               <!-- 中间：标题 -->
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-2">
