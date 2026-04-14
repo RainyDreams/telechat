@@ -187,8 +187,8 @@
       </aside>
 
       <aside
-        class="shrink-0 flex flex-col border-r border-slate-200/80 bg-white/85 p-3 backdrop-blur"
-        :class="mobileViewport ? 'flex-1 min-w-0' : 'w-72'"
+        v-if="!mobileViewport"
+        class="w-72 shrink-0 border-r border-slate-200/80 bg-white/85 p-3 backdrop-blur flex flex-col"
       >
         <!-- 消息列表 -->
         <template v-if="activeTab === 'messages'">
